@@ -26,4 +26,4 @@ jobs:
         host: ${{ secrets.HOST }}
         USERNAME: ${{ secrets.USERNAME }}
         KEY: ${{ secrets.SSHKEY }}
-        script: cd /bbc/bbc && git-lfs pull && python3 manage.py runserver 0.0.0.0:80 
+        script: cd /bbc/bbc && python3 manage.py runserver 0.0.0.0:80 
