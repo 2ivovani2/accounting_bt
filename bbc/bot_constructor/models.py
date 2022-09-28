@@ -42,6 +42,9 @@ class CustomUser(AbstractUser):
         null=True,
     )
 
+    def __str__(self) -> str:
+        return self.ton_wallet
+
     class Meta:
             verbose_name = 'Web user'
             verbose_name_plural = 'Web users'
@@ -72,6 +75,9 @@ class Bot(models.Model):
         verbose_name='Bot owner',
         on_delete=models.CASCADE,
     )
+
+    def __str__(self):
+        return self.name
 
     class Meta:
             verbose_name = 'Telegram Bot'
