@@ -29,4 +29,4 @@ jobs:
         host: ${{ secrets.HOST }}
         USERNAME: ${{ secrets.USERNAME }}
         KEY: ${{ secrets.SSHKEY }}
-        script: cd /bbc/bbc && sudo systemctl restart gunicorn
+        script: cd /bbc/bbc && docker kill $(docker ps -q) && docker-compose up -d --build
