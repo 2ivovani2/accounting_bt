@@ -6,8 +6,8 @@ class CustomUserAdmin(admin.ModelAdmin):
     """
         Model describing how to display info about users of web interface 
     """
-    list_display = ('id', 'ton_wallet', 'sub_type', 'expiration_date', 'is_superuser')
-    search_fields = ('id', 'ton_wallet', )
+    list_display = ('id', 'username', 'ton_wallet', 'sub_type', 'expiration_date', 'is_superuser')
+    search_fields = ('id', 'ton_wallet', 'username')
 
     fieldsets = (
         ('Custom params', {
