@@ -27,7 +27,6 @@ services:
   nginx:
     build: ./nginx
     restart: always
-    command: ln -s /etc/nginx/sites-available/bbc /etc/nginx/sites-enabled
     volumes:
       - static_volume:/home/app/web/staticfiles
     ports:
