@@ -1,21 +1,26 @@
 # BabyBossesClub Utility 👶🏽
 This NFT ecosystem is multifunctional.<br> It will have an NFT marketplace with a built-in analytics system<br> and a bot constructor for various promotions
-## Quick start 💥
-
-1. You have to config the `.env` file:
-  - Change Django App `SECRET_KEY`, `DEBUG`, `DJANGO_ALLOWED_HOSTS` to yours from `settings.py`
-  - Change PostreSQL `SQL_DATABASE`, `SQL_USER`, `SQL_PASSWORD` constants too on yours
-
-2. Then make sure that you have installed `docker` and `docker-compose`:
+## Docker Development 🐳👁
+You have to change all the credentials in file `.env.dev` on your own and then run these commands:
 ```shell
-docker --version
+$: docker-compose up -d --build
+$: docker-compose exec web python manage.py migrate --noinput
 ```
+Then your development server will be on http://127.0.0.1:8000 <br><br>
+If you want to stop the containers run
 ```shell
-docker-compose --version
+$: docker-compose down -v
 ```
 
-3. If everything is okay you have to change directory where `docker-compose.yml` file locates then make docker build and up the containers
+## Docker Production 🐳💥 🏻
+You have to change all the credentials in file `.env.prod` and `.env.prod.db` on your own and then run these commands:
 ```shell
-docker-compose up -d --build
+$: docker-compose -f docker-compose.prod.yml up -d --build
+$: docker-compose -f docker-compose.prod.yml exec web python manage.py migrate --noinput
+$: docker-compose -f docker-compose.prod.yml exec web python manage.py collectstatic --no-input --clear 
 ```
-
+Then your prod will be on http://127.0.0.1:1337 on local host becuse of the `nginx`, but if you start it on prod server, just enter it's `IP` or `Domain name` and you'll see the same result.<br><br>
+If you want to stop the containers run
+```shell
+$: docker-compose -f docker-compose.prod.yml down -v
+```
