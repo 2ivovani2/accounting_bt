@@ -41,7 +41,16 @@ class CustomUser(AbstractUser):
     )
 
     def __str__(self) -> str:
-        return self.ton_wallet
+        return self.username
+
+    def to_dict(self) -> dict:
+        return {
+            'username':self.username,
+            'ton_wallet':self.ton_wallet,
+            'balance':self.balance,
+            'sub_type':self.sub_type,
+            'expiration_date':self.expiration_date,
+        }
 
     class Meta:
             verbose_name = 'Web user'
