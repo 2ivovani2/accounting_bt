@@ -1,5 +1,9 @@
+
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+
+
+import telebot
 
 
 class CustomUser(AbstractUser):
@@ -141,9 +145,46 @@ class Bot(models.Model):
         verbose_name='Functions included to bot'
     )
 
-    def __str__(self):
-        return self.name
+    is_active = models.BooleanField(
+        verbose_name='Bot activity status',
+        null=False,
+        default=False,
+    )
 
+    def __str__(self) -> str:
+        return str(self.name)
+
+    def create_telegram_instance(self) -> None:
+        """
+            TODO create comments
+        """
+        self.bot_instance = telebot.TeleBot(self.token.strip(), parse_mode='HTML')
+        
+    def start_telegram_bot_instance(self) -> None:
+        """
+            TODO create comments
+        """
+        @self.bot_instance.message_handler(commands=['start', 'help'])
+        def command_help(message):
+            self.bot_instance.reply_to(message, "Hello, did someone call for help?")
+
+        self.bot_instance.polling(none_stop=True)
+
+
+    def to_dict(self) -> dict:
+        opts = self._meta
+        data = {
+            'bot_token':self.token,
+            'bot_name':self.name,
+            'website_connected':self.website,
+            'channel_connected':self.channel,
+        }
+
+        for f in opts.many_to_many:
+            data[f.name] = [i.function_name for i in f.value_from_object(self)]
+        
+        return data
+    
     class Meta:
             verbose_name = 'Telegram Bot'
             verbose_name_plural = 'Telegram Bots'

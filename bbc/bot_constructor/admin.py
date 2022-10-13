@@ -27,7 +27,7 @@ class BotAdmin(admin.ModelAdmin):
 
     fieldsets = (
         ('Bot params', {
-            'fields': ('name', 'token', 'owner', 'functions')
+            'fields': ('name', 'token', 'owner', 'functions', 'is_active')
 
         }),
 
