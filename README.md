@@ -1,5 +1,5 @@
-# BabyBossesClub Tonance 👶🏽
-This NFT ecosystem is multifunctional.<br> It will have an NFT marketplace with a built-in analytics system<br> and a bot constructor for various promotions
+# ООО Обнал 👶🏽
+This telegram system is multifunctional.<br> It will have an partner programm<br> and a bot constructor for various promotions
 ## Docker Development 🐳👁
 You have to change all the credentials in file `.env.dev` on your own and then run these commands:
 ```shell
