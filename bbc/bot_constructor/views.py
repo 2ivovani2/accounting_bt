@@ -56,7 +56,7 @@ def vue(request):
 def auth(request):
     """""
         Function of authentication of the user
-        TODO: logging via ton wallet
+        TODO: registration of new admins
     """
     username = request.POST.get('username', None).strip()
     password = request.POST.get('password', None).strip()
@@ -96,40 +96,6 @@ def auth(request):
                 status=HTTP_400_BAD_REQUEST
             ) 
 
-    elif auth_type.lower() == 'register':
-        ton_wallet = request.POST.get('ton_wallet', None)
-        
-        if CustomUser.objects.filter(ton_wallet=ton_wallet).exists() or CustomUser.objects.filter(username=username).exists():
-            return Response({
-                    'text':'Such user already exists.',
-                },
-                status=HTTP_400_BAD_REQUEST
-            )
-        
-        else:
-            user = CustomUser(
-                username=username,
-                ton_wallet=ton_wallet
-            )
-            user.set_password(password)
-            user.save()
-
-            token, _ = Token.objects.get_or_create(user=user)
-
-            return Response({
-                    'text':f'{user.username} was successfully created.',
-                    'token':token.key,
-                },
-                status=HTTP_200_OK
-            ) 
-    
-    else:
-        return Response(
-            {
-                'text':'Auth type is not provided.'
-            },
-            status=HTTP_500_INTERNAL_SERVER_ERROR
-        )
 
 
 @csrf_exempt
@@ -187,6 +153,7 @@ def stop_bot(request):
             status=HTTP_400_BAD_REQUEST
         )
 
+
     if Bot.objects.filter(token=bot_token, owner=request.user).exists():
         threads = threading.enumerate()
         for index in range(len(threads)): 
@@ -227,22 +194,23 @@ def stop_bot(request):
 @api_view(["POST"])
 def create_bot(request):
     """
-        Function which creates bot and host it to the docker container
-        TODO add bot website and channel
+        Function which creates bot and host it
     """
     
-    bot_token = request.POST.get('bot_token', None).strip()
-    bot_name = request.POST.get('bot_name', None).strip()
-    
-    if (bot_token is None):
+    bot_token = request.POST.get('bot_token', None)
+    bot_name = request.POST.get('bot_name', None)
+
+
+    if bot_token is None:
         return Response(
             {
                 'text':'Your token is invalid.'
             },
             status=HTTP_400_BAD_REQUEST
         )
-
-    
+    else:
+        bot_token = bot_token.strip()
+        
     user = request.user
     
     if Bot.objects.filter(token=bot_token).exists():
@@ -283,7 +251,7 @@ def create_bot(request):
 
     return Response(
         {
-            'text':f'Your bot with was successfully hosted.'
+            'text':f'Your bot was successfully hosted.'
         },
         status=HTTP_200_OK
     )

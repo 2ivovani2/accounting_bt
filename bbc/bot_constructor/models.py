@@ -1,28 +1,24 @@
-
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 
 
-import telebot
-
-
 class CustomUser(AbstractUser):
-    """
-        Model describing our website user's class
-        @SUBSCRIPTION_CHOICES - variants of subscription
-    """
-
-    SUBSCRIPTION_CHOICES = (
-        ('default','Default'),
-        ('expanded', 'Expanded'),
-        ('pro','Pro'),
-    )
-
-    ton_wallet = models.CharField(
-        verbose_name='TON wallet address',
+    telegram_id_in_admin_bot = models.CharField(
         max_length=255,
         null=False,
-        default=False,
+        default="Can't find id", 
+        verbose_name="Tg_id in admin bot"
+    )
+
+    verified_usr = models.BooleanField(
+        verbose_name="Verified by admin",
+        default=False
+    )
+
+    admin_info = models.TextField(
+         verbose_name="Information of admin's work",
+         null=False,
+         default="No info"
     )
 
     balance = models.PositiveIntegerField(
@@ -31,82 +27,53 @@ class CustomUser(AbstractUser):
         default=0,
     )
 
-    sub_type = models.CharField(
-        verbose_name='Type of subscription',
-        max_length=12,
-        null=False,
-        default='default',
-        choices=SUBSCRIPTION_CHOICES, 
-    )
-
-    expiration_date = models.DateTimeField(
-        verbose_name='Expiration date of subscription',
-        null=True,
-    )
-
     def __str__(self) -> str:
         return self.username
 
     def to_dict(self) -> dict:
         return {
             'username':self.username,
-            'ton_wallet':self.ton_wallet,
             'balance':self.balance,
-            'sub_type':self.sub_type,
-            'expiration_date':self.expiration_date,
         }
 
     class Meta:
-            verbose_name = 'Web user'
-            verbose_name_plural = 'Web users'
+        verbose_name = 'Admin'
+        verbose_name_plural = 'Admin'
 
-
-class Function(models.Model):
-    """
-        Model describing functions of the bots
-        @SUBSCRIPTION_CHOICES - variants of subscription
-
-    """
-
-    SUBSCRIPTION_CHOICES = (
-        ('default','Default'),
-        ('expanded', 'Expanded'),
-        ('pro','Pro'),
+class AdminApplication(models.Model):
+    STATUS_CHOICES = (
+        ("Accepted", "Accepted"),
+        ("Denied", "Denied"),
+        ("Created", "Created"),
     )
 
-    function_name = models.CharField(
-        verbose_name='Function name',
-        max_length=50,
+    date_created = models.DateTimeField(
+        auto_now_add=True,
+        blank=True, 
+        verbose_name="Apply date"
+    )
+
+    user = models.ForeignKey(
+        CustomUser,
+        verbose_name="User, who sended an apply",
+        on_delete=models.CASCADE
+    )
+
+    status = models.CharField(
+        max_length=30,
+        choices=STATUS_CHOICES,
         null=False,
-        default='none',
+        default="Created",
     )
 
-    function_desc = models.TextField(
-        verbose_name='Function description',
-        null=False,
-        default='none',
-    )
-
-    function_sub = models.CharField(
-        verbose_name='Type of subscription',
-        max_length=12,
-        null=False,
-        default='default',
-        choices=SUBSCRIPTION_CHOICES, 
-    )
-
-    def __str__(self):
-        return self.function_name
+    def __str__(self) -> str:
+        return self.user.username
 
     class Meta:
-            verbose_name = 'Function'
-            verbose_name_plural = 'Functions'
-
+        verbose_name = 'Admin apply'
+        verbose_name_plural = 'Admin applies'
 
 class Bot(models.Model):
-    """
-        Model describing our website user's bots instances
-    """
 
     token = models.CharField(
         verbose_name='TGBot token',
@@ -128,23 +95,6 @@ class Bot(models.Model):
         on_delete=models.CASCADE,
     )
 
-    website = models.CharField(
-        verbose_name='Project website link',
-        max_length=255,
-        null=True,
-    )
-
-    channel = models.CharField(
-        verbose_name='Project channel link',
-        max_length=255,
-        null=True     
-    )
-
-    functions = models.ManyToManyField(
-        Function,
-        verbose_name='Functions included to bot'
-    )
-
     is_active = models.BooleanField(
         verbose_name='Bot activity status',
         null=False,
@@ -154,21 +104,21 @@ class Bot(models.Model):
     def __str__(self) -> str:
         return str(self.name)
 
-    def create_telegram_instance(self) -> None:
-        """
-            TODO create comments
-        """
-        self.bot_instance = telebot.TeleBot(self.token.strip(), parse_mode='HTML')
+    # def create_telegram_instance(self) -> None:
+    #     """
+    #         TODO create comments
+    #     """
+    #     self.bot_instance = telebot.TeleBot(self.token.strip(), parse_mode='HTML')
         
-    def start_telegram_bot_instance(self) -> None:
-        """
-            TODO create comments
-        """
-        @self.bot_instance.message_handler(commands=['start', 'help'])
-        def command_help(message):
-            self.bot_instance.reply_to(message, "Hello, did someone call for help?")
+    # def start_telegram_bot_instance(self) -> None:
+    #     """
+    #         TODO create comments
+    #     """
+    #     @self.bot_instance.message_handler(commands=['start', 'help'])
+    #     def command_help(message):
+    #         self.bot_instance.reply_to(message, "Hello, did someone call for help?")
 
-        self.bot_instance.polling(none_stop=True)
+    #     self.bot_instance.polling(none_stop=True)
 
 
     def to_dict(self) -> dict:
@@ -176,8 +126,6 @@ class Bot(models.Model):
         data = {
             'bot_token':self.token,
             'bot_name':self.name,
-            'website_connected':self.website,
-            'channel_connected':self.channel,
         }
 
         for f in opts.many_to_many:
@@ -186,14 +134,12 @@ class Bot(models.Model):
         return data
     
     class Meta:
-            verbose_name = 'Telegram Bot'
-            verbose_name_plural = 'Telegram Bots'
+        verbose_name = 'Telegram Bot'
+        verbose_name_plural = 'Telegram Bots'
 
 
 class TGUser(models.Model):
-    """
-        Model describing current user's bot he belongs
-    """
+    
     
     telegram_id = models.PositiveBigIntegerField(
         verbose_name='Telegram user\'s id',
@@ -208,57 +154,6 @@ class TGUser(models.Model):
         default='Ánonymous', 
     )
 
-    is_admin = models.BooleanField(
-        verbose_name='Bot admin status',
-        null=False,
-        default=False,
-    )
-
-    balance = models.PositiveIntegerField(
-        verbose_name='Telegram user\'s balance',
-        null=False,
-        default=0,
-    )
-
-    experience = models.PositiveIntegerField(
-        verbose_name='Telegram user\'s experience',
-        null=False,
-        default=0,
-    )
-
-    rank = models.CharField(
-        verbose_name='Telegram user\'s rank',
-        max_length=30,
-        null=False,
-        default='Vegetable',
-    )
-
-    ton_wallet = models.CharField(
-        verbose_name='Telegram user\'s TON wallet address',
-        max_length=255,
-        null=False,
-        default=False,
-    )
-
-    whitelisted = models.BooleanField(
-        verbose_name='Telegram user\'s whitelist status',
-        null=False,
-        default=False,
-    )
-
-    messages_amount = models.PositiveIntegerField(
-        verbose_name='Telegram user\'s messages amount',
-        null=False,
-        default=0,
-    )
-
-    ref_token = models.CharField(
-        verbose_name='Telegram user\'s referral token',
-        max_length=255,
-        null=False,
-        default='No token',
-    )
-
     bot = models.ForeignKey(
         Bot,
         verbose_name='Telegram user\'s bot',
@@ -271,63 +166,3 @@ class TGUser(models.Model):
     class Meta:
         verbose_name = 'Telegram User'
         verbose_name_plural = 'Telegram Users'
-
-
-class NFT(models.Model):
-    """
-        Model describing nft
-    """
-
-    nft_name = models.CharField(
-        verbose_name='NFT name',
-        max_length=50,
-        null=False,
-        default='The best NFT in the world',
-    )
-
-    nft_creator = models.ForeignKey(
-        TGUser,
-        verbose_name='NFT creator',
-        on_delete=models.CASCADE,
-    )
-
-    nft_owner = models.ForeignKey(
-        CustomUser,
-        verbose_name='NFT owner',
-        on_delete=models.CASCADE,
-    )
-
-    def __str__(self) -> str:
-        return self.nft_name
-
-    class Meta:
-        verbose_name = 'NFT'
-        verbose_name_plural = 'NFTS'
-
-
-class ReferralLinks(models.Model):
-    """
-        Model describing refferal links between users
-    """
-
-    referrer = models.ForeignKey(
-        TGUser,
-        verbose_name='Referrer user',
-        related_name='referrer_user',
-        on_delete=models.CASCADE
-    )
-    
-    referred = models.ForeignKey(
-        TGUser,
-        verbose_name='Referred user',
-        related_name='referred_user',
-        on_delete=models.CASCADE
-    )
-
-    def __str__(self) -> str:
-        return self.id
-
-    class Meta:
-        unique_together = (('referrer', 'referred'),)
-        verbose_name = 'Referral link'
-        verbose_name_plural = 'Referral links'

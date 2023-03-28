@@ -20,3 +20,11 @@ services:
       - POSTGRES_USER=alexander
       - POSTGRES_PASSWORD=1234567890
       - POSTGRES_DB=bbc_dev
+
+  bot:
+    build: ./bbc
+    command: python manage.py bot
+    ports:
+      - 8001:8001
+    env_file:
+      - ./.env.dev
