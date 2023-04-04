@@ -7,12 +7,16 @@ class CustomUserAdmin(admin.ModelAdmin):
     """
         Model describing how to display info about users of web interface 
     """
-    list_display = ("id", "username", "verified_usr")
+    list_display = ("id", "username", "verified_usr", "balance", "total_income")
     search_fields = ("id", "username")
 
     fieldsets = (
+        ("Money info", {
+            "fields": ("balance", "total_income")
+        }),
+
         ("Params", {
-            "fields": ("username", "telegram_id_in_admin_bot", "verified_usr", "is_superuser", "groups", "admin_info")
+            "fields": ("username", "telegram_id_in_admin_bot", "verified_usr", "is_superuser", "groups", "admin_info",)
 
         }),
     )

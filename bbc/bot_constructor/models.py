@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-
+import telebot
 
 class CustomUser(AbstractUser):
     telegram_id_in_admin_bot = models.CharField(
@@ -25,6 +25,12 @@ class CustomUser(AbstractUser):
         verbose_name='Balance',
         null=False,
         default=0,
+    )
+
+    total_income = models.PositiveBigIntegerField(
+        verbose_name='Total income',
+        null=False,
+        default=0
     )
 
     def __str__(self) -> str:
@@ -86,7 +92,7 @@ class Bot(models.Model):
         verbose_name='TGBot name',
         max_length=100,
         null=False,
-        default='Loly'
+        default='Безымянный'
     )
 
     owner = models.ForeignKey(
@@ -104,34 +110,36 @@ class Bot(models.Model):
     def __str__(self) -> str:
         return str(self.name)
 
-    # def create_telegram_instance(self) -> None:
-    #     """
-    #         TODO create comments
-    #     """
-    #     self.bot_instance = telebot.TeleBot(self.token.strip(), parse_mode='HTML')
+    def create_telegram_instance(self) -> None:
+        """
+            TODO create comments
+        """
+        self.bot_instance = telebot.TeleBot(self.token.strip(), parse_mode='HTML')
         
-    # def start_telegram_bot_instance(self) -> None:
-    #     """
-    #         TODO create comments
-    #     """
-    #     @self.bot_instance.message_handler(commands=['start', 'help'])
-    #     def command_help(message):
-    #         self.bot_instance.reply_to(message, "Hello, did someone call for help?")
+    def start_telegram_bot_instance(self) -> None:
+        """
+            TODO create comments
+        """
+        @self.bot_instance.message_handler(commands=['start', 'help'])
+        def command_help(message):
+            self.bot_instance.reply_to(message, "Hello, did someone call for help?")
 
-    #     self.bot_instance.polling(none_stop=True)
+        self.bot_instance.polling(none_stop=True)
 
 
-    def to_dict(self) -> dict:
-        opts = self._meta
-        data = {
-            'bot_token':self.token,
-            'bot_name':self.name,
-        }
+    # def to_dict(self) -> dict:
+    #     opts = self._meta
+    #     data = {
+    #         'bot_token':self.token,
+    #         'bot_name':self.name,
+    #         'is_active':self.is_active,
+    #         'owner': self.owner,
+    #     }
 
-        for f in opts.many_to_many:
-            data[f.name] = [i.function_name for i in f.value_from_object(self)]
+    #     for f in opts.many_to_many:
+    #         data[f.name] = [i.function_name for i in f.value_from_object(self)]
         
-        return data
+    #     return data
     
     class Meta:
         verbose_name = 'Telegram Bot'

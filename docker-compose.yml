@@ -11,6 +11,10 @@ services:
     depends_on:
       - db
 
+    networks:
+      test_network:
+        ipv4_address: 172.16.238.10
+  
   db:
     image: postgres:13.0-alpine
     volumes:
@@ -21,6 +25,10 @@ services:
       - POSTGRES_PASSWORD=1234567890
       - POSTGRES_DB=bbc_dev
 
+    networks:
+      test_network:
+        ipv4_address: 172.16.238.11
+    
   bot:
     build: ./bbc
     command: python manage.py bot
@@ -28,3 +36,14 @@ services:
       - 8001:8001
     env_file:
       - ./.env.dev
+    
+    networks:
+      test_network:
+        ipv4_address: 172.16.238.12
+    
+networks:
+  test_network:
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.16.238.0/24
