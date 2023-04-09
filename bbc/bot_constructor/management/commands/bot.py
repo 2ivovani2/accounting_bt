@@ -4,7 +4,7 @@ from asgiref.sync import sync_to_async
 from django.core.management.base import BaseCommand
 from rest_framework.authtoken.models import Token
 
-import os, django, logging, warnings, requests, json
+import os, django, logging, warnings, requests, json, uuid
 warnings.filterwarnings("ignore")
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
@@ -29,11 +29,10 @@ logger = logging.getLogger(__name__)
 
 VERIFIED_MARKUP = InlineKeyboardMarkup([
         [
-            InlineKeyboardButton(text="Баланс 💰", callback_data="balance_info"),
             InlineKeyboardButton(text="Управление ботами 🤖", callback_data="bots_management")
         ],
         [
-            InlineKeyboardButton(text="Статистика 📊", callback_data="statystic")
+            InlineKeyboardButton(text="Статистика 📊", callback_data="stat")
         ]
 ])
 
@@ -82,10 +81,10 @@ async def start(update: Update, context: CallbackContext) -> None:
         )
     else:
 
-
+        
         await context.bot.send_message(
             usr.telegram_id_in_admin_bot,
-            f"<b>{usr.username}</b>, вы не зарегистрированы в нашей системе 😳\n\nДля того, чтобы зарегистрироваться, необоходимо:\n\n🔴 <i>Нажать на кнопочку ниже</i>\n🔴 <i>Ответить на несколько вопросов</i>\n🔴 <i>Зарабатывать с нами</i>",
+            f"<b>{usr.username}</b>, вы не зарегистрированы в нашей системе 😳\n\nДля того, чтобы зарегистрироваться, необходимо:\n⚫ <i>Нажать на кнопочку ниже</i>\n⚫ <i>Ответить на несколько вопросов</i>\n⚫ <i>Ожидать ответ администратора</i>",
             parse_mode="HTML",
             reply_markup=UNVERIFIED_MARKUP
         )
@@ -107,7 +106,7 @@ async def verification(update: Update, context: CallbackContext) -> None:
 
     await context.bot.send_message(
             usr.telegram_id_in_admin_bot,
-            f"Уважаемый <b>{usr.username}</b>, необходимо предоставить следующие данные: \n\n<b>1)</b> Канал с вашими отзывами (если есть).\n\n<b>2)</b> Укажите аккаунты ваших знакомых, которые пользуются нашей ПП(Это не делает вас чьим-либо рефералом. Это проверка вас.)\n\n<b>3)</b> Укажите ссылки на ваши источники трафика (каналы, чаты, паблики и т.д.).\n\n<b>4)</b> Укажите, откуда вы узнали о нашей ПП.\n\n<b>Необходимо ответить максимально подробно.\nОтправляйте ответ одним сообщением</b>\n\n\nПубличный канал: @pp_dark_side",
+            f"Уважаемый <b>{usr.username}</b>, необходимо предоставить следующие данные: \n\n<b>1)</b> Источники вашего трафика( Тикток, Телеграм, ВК, Другое )\n\n<b>2)</b> Укажите откуда вы узнали о нашей ПП (Это не делает вас чьим-либо рефералом.)\n\n<b>3)</b> Канал с вашими отзывами (При наличии)\n\n<b>4)</b> Ссылки на ваши источники трафика(телеграм каналы, тикток аккаунты, чаты, группы ВК и т.д.)\n\nПри необходимости саппорт вправе потребовать от вас док-во владения тем или иным источником трафика.\n\nОтвет отправлять <b>СТРОГО</b> одним сообщением. \n\n\nПубличный канал: @pp_dark_side\nЗадать вопрос: @i_vovani",
             parse_mode="HTML",      
     )
 
@@ -126,9 +125,12 @@ async def complete_verification(update: Update, context: CallbackContext) -> Con
         message = update.callback_query.message
 
     if not AdminApplication.objects.filter(user=usr).exists():
-        AdminApplication(
-            user=usr 
-        ).save()
+        application_id = str(uuid.uuid4())[:8]
+        application = AdminApplication(
+            user=usr,
+            application_number=application_id
+        )
+        application.save()
 
     accept_markup = InlineKeyboardMarkup([
         [
@@ -146,9 +148,10 @@ async def complete_verification(update: Update, context: CallbackContext) -> Con
         parse_mode="HTML"
     )
     
+    
     await context.bot.send_message(
         usr.telegram_id_in_admin_bot,
-        f"📜 Ваша заявка отправлена на модерацию.\n\tПосле проверки вы получите уведомление.",
+        f"⚫️ Ваша заявка отправлена на одобрение.\n\n⬛️ Номер заявки: <b>{application.application_number}</b>\n\nОжидайте подключения.\nЕсли возникнут вопросы: @i_vovani",
         parse_mode="HTML",      
     )
 
@@ -172,15 +175,21 @@ async def deny_user(update:Update, context:CallbackContext) -> None:
         if CustomUser.objects.filter(telegram_id_in_admin_bot=new_user_id).exists():
             new_usr = CustomUser.objects.filter(telegram_id_in_admin_bot=new_user_id)
             
-            AdminApplication.objects.filter(
+            application = AdminApplication.objects.filter(
                 user=new_usr[0]
-            ).update(
+            )
+            application.update(
                 status="Denied"
             )
 
+            await context.bot.delete_message(
+                usr.telegram_id_in_admin_bot,
+                update.effective_message.id
+            )
+            
             await context.bot.send_message(
                 new_usr[0].telegram_id_in_admin_bot,
-                f"🥺 Уважаемый, <b>{new_usr[0].username}</b>!\nК сожалению, мы не можем добавить вас в нашу партнерскую программу. Можете попробовать еще раз.\n\nЕсли считаете, что произошла ошибка, обратитесь к @i_vovani",
+                f"✖ К сожалению, ваша заявка <b>{application.application_number}</b> была отклонена\nПопробуйте еще раз, либо обратитесь к администратору\n\nАдминистратор: @i_vovani ",
                 parse_mode="HTML",
                 reply_markup=UNVERIFIED_MARKUP
             )
@@ -224,15 +233,21 @@ async def accept_user(update:Update, context:CallbackContext) -> None:
                 admin_info=new_user_info
             )
 
-            AdminApplication.objects.filter(
+            application = AdminApplication.objects.filter(
                 user=new_usr[0]
-            ).update(
+            )
+            application.update(
                 status="Accepted"
+            )
+
+            await context.bot.delete_message(
+                usr.telegram_id_in_admin_bot,
+                update.effective_message.id
             )
 
             await context.bot.send_message(
                 new_usr[0].telegram_id_in_admin_bot,
-                f"🤩 Поздравляем, <b>{new_usr[0].username}</b>!\nВы были добавлены в нашу партнерскую программу. Успешных продаж!",
+                f"Вы успешно подключены ✅\n\nУдачного пользования ботом\nАдмин: @i_vovani\nОткрытый канал: @pp_dark_side\n",
                 parse_mode="HTML",
                 reply_markup=InlineKeyboardMarkup.from_button(
                     InlineKeyboardButton(text="Открыть меню 📦", callback_data="main_menu"),
@@ -303,6 +318,14 @@ async def create_bot_by_usr_token(update:Update, context:CallbackContext):
    
     message = update.message
 
+    if Bot.objects.filter(bot_token=message.text.strip()).exists():
+        await context.bot.send_message(
+            usr.telegram_id_in_admin_bot,
+            f"❌ Бот с данным токеном уже существует.",
+        )
+    
+        return ConversationHandler.END
+
     await context.bot.send_message(
         usr.telegram_id_in_admin_bot,
         f"👁 Бот создается",
@@ -345,7 +368,7 @@ async def user_bots_info(update:Update, context:CallbackContext) -> None:
     user_bots = Bot.objects.filter(owner=usr).all()
 
 
-    if len(user_bots) == 0:
+    if len(user_bots) < BOTS_LIMIT:
         zero_bots_keyboard = InlineKeyboardMarkup([
             [
                 InlineKeyboardButton(text="Создать бота ➕", callback_data="create_bot_for_admin")
@@ -367,7 +390,7 @@ async def user_bots_info(update:Update, context:CallbackContext) -> None:
         end_message = f"👀 <b>{usr.username}</b>, у вас <b>{len(user_bots)}</b> ботов.\nИнформация по ним представлена ниже:\n\n"
 
         for bot in user_bots:
-            end_message += f"🆔: <b>{bot.id}</b>\n🍅 Токен: <b>{bot.token}</b>\n👩🏼‍💻Имя в базе: <b>{bot.name}</b>\n"
+            end_message += f"🆔: <b>{bot.id}</b>\n🍅 Юзернейм: <b>@{bot.telegram_name}</b>\n👩🏼‍💻Имя в базе: <b>{bot.name}</b>\n"
 
             if bot.is_active:
                 end_message += "✅ Статус работы: <b>работает</b>"
@@ -503,6 +526,35 @@ async def stop_activate_bot(update:Update, context:CallbackContext):
             ),
         )
 
+async def stat(update:Update, context:CallbackContext):
+    usr, _, _ = await user_get_by_update(update)
+    user_bots = Bot.objects.filter(owner=usr).all()
+    end_message = f"💰 Актуальный баланс: <b>{usr.balance}₽</b>\n\n📊 Суммарный оборот: <b>{usr.total_income}₽</b>"
+
+    if len(user_bots) != 0:
+        end_message += "\n\n🤖 <b>Статистика по ботам:</b>\n\n"
+        for bot in user_bots:
+            end_message += f"🍅 Юзернейм: <b>@{bot.telegram_name}</b>\n💲 Прибыль: <b>{bot.income}₽</b>"
+
+    await context.bot.send_message(
+        usr.telegram_id_in_admin_bot,
+        end_message,
+        parse_mode="HTML",
+        reply_markup=InlineKeyboardMarkup([
+            [
+                InlineKeyboardButton(text="Создать выплату 💷", callback_data="create_withdraw"),
+            ],
+        
+            [
+                InlineKeyboardButton(text="Список выплат 🖇", callback_data="withdraw_list"),
+            ],
+        
+            [
+                InlineKeyboardButton(text="Вернуться в меню 📦", callback_data="main_menu"),
+            ],
+        ])
+    )
+
 def main() -> None:
     """Run the bot."""
     application = Application.builder().token(os.environ.get("ADMIN_BOT_TOKEN")).build()
@@ -514,7 +566,8 @@ def main() -> None:
     application.add_handler(CallbackQueryHandler(deny_user, "deny_usr"))
 
     application.add_handler(CallbackQueryHandler(user_bots_info, "bots_management"))
-    
+    application.add_handler(CallbackQueryHandler(stat, "stat"))
+
     create_bot_conv_handler = ConversationHandler(
         entry_points=[CallbackQueryHandler(ask_for_bot_name, "create_bot_for_admin")],
         states={

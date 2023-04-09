@@ -10,7 +10,6 @@ services:
       - ./.env.dev
     depends_on:
       - db
-
     networks:
       test_network:
         ipv4_address: 172.16.238.10

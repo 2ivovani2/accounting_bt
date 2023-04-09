@@ -1,6 +1,27 @@
 from django.contrib import admin
 from bot_constructor.models import *
 
+@admin.register(AdminTransaction)
+class AdminTransactionAdmin(admin.ModelAdmin):
+    """
+        Model describing how to display info about users of web interface 
+    """
+    list_display = ("payment_id", "status", "payment_sum", "comission", "payeer", "withdraw_type")
+    search_fields = ("id", "username", "status", "payeer")
+
+    readonly_fields = ["date_payment"]
+
+    fieldsets = (
+        ("Money info", {
+            "fields": ("payment_id", "payment_sum", "comission", "withdraw_type")
+        }),
+
+        ("Params", {
+            "fields": ("payeer", "date_payment", "status")
+
+        }),
+    )
+
 
 @admin.register(CustomUser)
 class CustomUserAdmin(admin.ModelAdmin):
@@ -26,12 +47,11 @@ class AdminApplicationAdmin(admin.ModelAdmin):
     readonly_fields = ['date_created']
 
     list_display = ("id", "user", "status", "date_created")
-    search_fields = ("id", "status")
-
+    search_fields = ("id", "status", "application_number")
 
     fieldsets = (
         ("All fields", {
-            "fields": ("user", "status", "date_created",)
+            "fields": ("user", "status", "date_created","application_number")
 
         }),
     )
@@ -41,12 +61,12 @@ class BotAdmin(admin.ModelAdmin):
     """
         Model describing how to display info about telegram bots registered in web interface 
     """
-    list_display = ("id", "name", "token",)
-    search_fields = ("id", "name", "token",)
+    list_display = ("id", "name", "telegram_name", "income")
+    search_fields = ("id", "name", "telegram_name",)
 
     fieldsets = (
         ("Bot params", {
-            "fields": ("name", "token", "owner", "is_active")
+            "fields": ("name", "token", "owner", "is_active", "telegram_name", "income")
 
         }),
     )

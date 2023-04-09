@@ -48,9 +48,9 @@ class CustomUser(AbstractUser):
 
 class AdminApplication(models.Model):
     STATUS_CHOICES = (
-        ("Accepted", "Accepted"),
-        ("Denied", "Denied"),
-        ("Created", "Created"),
+        ("Принят", "Принят"),
+        ("Отклонен", "Отклонен"),
+        ("Создан", "Создан"),
     )
 
     date_created = models.DateTimeField(
@@ -65,11 +65,18 @@ class AdminApplication(models.Model):
         on_delete=models.CASCADE
     )
 
+    application_number = models.CharField(
+        verbose_name="Application number",
+        max_length=255,
+        null=False,
+        default="Not defined"
+    )
+
     status = models.CharField(
         max_length=30,
         choices=STATUS_CHOICES,
         null=False,
-        default="Created",
+        default="Создан",
     )
 
     def __str__(self) -> str:
@@ -79,6 +86,74 @@ class AdminApplication(models.Model):
         verbose_name = 'Admin apply'
         verbose_name_plural = 'Admin applies'
 
+class AdminTransaction(models.Model):
+    STATUS_CHOICES = (
+        ("В работе", "В работе"),
+        ("Отменен", "Отменен"),
+        ("Проведен", "Проведен"),
+        ("Создан", "Создан"),
+    )
+
+    WITHDRAW_CHOICES = (
+        ("Qiwi ник", "Qiwi ник"),
+        ("Qiwi номер", "Qiwi номер"),
+        ("Qiwi карта", "Qiwi карта"),
+        ("ЮМани", "ЮМани"),
+        ("Остальные карты", "Остальные карты"),
+    )
+
+    payment_id = models.CharField(
+        verbose_name="id of payment",
+        max_length=255,
+        null=False,
+        default="Not found"
+    )
+
+    withdraw_type = models.CharField(
+        max_length=30,
+        choices=WITHDRAW_CHOICES,
+        null=False,
+        default="Нет",
+    )
+
+    payment_sum = models.BigIntegerField(
+        verbose_name="Sum of the payment",
+        null=False,
+        default=0,
+    )
+
+    date_payment = models.DateTimeField(
+        auto_now_add=True,
+        blank=True, 
+        verbose_name="Apply date"
+    )
+
+    comission = models.BigIntegerField(
+        verbose_name="Comission amt in %",
+        null=False,
+        default=0
+    )
+
+    status = models.CharField(
+        max_length=30,
+        choices=STATUS_CHOICES,
+        null=False,
+        default="Создан",
+    )
+
+    payeer = models.ForeignKey(
+        CustomUser,
+        on_delete=models.CASCADE,
+        verbose_name="Person who applied for payment",
+    )
+
+    def __str__(self) -> str:
+        return self.payeer.username
+
+    class Meta:
+        verbose_name = 'Admin transaction apply'
+        verbose_name_plural = 'Admin transaction applies'
+
 class Bot(models.Model):
 
     token = models.CharField(
@@ -86,6 +161,13 @@ class Bot(models.Model):
         max_length=150,
         null=False,
         default=False
+    )
+
+    telegram_name = models.CharField(
+        verbose_name="Telegram username",
+        max_length=255,
+        null=False,
+        default="botfather"
     )
 
     name = models.CharField(
@@ -107,14 +189,23 @@ class Bot(models.Model):
         default=False,
     )
 
+    income = models.BigIntegerField(
+        verbose_name="Total bot income",
+        null=False,
+        default=0
+    )
+
     def __str__(self) -> str:
         return str(self.name)
 
-    def create_telegram_instance(self) -> None:
+    def create_telegram_instance(self) -> str:
         """
             TODO create comments
         """
-        self.bot_instance = telebot.TeleBot(self.token.strip(), parse_mode='HTML')
+        b = telebot.TeleBot(self.token.strip(), parse_mode='HTML')
+        self.bot_instance = b
+
+        return b.get_me().username
         
     def start_telegram_bot_instance(self) -> None:
         """
@@ -126,28 +217,12 @@ class Bot(models.Model):
 
         self.bot_instance.polling(none_stop=True)
 
-
-    # def to_dict(self) -> dict:
-    #     opts = self._meta
-    #     data = {
-    #         'bot_token':self.token,
-    #         'bot_name':self.name,
-    #         'is_active':self.is_active,
-    #         'owner': self.owner,
-    #     }
-
-    #     for f in opts.many_to_many:
-    #         data[f.name] = [i.function_name for i in f.value_from_object(self)]
-        
-    #     return data
     
     class Meta:
         verbose_name = 'Telegram Bot'
         verbose_name_plural = 'Telegram Bots'
 
-
 class TGUser(models.Model):
-    
     
     telegram_id = models.PositiveBigIntegerField(
         verbose_name='Telegram user\'s id',
