@@ -135,6 +135,7 @@ class AdminTransaction(models.Model):
     )
 
     status = models.CharField(
+        verbose_name="Payment status",
         max_length=30,
         choices=STATUS_CHOICES,
         null=False,
@@ -145,6 +146,12 @@ class AdminTransaction(models.Model):
         CustomUser,
         on_delete=models.CASCADE,
         verbose_name="Person who applied for payment",
+    )
+
+    income = models.BigIntegerField(
+        verbose_name="Income on apply",
+        null=False,
+        default=0
     )
 
     def __str__(self) -> str:

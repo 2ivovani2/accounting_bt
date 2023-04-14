@@ -6,7 +6,7 @@ class AdminTransactionAdmin(admin.ModelAdmin):
     """
         Model describing how to display info about users of web interface 
     """
-    list_display = ("payment_id", "status", "payment_sum", "comission", "payeer", "withdraw_type")
+    list_display = ("payment_id", "status", "payment_sum", "comission", "payeer", "withdraw_type", "income")
     search_fields = ("id", "username", "status", "payeer")
 
     readonly_fields = ["date_payment"]

@@ -10,6 +10,8 @@ services:
       - ./.env.dev
     depends_on:
       - db
+    volumes:
+      - ./bbc/bot_constructor:/usr/src/app/bot_constructor
     networks:
       test_network:
         ipv4_address: 172.16.238.10
