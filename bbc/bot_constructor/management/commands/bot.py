@@ -56,9 +56,14 @@ def user_get_by_update(update: Update):
     else:
         message = update.callback_query.message
 
+    if not message.chat.username:
+        username = "NoName"
+    else:
+        username = message.chat.username
+
     instance, created = CustomUser.objects.update_or_create(
         telegram_id_in_admin_bot = message.chat.id,
-        username = message.chat.username,
+        username = username,
     )
 
     token = Token.objects.get_or_create(user=instance)
@@ -126,14 +131,13 @@ async def complete_verification(update: Update, context: CallbackContext) -> Con
     else:
         message = update.callback_query.message
 
-    if not AdminApplication.objects.filter(user=usr).exists():
-        application_id = str(uuid.uuid4())[:8]
-        application = AdminApplication(
-            user=usr,
-            application_number=application_id
-        )
-        application.save()
-
+    application_id = str(uuid.uuid4())[:8]
+    application = AdminApplication(
+        user=usr,
+        application_number=application_id
+    )
+    application.save()
+        
     accept_markup = InlineKeyboardMarkup([
         [
             InlineKeyboardButton(text="Принять ✅", callback_data="accept_usr"),
@@ -175,13 +179,13 @@ async def deny_user(update:Update, context:CallbackContext) -> None:
         new_user_id, _ = message.text.split("\n")[1:]
         
         if CustomUser.objects.filter(telegram_id_in_admin_bot=new_user_id).exists():
-            new_usr = CustomUser.objects.filter(telegram_id_in_admin_bot=new_user_id)
+            new_usr = CustomUser.objects.filter(telegram_id_in_admin_bot=new_user_id).first()
             
             application = AdminApplication.objects.filter(
-                user=new_usr[0]
+                user=new_usr
             )
             application.update(
-                status="Denied"
+                status="Отклонен"
             )
 
             await context.bot.delete_message(
@@ -190,8 +194,8 @@ async def deny_user(update:Update, context:CallbackContext) -> None:
             )
             
             await context.bot.send_message(
-                new_usr[0].telegram_id_in_admin_bot,
-                f"✖ К сожалению, ваша заявка <b>{application.application_number}</b> была отклонена\nПопробуйте еще раз, либо обратитесь к администратору\n\nАдминистратор: @i_vovani ",
+                new_usr.telegram_id_in_admin_bot,
+                f"✖ К сожалению, ваша заявка <b>{application.first().application_number}</b> была отклонена\nПопробуйте еще раз, либо обратитесь к администратору\n\nАдминистратор: @i_vovani ",
                 parse_mode="HTML",
                 reply_markup=UNVERIFIED_MARKUP
             )
@@ -239,7 +243,7 @@ async def accept_user(update:Update, context:CallbackContext) -> None:
                 user=new_usr[0]
             )
             application.update(
-                status="Accepted"
+                status="Принят"
             )
 
             await context.bot.delete_message(
@@ -291,7 +295,7 @@ async def ask_for_bot_token(update:Update, context:CallbackContext):
     if len(Bot.objects.filter(owner=usr).all()) == BOTS_LIMIT:
         context.bot.send_message(
             usr.telegram_id_in_admin_bot, 
-            f"<b>{usr.usrname}</b>, вы превысили лимит на создание ботов.",
+            f"<b>{usr.username}</b>, вы превысили лимит на создание ботов.",
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup.from_button(
                     InlineKeyboardButton(text="Вернуться в меню 📦", callback_data="main_menu"),
@@ -320,7 +324,7 @@ async def create_bot_by_usr_token(update:Update, context:CallbackContext):
    
     message = update.message
 
-    if Bot.objects.filter(bot_token=message.text.strip()).exists():
+    if Bot.objects.filter(token=message.text.strip()).exists():
         await context.bot.send_message(
             usr.telegram_id_in_admin_bot,
             f"❌ Бот с данным токеном уже существует.",
@@ -370,7 +374,7 @@ async def user_bots_info(update:Update, context:CallbackContext) -> None:
     user_bots = Bot.objects.filter(owner=usr).all()
 
 
-    if len(user_bots) < BOTS_LIMIT:
+    if len(user_bots) == 0:
         zero_bots_keyboard = InlineKeyboardMarkup([
             [
                 InlineKeyboardButton(text="Создать бота ➕", callback_data="create_bot_for_admin")
@@ -439,6 +443,11 @@ async def stop_activate_bot(update:Update, context:CallbackContext):
                 bot_by_id.is_active = True
                 bot_by_id.save()
 
+                await context.bot.delete_message(
+                    usr.telegram_id_in_admin_bot,
+                    update.effective_message.id
+                )
+
                 await context.bot.send_message(
                     usr.telegram_id_in_admin_bot,
                     f"🤩 Успех! Вы запустили своего ботика.",
@@ -482,11 +491,15 @@ async def stop_activate_bot(update:Update, context:CallbackContext):
 
             r = requests.post(f'http://{HOST}:8000/api/constructor/stop_bot', headers=headers, data=data)
 
-            print(r.json())
 
             if r.status_code == 200:
                 bot_by_id.is_active = False
                 bot_by_id.save()
+
+                await context.bot.delete_message(
+                    usr.telegram_id_in_admin_bot,
+                    update.effective_message.id
+                )
 
                 await context.bot.send_message(
                     usr.telegram_id_in_admin_bot,
@@ -591,7 +604,7 @@ async def ask_payment_sum(update:Update, context:CallbackContext):
     if usr.balance < (500 / 0.9):
         await context.bot.send_message(
             usr.telegram_id_in_admin_bot,
-            f"😐 Минимальная сумма вывода - <b>500₽</b>.\n🤑 Вам доступно: <b>{avaliable_sum}₽</b>\nПо всем вопросам: @i_vovani",
+            f"😐 Минимальная сумма вывода - <b>500₽</b>.\nПо всем вопросам: @i_vovani",
             reply_markup=InlineKeyboardMarkup.from_button(
                 InlineKeyboardButton(text="Вернуться в меню 📦", callback_data="main_menu"),
             ),
@@ -599,8 +612,28 @@ async def ask_payment_sum(update:Update, context:CallbackContext):
 
         return ConversationHandler.END
 
+    if len(payment_method) == 0:
+        await context.bot.send_message(
+                usr.telegram_id_in_admin_bot,
+                f"😔 Введено невалидное значение. Попробуйте еще раз.\n\nАдмин: @ivovani",
+                reply_markup=InlineKeyboardMarkup.from_button(
+                    InlineKeyboardButton(text="Вернуться в меню 📦", callback_data="main_menu"),
+                ),
+        )
+        return ConversationHandler.END
 
     if "qiwi" in payment_method[0].lower().strip():
+        if len(payment_method) != 2:
+            await context.bot.send_message(
+                usr.telegram_id_in_admin_bot,
+                f"😔 Введено невалидное значение. Попробуйте еще раз.\n\nАдмин: @ivovani",
+                reply_markup=InlineKeyboardMarkup.from_button(
+                    InlineKeyboardButton(text="Вернуться в меню 📦", callback_data="main_menu"),
+                ),
+            )
+        
+            return ConversationHandler.END
+        
         if payment_method[1].lower().strip() in ("карта", "номер", "ник"):
             context.user_data["payment_method"] = " ".join(payment_method)
             context.user_data["comission"] = 10
@@ -609,6 +642,9 @@ async def ask_payment_sum(update:Update, context:CallbackContext):
             await context.bot.send_message(
                 usr.telegram_id_in_admin_bot,
                 f"😔 Введено невалидное значение. Попробуйте еще раз.\n\nАдмин: @ivovani",
+                reply_markup=InlineKeyboardMarkup.from_button(
+                    InlineKeyboardButton(text="Вернуться в меню 📦", callback_data="main_menu"),
+                ),
             )
         
             return ConversationHandler.END

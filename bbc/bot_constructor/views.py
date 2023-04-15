@@ -97,7 +97,6 @@ def auth(request):
             ) 
 
 
-
 @csrf_exempt
 @api_view(["POST"])
 def get_user_info(request):
@@ -143,7 +142,7 @@ def stop_bot(request):
         Function that gives you ability to kill a thread with running bot by name
     """
 
-    bot_token = request.POST.get('bot_token', None).strip()
+    bot_token = request.POST.get('bot_token', None)
 
     if bot_token is None:
         return Response(
@@ -152,6 +151,8 @@ def stop_bot(request):
             },
             status=HTTP_400_BAD_REQUEST
         )
+    else:
+        bot_token = bot_token.strip()
 
 
     if Bot.objects.filter(token=bot_token, owner=request.user).exists():
@@ -230,6 +231,7 @@ def create_bot(request):
 
         name = new_bot.create_telegram_instance()
         new_bot.telegram_name = name
+        
         try:
             daemon = StoppableBotThread(
                 target=new_bot.start_telegram_bot_instance,
