@@ -31,7 +31,7 @@ services:
     ports:
       - 8001:8001
     env_file:
-      - ./.env.dev
+      - ./.env.prod
   
   nginx:
     build: ./nginx
@@ -42,5 +42,3 @@ services:
     depends_on:
       - web
 
-volumes:
-  static_volume:
