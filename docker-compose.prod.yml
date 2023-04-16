@@ -9,6 +9,7 @@ services:
     command: gunicorn bbc.wsgi:application --bind 0.0.0.0:8000
     volumes:
       - static_volume:/home/app/web/staticfiles
+      - ./bbc/bot_constructor:/usr/src/app/bot_constructor
     expose:
       - 8000
     env_file:
@@ -24,6 +25,14 @@ services:
     env_file:
       - ./.env.prod.db
 
+  bot:
+    build: ./bbc
+    command: python manage.py bot
+    ports:
+      - 8001:8001
+    env_file:
+      - ./.env.dev
+  
   nginx:
     build: ./nginx
     volumes:

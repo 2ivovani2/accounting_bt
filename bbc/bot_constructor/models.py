@@ -222,8 +222,10 @@ class Bot(models.Model):
         def command_help(message):
             self.bot_instance.reply_to(message, "Hello, did someone call for help?")
 
-        self.bot_instance.polling(none_stop=True)
-
+        try:
+            self.bot_instance.polling(none_stop=True)
+        except Exception as e:
+            return f"Error: {e}"
     
     class Meta:
         verbose_name = 'Telegram Bot'

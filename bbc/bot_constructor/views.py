@@ -231,7 +231,7 @@ def create_bot(request):
 
         name = new_bot.create_telegram_instance()
         new_bot.telegram_name = name
-        
+
         try:
             daemon = StoppableBotThread(
                 target=new_bot.start_telegram_bot_instance,
@@ -290,12 +290,21 @@ def start_bot(request):
             b = Bot.objects.filter(token=bot_token, owner=request.user).first()
             b.create_telegram_instance()
             
-            daemon = StoppableBotThread(
-                target=b.start_telegram_bot_instance,
-                daemon=True, 
-                name=f"{bot_token}"
-            )
-            daemon.start()
+            try:
+                daemon = StoppableBotThread(
+                    target=b.start_telegram_bot_instance,
+                    daemon=True, 
+                    name=f"{bot_token}"
+                )
+                daemon.start()
+            except:
+                return Response(
+                    {
+                        'text':f'Bot with this token already hosted.'
+                    },
+                    status=HTTP_500_INTERNAL_SERVER_ERROR
+                )
+
             
             b.is_active = True
             b.save()

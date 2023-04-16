@@ -42,8 +42,7 @@ UNVERIFIED_MARKUP = InlineKeyboardMarkup([
         ]
 ])
 
-HOST = "172.16.238.10"
-BOTS_LIMIT = 1
+
 
 @sync_to_async
 def user_get_by_update(update: Update):
@@ -292,7 +291,7 @@ async def ask_for_bot_name(update:Update, context:CallbackContext):
 async def ask_for_bot_token(update:Update, context:CallbackContext):
     usr, _, _ = await user_get_by_update(update)
     
-    if len(Bot.objects.filter(owner=usr).all()) == BOTS_LIMIT:
+    if len(Bot.objects.filter(owner=usr).all()) == os.environ.get("BOTS_LIMIT"):
         context.bot.send_message(
             usr.telegram_id_in_admin_bot, 
             f"<b>{usr.username}</b>, вы превысили лимит на создание ботов.",
@@ -346,7 +345,7 @@ async def create_bot_by_usr_token(update:Update, context:CallbackContext):
         "bot_name":context.user_data["perm_bot_name"]
     }
 
-    r = requests.post(f'http://{HOST}:8000/api/constructor/create_bot', headers=headers, data=data)
+    r = requests.post(f'http://{os.environ.get("API_HOST")}:{os.environ.get("API_PORT")}/api/constructor/create_bot', headers=headers, data=data)
 
     if r.status_code == 200:
         await context.bot.send_message(
@@ -437,7 +436,7 @@ async def stop_activate_bot(update:Update, context:CallbackContext):
                 "bot_token":bot_by_id.token,
             }
             
-            r = requests.post(f'http://{HOST}:8000/api/constructor/start_bot', headers=headers, data=data)
+            r = requests.post(f'http://{os.environ.get("API_HOST")}:{os.environ.get("API_PORT")}/api/constructor/start_bot', headers=headers, data=data)
 
             if r.status_code == 200:
                 bot_by_id.is_active = True
@@ -489,7 +488,7 @@ async def stop_activate_bot(update:Update, context:CallbackContext):
                 "bot_token":bot_by_id.token,
             }
 
-            r = requests.post(f'http://{HOST}:8000/api/constructor/stop_bot', headers=headers, data=data)
+            r = requests.post(f'http://{os.environ.get("API_HOST")}:{os.environ.get("API_PORT")}/api/constructor/stop_bot', headers=headers, data=data)
 
 
             if r.status_code == 200:
@@ -586,7 +585,7 @@ async def ask_for_payment_method(update:Update, context:CallbackContext):
         [KeyboardButton(text="🥝 Qiwi ник"), KeyboardButton(text="🥝 Qiwi номер")],
         [KeyboardButton(text="🥝 Qiwi карта"), KeyboardButton(text="💳 Остальные карты")],
         [KeyboardButton(text="🟪 ЮМани")]  
-    ], one_time_keyboard=True)
+    ], one_time_keyboard=True, resize_keyboard=True)
 
     await context.bot.send_message(
         usr.telegram_id_in_admin_bot,
@@ -688,7 +687,10 @@ async def ask_for_credentials(update: Update, context: CallbackContext):
 
     try:
         amt = int(amt.strip())
-        avaliable_sum = usr.balance * (1 - context.user_data["comission"] / 100)
+        if "остальные карты" in context.user_data["payment_method"].lower().strip():
+            avaliable_sum = usr.balance * (1 - context.user_data['comission'] / 100) - 50
+        else:
+            avaliable_sum = usr.balance * (1 - context.user_data['comission'] / 100)
 
         if amt > avaliable_sum:
             await context.bot.send_message(
@@ -750,7 +752,7 @@ async def ask_for_acception_transaction(update: Update, context: CallbackContext
         reply_markup=ReplyKeyboardMarkup([
             [KeyboardButton(text="Подтверждаю ✅")],
             [KeyboardButton(text="Отклоняю 📛")]
-        ], one_time_keyboard=True)
+        ], one_time_keyboard=True, resize_keyboard=True)
     )
 
     return 3
