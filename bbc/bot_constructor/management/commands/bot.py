@@ -291,7 +291,7 @@ async def ask_for_bot_name(update:Update, context:CallbackContext):
 async def ask_for_bot_token(update:Update, context:CallbackContext):
     usr, _, _ = await user_get_by_update(update)
     
-    if len(Bot.objects.filter(owner=usr).all()) == os.environ.get("BOTS_LIMIT"):
+    if len(Bot.objects.filter(owner=usr).all()) == int(os.environ.get("BOTS_LIMIT")):
         context.bot.send_message(
             usr.telegram_id_in_admin_bot, 
             f"<b>{usr.username}</b>, вы превысили лимит на создание ботов.",

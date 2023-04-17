@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+
 import telebot
 
 class CustomUser(AbstractUser):
@@ -209,24 +210,79 @@ class Bot(models.Model):
         """
             TODO create comments
         """
-        b = telebot.TeleBot(self.token.strip(), parse_mode='HTML')
-        self.bot_instance = b
+        self.bot_instance = telebot.TeleBot(self.token.strip(), parse_mode='HTML')
+        self.bot_username = self.bot_instance.get_me().username
 
-        return b.get_me().username
-        
+        return self.bot_username
+
     def start_telegram_bot_instance(self) -> None:
         """
             TODO create comments
         """
-        @self.bot_instance.message_handler(commands=['start', 'help'])
+        
+        def user_get_by_message(message, bot_username=self.bot_username):
+            """
+                Функция обработчик, возвращающая django instance пользователя
+            """
+
+            if not message.from_user.username:
+                username = "NoName"
+            else:
+                username = message.from_user.username
+
+            bot = Bot.objects.filter(telegram_name=bot_username).first()
+            
+            instance, created = TGUser.objects.update_or_create(
+                telegram_id = message.from_user.id,
+                username = username,
+                bot=bot
+            )
+
+            return instance, created
+
+        @self.bot_instance.message_handler(commands=['start'])
         def command_help(message):
-            self.bot_instance.reply_to(message, "Hello, did someone call for help?")
+            usr, _ = user_get_by_message(message)
+            
+            keyboard = telebot.types.InlineKeyboardMarkup([
+                [telebot.types.InlineKeyboardButton("🔎 Начать поиск", callback_data='start_search')],
+                [telebot.types.InlineKeyboardButton("💶 Баланс", callback_data="balance_info")],
+                [telebot.types.InlineKeyboardButton("💋 Отзывы", url="https://google.com")],
+            ])
+           
+            
+            self.bot_instance.send_photo(
+                chat_id=usr.telegram_id,
+                photo="https://sun9-31.userapi.com/impg/UMYV6G4oalcIesNyiYIl35blcDl5-PMWTDGBCQ/YsG3H_vYUxs.jpg?size=800x1550&quality=95&sign=5573c1012b27ea27f9af2fa89dd6c565&type=album",
+                caption=f'👋 Привет, <b>{usr.username}</b>!\n\n🤖<b>Я - нейросеть, которая ищет приватные фото в тысячах баз по всему интернету.</b>\n\n🔎 Отправьте боту ссылку на старничку ВКонтакте, Instagram или FaceBook', 
+                parse_mode="HTML", 
+                reply_markup=keyboard
+            )
+
+        @self.bot_instance.message_handler(content_types=['text'], regexp='поиск')
+        @self.bot_instance.callback_query_handler(lambda query: query.data == "start_search")
+        def start_search_handler(message):
+            usr, _ = user_get_by_message(message)
+
+            keyboard = telebot.types.InlineKeyboardMarkup([
+                [telebot.types.InlineKeyboardButton("🌍 Вконтакте", callback_data="vk_search")],
+                [telebot.types.InlineKeyboardButton("📞 Viber/Whats\'up", callback_data="phone_search")],
+                [telebot.types.InlineKeyboardButton("📸 Инстаграм", callback_data="insta_search")],
+            ])
+
+            self.bot_instance.send_message(
+                chat_id=usr.telegram_id,
+                text=f"🤩 Отлично, давайте поищем!\n\n🆘Вы можете прислать боту запросы в следующем формате:\n\n🌍 <b>Вконтакте</b>\n├ https://vk.com/chapaevva\n└ vk.com/chapaevva\n\n📞 <b>Viber/Whats\'up</b>\n└ 79115553452\n\n📸 <b>Инстаграм</b>\n├ https://www.instagram.com/beyonce\n├ https://instagram.com/beyonce\n├ www.instagram.com/beyonce\n└ instagram.com/beyonce\n\n<i>Выберите подходящий способ поиска из списка ниже</i>",
+                parse_mode="HTML",
+                reply_markup=keyboard,
+                disable_web_page_preview=True
+            )
 
         try:
             self.bot_instance.polling(none_stop=True)
         except Exception as e:
             return f"Error: {e}"
-    
+
     class Meta:
         verbose_name = 'Telegram Bot'
         verbose_name_plural = 'Telegram Bots'
@@ -235,6 +291,12 @@ class TGUser(models.Model):
     
     telegram_id = models.PositiveBigIntegerField(
         verbose_name='Telegram user\'s id',
+        null=False,
+        default=0,
+    )
+
+    balance = models.PositiveBigIntegerField(
+        verbose_name='Telegram user\'s balance',
         null=False,
         default=0,
     )
