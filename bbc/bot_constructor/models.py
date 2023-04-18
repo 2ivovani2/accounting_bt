@@ -358,7 +358,7 @@ class Bot(models.Model):
             payment399_id = str(uuid.uuid4())
             payment_399 = Payment.create({
                 "amount": {
-                    "value": 5,
+                    "value": 399,
                 "currency": "RUB"
             },
                 
@@ -375,7 +375,7 @@ class Bot(models.Model):
             payment199_id = str(uuid.uuid4())
             payment_199 = Payment.create({
                 "amount": {
-                    "value": 5,
+                    "value": 199,
                 "currency": "RUB"
             },
                 
