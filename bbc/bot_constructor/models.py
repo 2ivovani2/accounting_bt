@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 
-import telebot, time, vk_api, pymorphy2, json, os, random, logging, uuid
+import telebot, time, vk_api, pymorphy2, json, os, random, logging, uuid, re
 from yookassa import Configuration, Payment
 
 logging.basicConfig(
@@ -335,80 +335,86 @@ class Bot(models.Model):
                         parse_mode="HTML"
                     )
                     return
-
-            startin_text = list("🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥")
-            msg = self.bot_instance.send_message(
-                usr.telegram_id,
-                f"Выполянем поиск... 🔎\n\n✅ Страница найдена в базе\n\n⏳ Отправка материала... <b>{0}%</b>\n{''.join(startin_text)}",
-                parse_mode="HTML"
-            )
-
-            for index in range(len(startin_text)):
-                startin_text[index] = "🟩"
-                self.bot_instance.edit_message_text(
-                    f"Выполянем поиск... 🔎\n\n✅ Страница найдена в базе\n\n⏳ Отправка материала... <b>{(index + 1) * 10}%</b>\n{''.join(startin_text)}",
+            elif ("instagram" in link)  or re.match("^\\+?[1-9][0-9]{7,14}$", link.strip()):
+                
+                startin_text = list("🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥")
+                msg = self.bot_instance.send_message(
                     usr.telegram_id,
-                    msg.id
+                    f"Выполянем поиск... 🔎\n\n✅ Страница найдена в базе\n\n⏳ Отправка материала... <b>{0}%</b>\n{''.join(startin_text)}",
+                    parse_mode="HTML"
                 )
-                time.sleep(0.5)
-            
-            Configuration.account_id = os.environ.get("SHOP_ID")
-            Configuration.secret_key = os.environ.get("SHOP_API_TOKEN")
-            
-            payment399_id = str(uuid.uuid4())
-            payment_399 = Payment.create({
-                "amount": {
-                    "value": 399,
-                "currency": "RUB"
-            },
-                
-            "confirmation": {
-                "type": "redirect",
-                "return_url": f'http://{os.environ.get("HOST")}:{os.environ.get("PORT")}/confirm_payment/?payment_id={payment399_id}&bot_username={self.bot_username}&payeer_username={usr.username}&amt=399'
-            },
-            "capture": True,
-            "description": 'Оплата информационных услуг.'
-            })
-            payment_data = json.loads(payment_399.json())
-            payment399_url = (payment_data['confirmation'])['confirmation_url']
-            
-            payment199_id = str(uuid.uuid4())
-            payment_199 = Payment.create({
-                "amount": {
-                    "value": 199,
-                "currency": "RUB"
-            },
-                
-            "confirmation": {
-                "type": "redirect",
-                "return_url": f'http://{os.environ.get("HOST")}:{os.environ.get("PORT")}/confirm_payment/?payment_id={payment199_id}&bot_username={self.bot_username}&payeer_username={usr.username}&amt=199'
-            },
-            "capture": True,
-            "description": 'Оплата информационных услуг.'
-            })
-            payment_data = json.loads(payment_199.json())
-            payment199_url = (payment_data['confirmation'])['confirmation_url']
-            
-            
-            kb = telebot.types.InlineKeyboardMarkup([
-                [telebot.types.InlineKeyboardButton("Приобрести 💳|199₽", url=str(payment199_url).strip())],
-                [telebot.types.InlineKeyboardButton("Купить безлимит 💳|399₽", url=str(payment399_url).strip())],
-                [telebot.types.InlineKeyboardButton("Проверить оплату ✅", callback_data="check_payment")],
-            ])
 
-            self.bot_instance.send_photo(
-                chat_id=usr.telegram_id,
-                photo="https://sun9-51.userapi.com/impg/LA8QLJqXNeiDAlF2ljlbyzAa4xE835jo6CZbEw/fUs8hTMKmIg.jpg?size=800x1550&quality=95&sign=127fdd19fa59b28301f2e325e6e5aa19&type=album",
-                caption=f"Слив найден ✅\n\n<b>Интим фото:</b>{random.randint(10, 50)} шт.\n<b>Интим видео:</b>{random.randint(1, 10)} шт.", 
-                parse_mode="HTML", 
-                reply_markup=kb
-            )
+                for index in range(len(startin_text)):
+                    startin_text[index] = "🟩"
+                    self.bot_instance.edit_message_text(
+                        f"Выполянем поиск... 🔎\n\n✅ Страница найдена в базе\n\n⏳ Отправка материала... <b>{(index + 1) * 10}%</b>\n{''.join(startin_text)}",
+                        usr.telegram_id,
+                        msg.id
+                    )
+                    time.sleep(0.5)
+                
+                Configuration.account_id = os.environ.get("SHOP_ID")
+                Configuration.secret_key = os.environ.get("SHOP_API_TOKEN")
+                
+                payment_399 = Payment.create({
+                    "amount": {
+                        "value": 399,
+                    "currency": "RUB"
+                },
+                    
+                "confirmation": {
+                    "type": "redirect",
+                    "return_url": f'https://t.me/{self.bot_username}'
+                },
+                "capture": True,
+                "description": 'Оплата информационных услуг.'
+                })
+                payment_data = json.loads(payment_399.json())
+                payment399_url = (payment_data['confirmation'])['confirmation_url']
+                
+                payment_199 = Payment.create({
+                    "amount": {
+                        "value": 199,
+                    "currency": "RUB"
+                },
+                    
+                "confirmation": {
+                    "type": "redirect",
+                    "return_url": f'https://t.me/{self.bot_username}'
+                },
+                "capture": True,
+                "description": 'Оплата информационных услуг.'
+                })
+                payment_data = json.loads(payment_199.json())
+                payment199_url = (payment_data['confirmation'])['confirmation_url']
+                
+                
+                kb = telebot.types.InlineKeyboardMarkup([
+                    [telebot.types.InlineKeyboardButton("Приобрести 💳|199₽", url=str(payment199_url).strip())],
+                    [telebot.types.InlineKeyboardButton("Купить безлимит 💳|399₽", url=str(payment399_url).strip())],
+                    [telebot.types.InlineKeyboardButton("Проверить оплату ✅", callback_data="check_payment")],
+                ])
 
-            self.bot_instance.send_message(
-                usr.telegram_id,
-                parse_mode="HTML", 
-                reply_markup=kb
-            )
+                self.bot_instance.send_photo(
+                    chat_id=usr.telegram_id,
+                    photo="https://sun9-51.userapi.com/impg/LA8QLJqXNeiDAlF2ljlbyzAa4xE835jo6CZbEw/fUs8hTMKmIg.jpg?size=800x1550&quality=95&sign=127fdd19fa59b28301f2e325e6e5aa19&type=album",
+                    caption=f"Слив найден ✅\n\n<b>Интим фото:</b>{random.randint(10, 50)} шт.\n<b>Интим видео:</b>{random.randint(1, 10)} шт.", 
+                    parse_mode="HTML", 
+                    reply_markup=kb
+                )
+
+                self.bot_instance.send_message(
+                    usr.telegram_id,
+                    parse_mode="HTML", 
+                    reply_markup=kb
+                )
+            else:
+                self.bot_instance.send_message(
+                        usr.telegram_id,
+                        f"🥺 К сожалению, ссылка прислана с ошибкой. Попробуйте еще раз.",
+                        parse_mode="HTML"
+                    )
+                sreturn
 
         @self.bot_instance.callback_query_handler(lambda query: query.data == "check_payment")
         def check_payment(message):
@@ -416,7 +422,6 @@ class Bot(models.Model):
             keyboard = telebot.types.InlineKeyboardMarkup([
                 [telebot.types.InlineKeyboardButton("📥 Меню", callback_data="menu")],
             ])
-
 
             self.bot_instance.send_message(
                 chat_id=usr.telegram_id,

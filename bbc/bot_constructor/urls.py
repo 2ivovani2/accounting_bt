@@ -7,5 +7,6 @@ urlpatterns = [
     path('create_bot', views.create_bot),
     path('stop_bot', views.stop_bot),
     path('start_bot', views.start_bot),
+    path('confirm_payment', views.payment_tnx)
 ]
 
