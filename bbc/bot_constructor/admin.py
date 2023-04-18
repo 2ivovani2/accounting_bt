@@ -1,6 +1,18 @@
 from django.contrib import admin
 from bot_constructor.models import *
 
+@admin.register(TGPayment)
+class TGPaymentAdmin(admin.ModelAdmin):
+    list_display = ("payment_id", "amt", "bot", "payeer")
+    search_fields = ("payment_id", "amt", "bot", "payeer")
+
+    fieldsets = (
+        ("Money info", {
+            "fields": ("payment_id", "amt", "bot", "payeer")
+        }),
+
+    )
+
 @admin.register(AdminTransaction)
 class AdminTransactionAdmin(admin.ModelAdmin):
     """

