@@ -345,7 +345,7 @@ async def create_bot_by_usr_token(update:Update, context:CallbackContext):
         "bot_name":context.user_data["perm_bot_name"]
     }
 
-    if os.environ.get("API_PORT", False):
+    if not os.environ.get("API_PORT"):
         r = requests.post(f'{os.environ.get("API_PROTOCOL")}://{os.environ.get("API_HOST")}/api/constructor/create_bot', headers=headers, data=data)
     else:
         r = requests.post(f'{os.environ.get("API_PROTOCOL")}://{os.environ.get("API_HOST")}:{os.environ.get("API_PORT")}/api/constructor/create_bot', headers=headers, data=data)
@@ -439,7 +439,7 @@ async def stop_activate_bot(update:Update, context:CallbackContext):
                 "bot_token":bot_by_id.token,
             }
             
-            if os.environ.get("API_PORT", False):
+            if not os.environ.get("API_PORT"):
                 r = requests.post(f'{os.environ.get("API_PROTOCOL")}://{os.environ.get("API_HOST")}/api/constructor/start_bot', headers=headers, data=data)
             else:
                 r = requests.post(f'{os.environ.get("API_PROTOCOL")}://{os.environ.get("API_HOST")}:{os.environ.get("API_PORT")}/api/constructor/start_bot', headers=headers, data=data)
@@ -495,7 +495,7 @@ async def stop_activate_bot(update:Update, context:CallbackContext):
                 "bot_token":bot_by_id.token,
             }
 
-            if os.environ.get("API_PORT", False):
+            if not os.environ.get("API_PORT"):
                 r = requests.post(f'{os.environ.get("API_PROTOCOL")}://{os.environ.get("API_HOST")}/api/constructor/stop_bot', headers=headers, data=data)
             else:
                 r = requests.post(f'{os.environ.get("API_PROTOCOL")}://{os.environ.get("API_HOST")}:{os.environ.get("API_PORT")}/api/constructor/stop_bot', headers=headers, data=data)
