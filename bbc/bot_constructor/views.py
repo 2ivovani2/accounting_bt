@@ -55,20 +55,23 @@ def vue(request):
     return render(request, 'root.html') 
 
 
+
 @csrf_exempt
 @ensure_csrf_cookie
-@api_view(["GET"])
+@api_view(["GET","POST"])
 @permission_classes((AllowAny,))
 def payment_tnx(request):
     """
         Display tnx payment
         TODO переписать
       """
-    logger.info(dir(request.POST))
-    logger.info(dir(request.GET))
-
-    return redirect(f"https://naeb.tech")
-
+    logger.info(request.data)
+    return Response({
+            'text':'OK',
+         },
+         status=HTTP_200_OK
+    )
+ 
 @csrf_exempt
 @api_view(["POST"])
 @permission_classes((AllowAny,))
