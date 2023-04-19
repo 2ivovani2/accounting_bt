@@ -604,6 +604,7 @@ async def ask_payment_sum(update:Update, context:CallbackContext):
         await context.bot.send_message(
             usr.telegram_id_in_admin_bot,
             f"😐 Минимальная сумма вывода - <b>500₽</b>.\nПо всем вопросам: @i_vovani",
+	    parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup.from_button(
                 InlineKeyboardButton(text="Вернуться в меню 📦", callback_data="main_menu"),
             ),

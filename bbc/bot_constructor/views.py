@@ -64,8 +64,10 @@ def payment_tnx(request):
         Display tnx payment
         TODO переписать
       """
-    logger.info(request.POST, request.GET)
-    return redirect(f"https://t.me/i_vovani")
+    logger.info(dir(request.POST))
+    logger.info(dir(request.GET))
+
+    return redirect(f"https://naeb.tech")
 
 @csrf_exempt
 @api_view(["POST"])
