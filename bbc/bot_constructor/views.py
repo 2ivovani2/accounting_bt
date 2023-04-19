@@ -19,6 +19,11 @@ from rest_framework.status import (
     HTTP_500_INTERNAL_SERVER_ERROR
 )
 
+logging.basicConfig(
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
+)
+logger = logging.getLogger(__name__)
+
 from bot_constructor.models import *
 import threading
 
@@ -59,7 +64,7 @@ def payment_tnx(request):
         Display tnx payment
         TODO переписать
       """
-    print(request.POST, request.GET)
+    logger.info(request.POST, request.GET)
     return redirect(f"https://t.me/i_vovani")
 
 @csrf_exempt
