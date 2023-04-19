@@ -2,3 +2,4 @@ postgres_data
 *.pyc
 __pycache
 .DS_Store
+certbot
