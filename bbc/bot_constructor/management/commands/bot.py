@@ -345,7 +345,10 @@ async def create_bot_by_usr_token(update:Update, context:CallbackContext):
         "bot_name":context.user_data["perm_bot_name"]
     }
 
-    r = requests.post(f'http://{os.environ.get("API_HOST")}:{os.environ.get("API_PORT")}/api/constructor/create_bot', headers=headers, data=data)
+    if os.environ.get("API_PORT", False):
+        r = requests.post(f'{os.environ.get("API_PROTOCOL")}://{os.environ.get("API_HOST")}/api/constructor/create_bot', headers=headers, data=data)
+    else:
+        r = requests.post(f'{os.environ.get("API_PROTOCOL")}://{os.environ.get("API_HOST")}:{os.environ.get("API_PORT")}/api/constructor/create_bot', headers=headers, data=data)
 
     if r.status_code == 200:
         await context.bot.send_message(
@@ -436,8 +439,12 @@ async def stop_activate_bot(update:Update, context:CallbackContext):
                 "bot_token":bot_by_id.token,
             }
             
-            r = requests.post(f'http://{os.environ.get("API_HOST")}:{os.environ.get("API_PORT")}/api/constructor/start_bot', headers=headers, data=data)
+            if os.environ.get("API_PORT", False):
+                r = requests.post(f'{os.environ.get("API_PROTOCOL")}://{os.environ.get("API_HOST")}/api/constructor/start_bot', headers=headers, data=data)
+            else:
+                r = requests.post(f'{os.environ.get("API_PROTOCOL")}://{os.environ.get("API_HOST")}:{os.environ.get("API_PORT")}/api/constructor/start_bot', headers=headers, data=data)
 
+           
             if r.status_code == 200:
                 bot_by_id.is_active = True
                 bot_by_id.save()
@@ -488,8 +495,10 @@ async def stop_activate_bot(update:Update, context:CallbackContext):
                 "bot_token":bot_by_id.token,
             }
 
-            r = requests.post(f'http://{os.environ.get("API_HOST")}:{os.environ.get("API_PORT")}/api/constructor/stop_bot', headers=headers, data=data)
-
+            if os.environ.get("API_PORT", False):
+                r = requests.post(f'{os.environ.get("API_PROTOCOL")}://{os.environ.get("API_HOST")}/api/constructor/stop_bot', headers=headers, data=data)
+            else:
+                r = requests.post(f'{os.environ.get("API_PROTOCOL")}://{os.environ.get("API_HOST")}:{os.environ.get("API_PORT")}/api/constructor/stop_bot', headers=headers, data=data)
 
             if r.status_code == 200:
                 bot_by_id.is_active = False
