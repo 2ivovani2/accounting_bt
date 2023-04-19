@@ -1,5 +1,7 @@
-from os import stat
-import time
+import threading, logging
+
+from bot_constructor.models import *
+
 from django.shortcuts import render, redirect
 from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
 from django.shortcuts import render
@@ -24,8 +26,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-from bot_constructor.models import *
-import threading
 
 class StoppableBotThread(threading.Thread):
     """
