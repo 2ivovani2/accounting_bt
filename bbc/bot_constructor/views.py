@@ -55,29 +55,12 @@ def vue(request):
 @api_view(["GET"])
 @permission_classes((AllowAny,))
 def payment_tnx(request):
-    """"
+    """
         Display tnx payment
         TODO переписать
-    """
-    try:
-        payment_id = request.GET["payment_id"]
-        bot_username = request.GET["bot_username"]
-        payeer_username = request.GET["payeer_username"]
-        amt = int(request.GET["amt"])
-
-        payment = TGPayment(
-            payment_id=payment_id,
-            amt=amt,
-            payeer=TGUser.object.filter(username=payeer_username).first(),
-            bot=Bot.object.filter(telegram_name=bot_username).first(),
-        )
-        
-        payment.save()
-
-    except:
-        pass
-
-    return redirect(f"https://t.me/{bot_username}")
+      """
+    print(request.POST, request.GET)
+    return redirect(f"https://t.me/i_vovani")
 
 @csrf_exempt
 @api_view(["POST"])
