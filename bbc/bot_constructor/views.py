@@ -65,13 +65,34 @@ def payment_tnx(request):
         Display tnx payment
         TODO переписать
       """
-    logger.info(request.data)
-    return Response({
-            'text':'OK',
-         },
-         status=HTTP_200_OK
-    )
- 
+    try:
+        payment_id = request.data["object"]["id"]
+        payment_amt = int(request.data["object"]["amount"]["value"])
+        
+        payment_db_obj = TGPayment.objects.filter(payment_id=payment_id)
+        
+        payment_db_obj.update(
+            fact_amt=payment_amt,
+            status="Проведен"
+        )
+
+        bot_owner = payment_db_obj.first().owner
+        
+        bot_owner.balance += payment_amt
+        bot_owner.save()
+
+        return Response({
+                "text":"OK",
+            },
+            status=HTTP_200_OK
+        )
+    except:
+        return Response({
+                "text":"Server erroe occured"
+            },
+            status=HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
 @csrf_exempt
 @api_view(["POST"])
 @permission_classes((AllowAny,))
@@ -117,45 +138,6 @@ def auth(request):
                 },
                 status=HTTP_400_BAD_REQUEST
             ) 
-
-
-@csrf_exempt
-@api_view(["POST"])
-def get_user_info(request):
-    """
-        Function of checking actual token info
-    """
-    token = request.POST.get('token', None).strip()
-    
-    if token is None:
-        return Response(
-            {
-                'text':'Your token is invalid.'
-            },
-            status=HTTP_400_BAD_REQUEST
-        )
-
-    if Token.objects.filter(key=token).exists():
-        user = Token.objects.filter(key=token).first().user
-
-        bots = Bot.objects.filter(owner=user).all()
-        bots_info = [bot.to_dict() for bot in bots]
-
-        return Response(
-            {
-                'web_user_info':user.to_dict(),
-                'web_user_bots_info':bots_info,
-            },
-            status=HTTP_200_OK
-        )
-    else:
-        return Response(
-            {
-                'text':'Such token doesn\'t exist.'
-            },
-            status=HTTP_404_NOT_FOUND
-        )
-
 
 @csrf_exempt
 @api_view(['POST'])

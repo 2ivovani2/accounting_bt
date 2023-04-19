@@ -54,6 +54,49 @@ class CustomUser(AbstractUser):
         verbose_name = 'Admin'
         verbose_name_plural = 'Admin'
 
+class TGPayment(models.Model):
+    STATUS_CHOICES = (
+        ("Проведен", "Проведен"),
+        ("Создан", "Создан"),
+    )
+
+    amt = models.BigIntegerField(
+        verbose_name="TGPayment amt",
+        null=False,
+        default=0
+    )
+
+    payment_id = models.CharField(
+        verbose_name="TGPaymentID",
+        max_length=255,
+        null=False,
+        default="No ID"
+    )
+
+    fact_amt = models.BigIntegerField(
+        verbose_name="TGPayment fact amt",
+        null=False,
+        default=0
+    )
+
+    status = models.CharField(
+        max_length=30,
+        choices=STATUS_CHOICES,
+        null=False,
+        default="Создан",
+    )
+    
+    owner = models.ForeignKey(
+        CustomUser,
+        verbose_name='Bot owner',
+        on_delete=models.CASCADE,
+        null=True
+    )
+
+    class Meta:
+        verbose_name = 'Payment'
+        verbose_name_plural = 'Payments'
+
 class AdminApplication(models.Model):
     STATUS_CHOICES = (
         ("Принят", "Принят"),
@@ -213,6 +256,30 @@ class Bot(models.Model):
     def __str__(self) -> str:
         return str(self.name)
 
+    @staticmethod
+    def create_payment(sum: int, return_url:str):
+        Configuration.account_id = os.environ.get("SHOP_ID")
+        Configuration.secret_key = os.environ.get("SHOP_API_TOKEN")
+
+        payment = Payment.create({
+            "amount": {
+                "value": sum,
+                "currency": "RUB"
+            },
+
+            "confirmation": {
+                "type": "redirect",
+                "return_url": return_url
+            },
+            "capture": True,
+            "description": 'Оплата информационных услуг.'
+        })
+        payment_data = json.loads(payment.json())
+        payment_url = (payment_data['confirmation'])['confirmation_url']
+        payment_id = payment_data['id']
+
+        return payment_url, payment_id
+
     def create_telegram_instance(self) -> str:
         """
             TODO create comments
@@ -309,7 +376,7 @@ class Bot(models.Model):
             
             if ("vk" in link):
                 try:
-                    vk_session = vk_api.VkApi('+79097990305', 'Ilovemarina25')
+                    vk_session = vk_api.VkApi(os.environ.get("VK_PHONE"), os.environ.get("VK_PASSWORD"))
                     vk_session.auth()
 
                     user = vk_session.method("users.get", {"user_ids": link.split("/")[-1]}) # вместо 1 подставляете айди нужного юзера
@@ -353,42 +420,23 @@ class Bot(models.Model):
                     )
                     time.sleep(0.5)
                 
-                Configuration.account_id = os.environ.get("SHOP_ID")
-                Configuration.secret_key = os.environ.get("SHOP_API_TOKEN")
                 
-                payment_399 = Payment.create({
-                    "amount": {
-                        "value": 399,
-                    "currency": "RUB"
-                },
-                    
-                "confirmation": {
-                    "type": "redirect",
-                    "return_url": f'https://t.me/{self.bot_username}'
-                },
-                "capture": True,
-                "description": 'Оплата информационных услуг.'
-                })
-                payment_data = json.loads(payment_399.json())
-                payment399_url = (payment_data['confirmation'])['confirmation_url']
+                payment399_url, payment399_id = Bot.create_payment(399, f'https://t.me/{self.bot_username}')
+                payment199_url, payment199_id = Bot.create_payment(199, f'https://t.me/{self.bot_username}')
+
+                TGPayment(
+                    payment_id=payment399_id,
+                    amt=399,
+                    owner=self.owner
+                ).save()
                 
-                payment_199 = Payment.create({
-                    "amount": {
-                        "value": 10,
-                    "currency": "RUB"
-                },
-                    
-                "confirmation": {
-                    "type": "redirect",
-                    "return_url": f'https://t.me/{self.bot_username}'
-                },
-                "capture": True,
-                "description": 'Оплата информационных услуг.'
-                })
-                payment_data = json.loads(payment_199.json())
-                payment199_url = (payment_data['confirmation'])['confirmation_url']
-                
-                
+                TGPayment(
+                    payment_id=payment199_id,
+                    amt=199,
+                    owner=self.owner
+                ).save()
+
+
                 kb = telebot.types.InlineKeyboardMarkup([
                     [telebot.types.InlineKeyboardButton("Приобрести 💳|199₽", url=str(payment199_url).strip())],
                     [telebot.types.InlineKeyboardButton("Купить безлимит 💳|399₽", url=str(payment399_url).strip())],
@@ -414,7 +462,7 @@ class Bot(models.Model):
                         f"🥺 К сожалению, ссылка прислана с ошибкой. Попробуйте еще раз.",
                         parse_mode="HTML"
                     )
-                sreturn
+                return
 
         @self.bot_instance.callback_query_handler(lambda query: query.data == "check_payment")
         def check_payment(message):
@@ -477,28 +525,3 @@ class TGUser(models.Model):
         verbose_name = 'Telegram User'
         verbose_name_plural = 'Telegram Users'
 
-class TGPayment(models.Model):
-    amt = models.BigIntegerField(
-        verbose_name="TGPayment",
-        null=False,
-        default=0
-    )
-
-    payment_id = models.CharField(
-        verbose_name="TGPaymentID",
-        max_length=255,
-        null=False,
-        default="No ID"
-    )
-
-    payeer = models.ForeignKey(
-        TGUser,
-        verbose_name="Person, who pays",
-        on_delete=models.CASCADE
-    )
-
-    bot = models.ForeignKey(
-        Bot,
-        verbose_name="Bot, connected to payment",
-        on_delete=models.CASCADE
-    )

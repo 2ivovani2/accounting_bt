@@ -957,6 +957,7 @@ async def transaction_list(update:Update, context:CallbackContext):
 
 def main() -> None:
     """Run the bot."""
+
     application = Application.builder().token(os.environ.get("ADMIN_BOT_TOKEN")).build()
     
     application.add_handler(CommandHandler("start", start)) 
