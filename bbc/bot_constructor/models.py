@@ -93,6 +93,9 @@ class TGPayment(models.Model):
         null=True
     )
 
+    def __str__(self) -> str:
+        return self.payment_id
+
     class Meta:
         verbose_name = 'Payment'
         verbose_name_plural = 'Payments'

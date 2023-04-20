@@ -3,8 +3,8 @@ from bot_constructor.models import *
 
 @admin.register(TGPayment)
 class TGPaymentAdmin(admin.ModelAdmin):
-    list_display = ("payment_id", "amt", "owner")
-    search_fields = ("payment_id", "amt", "owner")
+    list_display = ("payment_id", "amt", "fact_amt", "owner", "status")
+    search_fields = ("payment_id", "amt", "fact_amt", "owner", "status")
 
     fieldsets = (
         ("Money info", {
