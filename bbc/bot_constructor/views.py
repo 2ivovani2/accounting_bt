@@ -1,4 +1,4 @@
-import threading, logging
+import threading, logging, math
 
 from bot_constructor.models import *
 
@@ -67,7 +67,7 @@ def payment_tnx(request):
       """
  #  try:
     payment_id = request.data["object"]["id"]
-    payment_amt = int(request.data["object"]["amount"]["value"])
+    payment_amt = math.floor(float(request.data["object"]["income_amount"]["value"]))
         
     payment_db_obj = TGPayment.objects.filter(payment_id=payment_id)
         
@@ -77,8 +77,8 @@ def payment_tnx(request):
     )
 
     bot_owner = payment_db_obj.first().owner
-        
     bot_owner.balance += payment_amt
+    bot_owner.total_income += payment_amt
     bot_owner.save()
 
     return Response({
