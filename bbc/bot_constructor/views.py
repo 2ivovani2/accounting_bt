@@ -65,33 +65,33 @@ def payment_tnx(request):
         Display tnx payment
         TODO переписать
       """
-    try:
-        payment_id = request.data["object"]["id"]
-        payment_amt = int(request.data["object"]["amount"]["value"])
+ #   try:
+     payment_id = request.data["object"]["id"]
+     payment_amt = int(request.data["object"]["amount"]["value"])
         
-        payment_db_obj = TGPayment.objects.filter(payment_id=payment_id)
+     payment_db_obj = TGPayment.objects.filter(payment_id=payment_id)
         
-        payment_db_obj.update(
-            fact_amt=payment_amt,
-            status="Проведен"
-        )
+     payment_db_obj.update(
+        fact_amt=payment_amt,
+        status="Проведен"
+     )
 
-        bot_owner = payment_db_obj.first().owner
+     bot_owner = payment_db_obj.first().owner
         
-        bot_owner.balance += payment_amt
-        bot_owner.save()
+     bot_owner.balance += payment_amt
+     bot_owner.save()
 
-        return Response({
+     return Response({
                 "text":"OK",
             },
             status=HTTP_200_OK
-        )
-    except:
-        return Response({
-                "text":"Server erroe occured"
-            },
-            status=HTTP_500_INTERNAL_SERVER_ERROR
-        )
+     )
+#    except:
+#       return Response({
+#                "text":"Server erroe occured"
+#            },
+#            status=HTTP_500_INTERNAL_SERVER_ERROR
+#       )
 
 @csrf_exempt
 @api_view(["POST"])

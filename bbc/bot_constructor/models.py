@@ -263,7 +263,7 @@ class Bot(models.Model):
 
         payment = Payment.create({
             "amount": {
-                "value": sum,
+                "value": 5,
                 "currency": "RUB"
             },
 
