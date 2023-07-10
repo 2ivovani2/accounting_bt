@@ -3,13 +3,13 @@ version: '3.8'
 services:
   web:
     build:
-      context: ./bbc
+      context: ./tmp
       dockerfile: Dockerfile.prod
     restart: always
     command: gunicorn bbc.wsgi:application --bind 0.0.0.0:8000
     volumes:
       - static_volume:/home/app/web/staticfiles
-      - ./bbc/bot_constructor:/usr/src/app/bot_constructor
+      - ./tmp/main:/usr/src/app/main
     expose:
       - 8000
     env_file:
@@ -26,7 +26,7 @@ services:
       - ./.env.prod.db
 
   bot:
-    build: ./bbc
+    build: ./tmp
     command: python manage.py bot
     ports:
       - 8001:8001

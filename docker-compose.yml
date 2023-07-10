@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   web:
-    build: ./bbc
+    build: ./tmp
     command: python manage.py runserver 0.0.0.0:8000
     ports:
       - 8000:8000
@@ -11,7 +11,7 @@ services:
     depends_on:
       - db
     volumes:
-      - ./bbc/bot_constructor:/usr/src/app/bot_constructor
+      - ./tmp/main:/usr/src/app/main
     networks:
       test_network:
         ipv4_address: 172.16.238.10
@@ -31,7 +31,7 @@ services:
         ipv4_address: 172.16.238.11
     
   bot:
-    build: ./bbc
+    build: ./tmp
     command: python manage.py bot
     ports:
       - 8001:8001
