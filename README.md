@@ -1,23 +1,27 @@
-# ООО Обнал 👶🏽
-This telegram system is multifunctional.<br> It will have an partner programm<br> and a bot constructor for various promotions
-## Docker Development 🐳👁
-You have to change all the credentials in file `.env.dev` on your own and then run these commands:
+# Бухгалтерия 👶🏽
+Это универсальный бот для учета ваших финансов по каждому проекту.<br>Уже умеет:<br>
+- Создавать таблицы
+- Добавлять пользователей в таблицы
+- Добавлять операции разного типа 
+
+## Docker Local🐳👁
+Вам необходимо заменить все необходимые параметры на ваши в файле `.env.dev` и затем запустить команды ниже:
 ```shell
-$: docker-compose up -d --build
+$: sudo docker-compose up -d --build
 ```
-Then your development server will be on http://127.0.0.1:8000 <br><br>
-If you want to stop the containers run
+Затем ваш `django`сервер будт запущен по адресу http://0.0.0.0:8000 <br><br>
+Если вы хотите завершить работу всех контейнеров, то запустите данную команду:
 ```shell
-$: docker-compose down -v
+$: sudo docker-compose down -v
 ```
 
 ## Docker Production 🐳💥
-You have to change all the credentials in file `.env.prod` and `.env.prod.db` on your own and then run these commands:
+Вам необходимо изменить все данные на ваши в файле `.env.prod` и данные от базы данных в файле `.env.prod.db` и затем запустить:
 ```shell
-$: docker-compose -f docker-compose.prod.yml up -d --build 
+$: sudo docker-compose -f docker-compose.prod.yml up -d --build 
 ```
-Then your prod will be on http://127.0.0.1:1337 on local host becuse of the `nginx`, but if you start it on prod server, just enter it's `IP` or `Domain name` and you'll see the same result.<br><br>
-If you want to stop the containers run
+Если вы запускаете prod файл на localhost, тогда вы сможете найти ваше приложение по адресу http://127.0.0.1:1337 из-за `nginx`, но если вы запустили prod на вашей удаленной машине, тогда просто введите ее `IP` или `Domain name`, привязанное к ней и вы получите ваше приложение.<br><br>
+Если вы хотите завершить работу всех контейнеров, то запустите данную команду:
 ```shell
-$: docker-compose -f docker-compose.prod.yml down -v
+$: sudo docker-compose -f docker-compose.prod.yml down -v
 ```

@@ -12,9 +12,9 @@ services:
       - db
     volumes:
       - ./tmp/main:/usr/src/app/main
-    networks:
-      test_network:
-        ipv4_address: 172.16.238.10
+    # networks:
+    #   test_network:
+    #     ipv4_address: 172.16.238.10
   
   db:
     image: postgres:13.0-alpine
@@ -26,9 +26,9 @@ services:
       - POSTGRES_PASSWORD=1234567890
       - POSTGRES_DB=bbc_dev
 
-    networks:
-      test_network:
-        ipv4_address: 172.16.238.11
+    # networks:
+    #   test_network:
+    #     ipv4_address: 172.16.238.11
     
   bot:
     build: ./tmp
@@ -38,13 +38,13 @@ services:
     env_file:
       - ./.env.dev
     
-    networks:
-      test_network:
-        ipv4_address: 172.16.238.12
+    # networks:
+    #   test_network:
+    #     ipv4_address: 172.16.238.12
     
-networks:
-  test_network:
-    ipam:
-      driver: default
-      config:
-        - subnet: 172.16.238.0/24
+# networks:
+#   test_network:
+#     ipam:
+#       driver: default
+#       config:
+#         - subnet: 172.16.238.0/24

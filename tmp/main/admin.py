@@ -42,13 +42,13 @@ class OperationAdmin(admin.ModelAdmin):
     """
         Описание операций в админской панели 
     """
-    list_display = ("id", "type", "amount", "date")
-    search_fields = ("id", "type", "amount", "date")
+    list_display = ("type", "amount", "date", "creator")
+    search_fields = ("id", "type", "amount", "date", "description")
 
     readonly_fields = ["id", "date"]
 
     fieldsets = (
         ("Основные параметры", {
-            "fields": ["type", "amount", "table"]
+            "fields": ["type", "amount", "table", "creator", "description"]
         }),
     )

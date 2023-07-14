@@ -111,6 +111,13 @@ class Operation(models.Model):
         null=True,
     )
 
+    description = models.CharField(
+        verbose_name="Описание платежа",
+        max_length=255,
+        null=False,
+        default="Без описания"
+    )
+
     class Meta:
         verbose_name = "Операция"
         verbose_name_plural = "Операции"
