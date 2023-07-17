@@ -3,3 +3,4 @@ postgres_data
 __pycache
 .DS_Store
 certbot
+.idea
