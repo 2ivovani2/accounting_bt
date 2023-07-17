@@ -61,7 +61,9 @@ async def start(update: Update, context: CallbackContext):
     usr, _, _ = await user_get_by_update(update)
 
     if usr.verified_usr:
-        if context.user_data.get("active_table_id", "") in [tbl.id for tbl in usr.get_tables()]:
+        active_table_id = context.user_data.get("active_table_id", "")
+
+        if active_table_id in [tbl.id for tbl in usr.get_tables()]:
             markup = InlineKeyboardMarkup([
                 [InlineKeyboardButton(
                     text="Создать новую таблицу ➕",
@@ -78,9 +80,24 @@ async def start(update: Update, context: CallbackContext):
                 [InlineKeyboardButton(
                     text="Сводка по таблицам 📊",
                     callback_data="table_analytics",
+                )],
+                [InlineKeyboardButton(
+                    text="История операций 🔭",
+                    callback_data="operation_history",
                 )]
-
             ])
+
+            active_table = Table.objects.get(pk=active_table_id)
+
+            await context.bot.send_video(
+                usr.telegram_chat_id,
+                "https://media2.giphy.com/media/67ThRZlYBvibtdF9JH/giphy.gif?cid=ecf05e47u0hkmcznkfg7hju8bo77hffom4asrl76jmv4xlpd&ep=v1_gifs_search&rid=giphy.gif&ct=g",
+                caption=f"😽 С возвращением, <b>{usr.username}</b>\n💰 Уже подсчитываю ваши миллионы\n\n<u><i>Ваша активная таблица</i></u>:\n\n🔗 Название: <b>{active_table.name}</b>\n⚰️ id: <b>{active_table.id}</b>",
+                parse_mode="HTML",
+                width=150,
+                height=150,
+                reply_markup=markup
+            )
         else:
             markup = InlineKeyboardMarkup([
                 [InlineKeyboardButton(
@@ -97,15 +114,15 @@ async def start(update: Update, context: CallbackContext):
                 )]
             ])
 
-        await context.bot.send_video(
-            usr.telegram_chat_id,
-            "https://media2.giphy.com/media/67ThRZlYBvibtdF9JH/giphy.gif?cid=ecf05e47u0hkmcznkfg7hju8bo77hffom4asrl76jmv4xlpd&ep=v1_gifs_search&rid=giphy.gif&ct=g",
-            caption=f"😽 С возвращением, <b>{usr.username}</b>\n💰 Уже подсчитываю ваши миллионы",
-            parse_mode="HTML",
-            width=150,
-            height=150,
-            reply_markup=markup
-        )
+            await context.bot.send_video(
+                usr.telegram_chat_id,
+                "https://media2.giphy.com/media/67ThRZlYBvibtdF9JH/giphy.gif?cid=ecf05e47u0hkmcznkfg7hju8bo77hffom4asrl76jmv4xlpd&ep=v1_gifs_search&rid=giphy.gif&ct=g",
+                caption=f"😽 С возвращением, <b>{usr.username}</b>\n💰 Уже подсчитываю ваши миллионы",
+                parse_mode="HTML",
+                width=150,
+                height=150,
+                reply_markup=markup
+            )
     else:
         await context.bot.send_message(
             usr.telegram_chat_id,
@@ -209,7 +226,7 @@ async def create_table(update: Update, context: CallbackContext):
 async def list_table(update: Update, context: CallbackContext):
     usr, _, _ = await user_get_by_update(update)
     
-    user_tables = [table for table in usr.tables.all().order_by("id")]
+    user_tables = usr.get_tables()
 
     if len(user_tables) != 0:
         msg = ""
@@ -527,27 +544,33 @@ async def create_operation(update: Update, context: CallbackContext):
 
 async def table_analytics(update: Update, context: CallbackContext):
     usr, _, _ = await user_get_by_update(update)
-    end_msg = ""
+    end_msg = "📊 <u><b>Сводка</b></u>\n\n"
 
-    for table in usr.tables.all().order_by("id"):
+    total_income, total_consumption = 0, 0 
+
+    for table in usr.get_tables():
         operations = Operation.objects.filter(table=table).all()
-        total_income, total_consumption = 0, 0
+        table_income, table_consumption = 0, 0
 
-    if len(operations) != 0:
+        if len(operations) != 0:
             for operation in operations:
                 if operation.type == "Доход":
-                    total_income += operation.amount
+                    table_income += operation.amount
                 else:
-                    total_consumption += operation.amount
+                    table_consumption += operation.amount
 
-                end_msg += f"🔗 Таблица <b>{table.name}</b>:\n🤑 Доход: <b>{total_income}₽</b>\n😢 Расход: <b>{total_consumption}₽</b>\n💸 <u><b>Прибыль</b></u>: <b>{total_income - total_consumption}₽</b>\n\n"
-    else:
-        end_msg += f"Таблица <b>{table.name}</b>:\nДоход: <b>{total_income}₽</b>\tРасход: <b>{total_consumption}₽</b>\n<u><b>Прибыль</b></u>: <b>{total_income - total_consumption}₽</b>\n\n"
+            end_msg += f"🔗 Таблица <b>{table.name}</b>:\n🤑 Доход: <b>{table_income}₽</b>\n😢 Расход: <b>{table_consumption}₽</b>\n💸 <b>Прибыль</b>: <b>{table_income - table_consumption}₽</b>\n\n"
+        else:
+            end_msg += f"🔗 Таблица <b>{table.name}</b>:\n🤑 Доход: <b>{table_income}₽</b>\t😢 Расход: <b>{table_consumption}₽</b>\n💸 <b>Прибыль</b>: <b>{table_income - table_consumption}₽</b>\n\n"
         
+        total_income += table_income
+        total_consumption += table_consumption
+
+    end_msg += f"\n🍪 <u><b>Общая ситуация</b></u>\n\n🔎 Общий доход: <b>{total_income}₽</b>\n😔 Общий расход: <b>{total_consumption}₽</b>\n💩 <b>Общая прибыль</b>: <b>{total_income - total_consumption}₽</b>"
 
     await context.bot.send_message(
         usr.telegram_chat_id,
-        f"📊 <b>Сводка</b>\n\n{end_msg}",
+        end_msg,
         parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton(
@@ -562,7 +585,7 @@ async def garbage_callback(update: Update, context: CallbackContext):
 
     await context.bot.send_message(
         usr.telegram_chat_id,
-        f"Какая-то суета произошла. Во всем виновата Америка <b>Z</b> <b>V</b>",
+        f"Мы такое не обрабатываем. Во всем виновата Америка <b>Z</b> <b>V</b>",
         parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton(
@@ -613,6 +636,9 @@ def main() -> None:
         fallbacks=[CallbackQueryHandler(start, "menu")]
     )
     application.add_handler(choose_table_conv_handler)
+ 
+    application.add_handler(CallbackQueryHandler(start, "menu"))
+    application.add_handler(MessageHandler(filters.TEXT, garbage_callback))
  
     application.run_polling()
 

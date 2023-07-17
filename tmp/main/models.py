@@ -60,7 +60,7 @@ class CustomUser(AbstractUser):
         """
             Метод, возвращающий все таблицы пользователя
         """
-        return [table for table in self.tables.all()]
+        return [table for table in self.tables.all().order_by("id")]
     
     class Meta:
         verbose_name = "Пользователь"
