@@ -43,7 +43,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    'main',
+    "main",
+    "naeb_bot",
 
     'rest_framework',
     'rest_framework.authtoken',
