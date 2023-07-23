@@ -3,7 +3,7 @@ from main.models import *
 from asgiref.sync import sync_to_async
 from rest_framework.authtoken.models import Token
 
-import os, django, logging, warnings, uuid, time, random
+import os, django, logging, warnings, uuid, time, random, cv2
 warnings.filterwarnings("ignore")
 
 from django.core.management.base import BaseCommand
@@ -116,6 +116,39 @@ async def content(update: Update, context: CallbackContext):
     
     return 1
 
+async def check_photo(update: Update, context: CallbackContext):
+    if update.message:
+        message = update.message
+    else:
+        message = update.callback_query.message
+
+    face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+    img = cv2.imread(message.photo[0].file_id)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+    faces = face_cascade.detectMultiScale(gray, 1.3, 5)
+    if len(faces) != 0:
+        await context.bot.send_message(
+            message.chat.id,
+            '<b>Лицо обнаружено</b>',
+            parse_mode="HTML"
+        )
+        return 2
+    else:
+        await context.bot.send_message(
+            message.chat.id,
+            '<b>Лицо не обнаружено\nК сожалению невозможно сгенерировать изображение без лица\n\n<b>Выберите другую фотографию</b></b>',
+            parse_mode="HTML",
+            reply_markup=reply_markup=InlineKeyboardMarkup([
+            [
+                InlineKeyboardButton(
+                    text="⏮️ В меню",
+                    callback_data="menu",
+                )
+            ],
+        ])
+    )
+
 async def search(update:Update, context: CallbackContext):
     startin_text = list("🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥")
     if update.message:
@@ -164,7 +197,7 @@ async def search(update:Update, context: CallbackContext):
         write_timeout=5,
     )
 
-    return 2
+    return 3
 
 async def confirm_paying(update: Update, context: CallbackContext):
     code = "#" + str(uuid.uuid4().hex)[:6].upper()
@@ -260,8 +293,10 @@ def main() -> None:
         entry_points=[CallbackQueryHandler(ask_for_link, "dump_naeb",)],
         states={
             0:[CallbackQueryHandler(content, "search",)],
-            1:[MessageHandler(filters.PHOTO, search)],
-            2:[CallbackQueryHandler(confirm_paying, "buy_archive",)],
+            1:[MessageHandler(filters.PHOTO, check_photo), 
+               CallbackQueryHandler(content, 'face_blocking')],
+            2:[CallbackQueryHandler(search, "face_pass")],
+            3:[CallbackQueryHandler(confirm_paying, "buy_archive",)],
         },
         fallbacks=[CallbackQueryHandler(start, "menu",)]
     )
