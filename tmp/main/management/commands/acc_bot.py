@@ -3,7 +3,7 @@ from main.models import *
 from asgiref.sync import sync_to_async
 from rest_framework.authtoken.models import Token
 
-import os, django, logging, warnings
+import os, django, logging, warnings, re
 warnings.filterwarnings("ignore")
 
 from django.core.management.base import BaseCommand
@@ -561,7 +561,7 @@ async def table_analytics(update: Update, context: CallbackContext):
 
             end_msg += f"🔗 Таблица <b>{table.name}</b>:\n🤑 Доход: <b>{table_income}₽</b>\n😢 Расход: <b>{table_consumption}₽</b>\n💸 <b>Прибыль</b>: <b>{table_income - table_consumption}₽</b>\n\n"
         else:
-            end_msg += f"🔗 Таблица <b>{table.name}</b>:\n🤑 Доход: <b>{table_income}₽</b>\t😢 Расход: <b>{table_consumption}₽</b>\n💸 <b>Прибыль</b>: <b>{table_income - table_consumption}₽</b>\n\n"
+            end_msg += f"🔗 Таблица <b>{table.name}</b>:\n🤑 Доход: <b>{table_income}₽</b>\n😢 Расход: <b>{table_consumption}₽</b>\n💸 <b>Прибыль</b>: <b>{table_income - table_consumption}₽</b>\n\n"
         
         total_income += table_income
         total_consumption += table_consumption
@@ -579,7 +579,142 @@ async def table_analytics(update: Update, context: CallbackContext):
             )]
         ])
     )
-    
+
+async def ask_for_history_type(update: Update, context: CallbackContext):
+    usr, _, _ = await user_get_by_update(update)
+    await context.bot.send_message(
+        usr.telegram_chat_id,
+        f"🔩 <b>{usr.username}</b>, введите диапазон дат для среза операций.\n\nФормат данных <b>dd-mm-yy</b> <b>dd-mm-yy</b>",
+        parse_mode="HTML",
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton(
+                text="В меню 🍺",
+                callback_data="menu"
+            )]
+        ])
+    )
+
+    return 0
+
+async def show_history(update: Update, context: CallbackContext):
+    usr, _, _ = await user_get_by_update(update)
+    table_id = context.user_data.get("active_table_id",'')
+
+    message = list(filter(lambda x: x != " ", update.message.text.lower().strip().split()))
+    expression = re.compile("(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[012])-(19|20)\d\d")
+
+    if len(message) == 2:
+        if expression.match(message[0]) and expression.match(message[0]):
+            date_start, date_end = "-".join(reversed(message[0].split("-"))), "-".join(list(reversed(message[1].split("-")[1:])) + [str(int(message[1].split("-")[0]) + 1)])
+            
+            if Table.objects.filter(id=table_id).exists():
+                if Table.objects.get(pk=table_id) in usr.get_tables():
+                    users_table = Table.objects.get(pk=table_id)
+                    try:
+                        end_msg = f"⏳<b><u>История</u></b>\n\n<b>🕕 Дата начала:</b>{date_start}\n<b>🕤 Дата конца:</b>{date_end}\n\n"
+                        operations = Operation.objects.filter(
+                            date__range=[date_start, date_end],
+                            table=users_table
+                        ).all().order_by('-date')
+                        
+                        if len(operations) != 0:
+                            slice_income, slice_consumption = 0, 0 
+                            for operation in operations:
+                                end_msg += f"<i>{str(operation.date).split()[0]}</i> - <b>{operation.amount}₽</b> - <b>{operation.type}</b> - <b>{operation.creator}</b>\n"
+                                
+                                if operation.type.lower() == "доход":
+                                    slice_income += operation.amount
+                                elif operation.type.lower() == "расход":
+                                    slice_consumption += operation.amount
+
+                            end_msg += f"\n\n🗿<b><u>Сводка:</u></b>\n\n🔎 Общий доход: <b>{slice_income}₽</b>\n😔 Общий расход: <b>{slice_consumption}₽</b>\n💩 <b>Общая прибыль</b>: <b>{slice_income - slice_consumption}₽</b>"
+
+                        else:
+                            end_msg = f"⏳<b><u>История</u></b>\n\n<b>Дата начала:</b>{date_start}\n<b>Дата конца:</b>{date_end}\n\n😵‍💫 Ни одной записи по вашему запросу не найдено."
+                        
+                        await context.bot.send_message(
+                            usr.telegram_chat_id,
+                            end_msg,
+                            parse_mode="HTML",
+                            reply_markup=InlineKeyboardMarkup([
+                                [InlineKeyboardButton(
+                                    text="Еще раз 🚀",
+                                    callback_data="operation_history"
+                                )],
+                                [InlineKeyboardButton(
+                                    text="В меню 🍺",
+                                    callback_data="menu"
+                                )]
+                            ])
+                        )
+
+                    except Exception as e:
+                        await context.bot.send_message(
+                            usr.telegram_chat_id,
+                            f"❌ Произошла ошибка во время поиска таблицы.\n\n<b>Ошибка:</b><i>{e}</i>",
+                            parse_mode="HTML",
+                            reply_markup=InlineKeyboardMarkup([
+                                [InlineKeyboardButton(
+                                    text="В меню 🍺",
+                                    callback_data="menu"
+                                )]
+                            ])
+                        )
+                else:
+                    await context.bot.send_message(
+                        usr.telegram_chat_id,
+                        f"❌ Вы не являетесь владельцем таблицы с id = {context.user_data.get('active_table_id','')}",
+                        parse_mode="HTML",
+                        reply_markup=InlineKeyboardMarkup([
+                            [InlineKeyboardButton(
+                                text="В меню 🍺",
+                                callback_data="menu"
+                            )]
+                        ])
+                    )
+
+            else:
+                await context.bot.send_message(
+                    usr.telegram_chat_id,
+                    f"❌ Вы не выбрали активную таблицу. Сделайте это в списке таблиц.",
+                    parse_mode="HTML",
+                    reply_markup=InlineKeyboardMarkup([
+                        [InlineKeyboardButton(
+                            text="В меню 🍺",
+                            callback_data="menu"
+                        )]
+                    ])
+                )
+
+        else:
+            await context.bot.send_message(
+            usr.telegram_chat_id,
+            f"👿 Получено некорректное значение дат, выйдите в меню и попробуйте еще раз.\n\n<i>Будьте внимательны, формат даты: <b>dd-mm-yy dd-mm-yy</b></i>",
+            parse_mode="HTML",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton(
+                    text="В меню 🍺",
+                    callback_data="menu"
+                )]
+            ])
+        )
+            
+    else:
+        await context.bot.send_message(
+            usr.telegram_chat_id,
+            f"👿 Получено некорректное значение дат, выйдите в меню и попробуйте еще раз.\n\n<i>Будьте внимательны, формат даты: <b>dd-mm-yy dd-mm-yy</b></i>",
+            parse_mode="HTML",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton(
+                    text="В меню 🍺",
+                    callback_data="menu"
+                )]
+            ])
+        )
+
+    return ConversationHandler.END
+
+
 async def garbage_callback(update: Update, context: CallbackContext):
     usr, _, _ = await user_get_by_update(update)
 
@@ -637,6 +772,15 @@ def main() -> None:
     )
     application.add_handler(choose_table_conv_handler)
  
+    get_history_conv_handler = ConversationHandler(
+        entry_points=[CallbackQueryHandler(ask_for_history_type, "operation_history")],
+        states={
+            0: [MessageHandler(filters.TEXT, show_history)]
+        },
+        fallbacks=[CallbackQueryHandler(start, "menu")]
+    )
+    application.add_handler(get_history_conv_handler)
+
     application.add_handler(CallbackQueryHandler(start, "menu"))
     application.add_handler(MessageHandler(filters.TEXT, garbage_callback))
  

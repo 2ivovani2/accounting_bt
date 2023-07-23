@@ -118,6 +118,9 @@ class Operation(models.Model):
         default="Без описания"
     )
 
+    def __str__(self) -> str:
+        return self.creator.username
+
     class Meta:
         verbose_name = "Операция"
         verbose_name_plural = "Операции"
