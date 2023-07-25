@@ -1,5 +1,5 @@
 # pull official base image
-FROM python:3.9.6-alpine
+FROM python:3.9-slim
 
 # set work directory
 WORKDIR /usr/src/app
@@ -8,10 +8,19 @@ WORKDIR /usr/src/app
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-# install psycopg2 dependencies
-RUN apk update \
-    && apk add postgresql-dev gcc python3-dev musl-dev
+RUN apt update
+RUN apt -y install build-essential libwrap0-dev libssl-dev libc-ares-dev uuid-dev xsltproc
+RUN apt-get update -qq \
+    && apt-get install --no-install-recommends --yes \
+        build-essential \
+        gcc \
+        postgresql-server-dev-all \
+        musl-dev \
+        python3-dev \
+        mosquitto \
+        mosquitto-clients
 
+RUN pip3 install --upgrade pip setuptools wheel
 # install dependencies
 RUN pip install --upgrade pip
 COPY ./requirements.txt .

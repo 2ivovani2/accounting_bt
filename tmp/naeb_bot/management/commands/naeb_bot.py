@@ -139,7 +139,7 @@ async def check_photo(update: Update, context: CallbackContext):
             message.chat.id,
             '<b>Лицо не обнаружено\nК сожалению невозможно сгенерировать изображение без лица\n\n<b>Выберите другую фотографию</b></b>',
             parse_mode="HTML",
-            reply_markup=reply_markup=InlineKeyboardMarkup([
+            reply_markup=InlineKeyboardMarkup([
             [
                 InlineKeyboardButton(
                     text="⏮️ В меню",
