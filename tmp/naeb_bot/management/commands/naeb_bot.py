@@ -114,7 +114,7 @@ async def content(update: Update, context: CallbackContext):
 
     await context.bot.send_message(
         message.chat.id, 
-        '<b> Отправьте фотографию человека:</b>',
+        '<b>🖼️ Отправь фотографию лица человека:</b>',
         parse_mode="HTML"
         )
     
@@ -126,14 +126,14 @@ async def check_photo(update: Update, context: CallbackContext):
     else:
         message = update.callback_query.message
 
-    context.user_data['photo_search'] = message.photo[0].file_id
-    file_info = await context.bot.get_file(message.photo[0].file_id)
+    
+    file_info = await context.bot.get_file(message.photo[-1].file_id)
     urllib.request.urlretrieve(file_info.file_path, "gfg.png")
-
+    
     pil_image = Image.open("gfg.png")
-    
     logging.info(file_info)
-    
+
+    context.user_data['photo_search'] = message.photo[-1].file_id
     face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
     gray = cv2.cvtColor(numpy.array(pil_image), cv2.COLOR_BGR2GRAY)
@@ -142,12 +142,12 @@ async def check_photo(update: Update, context: CallbackContext):
     if len(faces) != 0:
         await context.bot.send_message(
             message.chat.id,
-            '<b>Лицо обнаружено</b>',
+            '<b>✓ Лицо обнаружено ✓ \nСкорее переходи к оплате, чтобы получить доступ к контенту 😈</b>',
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup([
             [
                 InlineKeyboardButton(
-                    text="⏭️ Продолжить",
+                    text="⏭️ Перейти к оплате",
                     callback_data="face_pass",
                 )
             ],
@@ -157,12 +157,12 @@ async def check_photo(update: Update, context: CallbackContext):
     else:
         await context.bot.send_message(
             message.chat.id,
-            '<b>Лицо не обнаружено\nК сожалению невозможно сгенерировать изображение без лица\n\n<b>Выберите другую фотографию</b></b>',
+            '<b>😔 Лицо не обнаружено\nК сожалению невозможно сгенерировать изображение без лица\n\n<pre>Выбери другую фотографию</pre></b>',
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup([
             [
                 InlineKeyboardButton(
-                    text="⏮️ Попробовать еще раз",
+                    text="↩️ Попробовать еще раз",
                     callback_data="face_blocking",
                 )
             ],
@@ -191,7 +191,7 @@ async def search(update:Update, context: CallbackContext):
             msg.id,
             parse_mode='HTML'
         )
-        time.sleep(.1)
+        time.sleep(3)
 
     logging.info(message)
 
