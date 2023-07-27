@@ -4,4 +4,4 @@ psycopg2-binary==2.9.1
 djangorestframework==3.14.0
 python-telegram-bot==20.2
 opencv-contrib-python-headless
-Pillow
+Pillow==10.0.0
