@@ -12,7 +12,6 @@ services:
       - db
     volumes:
       - ./tmp/main:/usr/src/app/main
-      - ./tmp/naeb_bot:/usr/src/app/naeb_bot
       - ./tmp:/usr/src/app
     # networks:
     #   test_network:
@@ -43,14 +42,7 @@ services:
     # networks:
     #   test_network:
     #     ipv4_address: 172.16.238.12
-    
-  naeb_bot:
-    build: ./tmp
-    command: python manage.py naeb_bot
-    ports:
-      - 8002:8002
-    env_file:
-      - ./.env.dev
+
 
 # networks:
 #   test_network:
