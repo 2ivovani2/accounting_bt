@@ -44,7 +44,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     "main",
-    "naeb_bot",
 
     'rest_framework',
     'rest_framework.authtoken',
