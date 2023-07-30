@@ -70,7 +70,7 @@ async def start(update: Update, context: CallbackContext):
                     callback_data="create_table",
                 )],
                 [InlineKeyboardButton(
-                    text="Добавить операцию в активную таблицу 💸",
+                    text="Добавить запись 💸",
                     callback_data="add_operation",
                 )],
                 [InlineKeyboardButton(
@@ -610,27 +610,51 @@ async def show_history(update: Update, context: CallbackContext):
             if Table.objects.filter(id=table_id).exists():
                 if Table.objects.get(pk=table_id) in usr.get_tables():
                     users_table = Table.objects.get(pk=table_id)
+                    
                     try:
-                        end_msg = f"⏳<b><u>История</u></b>\n\n<b>🕕 Дата начала:</b>{date_start}\n<b>🕤 Дата конца:</b>{date_end}\n\n"
-                        operations = Operation.objects.filter(
+                        end_msg = f"⏳<b><u>История</u></b>\n\n<b>🧩 Таблица:</b> <i>{users_table.name}</i>\n\n<b>🕐 Дата начала:</b> {date_start}\n<b>🕤 Дата конца:</b> {date_end}\n\n"
+                        active_table_operations = Operation.objects.filter(
                             date__range=[date_start, date_end],
                             table=users_table
                         ).all().order_by('-date')
                         
-                        if len(operations) != 0:
-                            slice_income, slice_consumption = 0, 0 
-                            for operation in operations:
-                                end_msg += f"<i>{str(operation.date).split()[0]}</i> - <b>{operation.amount}₽</b> - <b>{operation.type}</b> - <b>{operation.creator}</b>\n"
-                                
+                        total_slice_income, total_slice_consumption = 0, 0
+                        for table in usr.get_tables():
+                            table_operations = Operation.objects.filter(
+                                date__range=[date_start, date_end],
+                                table=table
+                            ).all().order_by('-date')
+                            
+                            for operation in table_operations:
                                 if operation.type.lower() == "доход":
-                                    slice_income += operation.amount
+                                    total_slice_income += operation.amount
                                 elif operation.type.lower() == "расход":
-                                    slice_consumption += operation.amount
+                                    total_slice_consumption += operation.amount
 
-                            end_msg += f"\n\n🗿<b><u>Сводка:</u></b>\n\n🔎 Общий доход: <b>{slice_income}₽</b>\n😔 Общий расход: <b>{slice_consumption}₽</b>\n💩 <b>Общая прибыль</b>: <b>{slice_income - slice_consumption}₽</b>"
 
+                        if len(active_table_operations) != 0:
+                            active_table_slice_income, active_table_slice_consumption = 0, 0 
+                            
+                            income_msg = f"💸 <b><u>Доходы:</u></b>\n\n"
+                            consumption_msg = f"🤬 <b><u>Расходы:</u></b>\n\n"
+
+                            for operation in active_table_operations:
+                                 
+                                if operation.type.lower() == "доход":
+                                    active_table_slice_income += operation.amount
+                                    income_msg += f"<i>{str(operation.date).split()[0]}</i> - <b>{operation.amount}₽</b> - <b>{operation.description}</b>\n"
+                                
+                                elif operation.type.lower() == "расход":
+                                    active_table_slice_consumption += operation.amount
+                                    consumption_msg += f"<i>{str(operation.date).split()[0]}</i> - <b>{operation.amount}₽</b> - <b>{operation.description}</b>\n"
+                                
+                            end_msg = end_msg + income_msg + "\n" + consumption_msg
+
+                            end_msg += f"\n\n🗿<b><u>Сводка по активной таблице:</u></b>\n\n🔎 Общий доход: <b>{active_table_slice_income}₽</b>\n😔 Общий расход: <b>{active_table_slice_consumption}₽</b>\n💩 <b>Общая прибыль</b>: <b>{active_table_slice_income - active_table_slice_consumption}₽</b>\n\n"
+                            end_msg += f"\n🍺<b><u>Сводка по всем таблицам:</u></b>\n\n🔎 Общий доход: <b>{total_slice_income}₽</b>\n😔 Общий расход: <b>{total_slice_consumption}₽</b>\n💩 <b>Общая прибыль</b>: <b>{total_slice_income - total_slice_consumption}₽</b>"
+                            
                         else:
-                            end_msg = f"⏳<b><u>История</u></b>\n\n<b>Дата начала:</b>{date_start}\n<b>Дата конца:</b>{date_end}\n\n😵‍💫 Ни одной записи по вашему запросу не найдено."
+                            end_msg = f"⏳<b><u>История</u></b>\n\n<b>🧩 Таблица:</b> <i>{users_table.name}</i>\n\n<b>🕐 Дата начала:</b> {date_start}\n<b>🕤 Дата конца:</b> {date_end}\n\n😵‍💫 Ни одной записи по вашему запросу не найдено."
                         
                         await context.bot.send_message(
                             usr.telegram_chat_id,
