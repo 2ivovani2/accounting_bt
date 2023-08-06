@@ -28,6 +28,32 @@ class Table(models.Model):
         verbose_name = "Таблица"
         verbose_name_plural = "Таблицы"
 
+class Category(models.Model):
+    """
+        Категория операции по таблице
+    """
+
+    name = models.CharField(
+        verbose_name="Название категории",
+        max_length=255,
+        null=False,
+        default="Без названия"
+    )
+
+    table = models.ForeignKey(
+        Table,
+        verbose_name="Таблица по категории",
+        on_delete=models.CASCADE,
+        null=True,
+    )
+
+    def __str__(self) -> str:
+        return self.name
+
+    class Meta:
+        verbose_name = "Категория"
+        verbose_name_plural = "Категории"
+
 class CustomUser(AbstractUser):
     """
         Модель, описывающая пользователй
@@ -47,10 +73,15 @@ class CustomUser(AbstractUser):
         default=False
     )
 
+    can_create_categories = models.BooleanField(
+        verbose_name="Возможность создавать новые категории",
+        default=False
+    )
+
     tables = models.ManyToManyField(
         Table,
         verbose_name="Таблицы пользователя",
-        blank=True
+        blank=True,
     )
 
     def __str__(self) -> str:
@@ -65,7 +96,6 @@ class CustomUser(AbstractUser):
     class Meta:
         verbose_name = "Пользователь"
         verbose_name_plural = "Пользователи"
-
 
 class Operation(models.Model):
     """
@@ -111,12 +141,20 @@ class Operation(models.Model):
         null=True,
     )
 
+    category = models.ForeignKey(
+        Category,
+        verbose_name="Категория операции",
+        on_delete=models.CASCADE,
+        null=True,
+    )
+
     description = models.CharField(
         verbose_name="Описание платежа",
         max_length=255,
         null=False,
         default="Без описания"
     )
+    
 
     def __str__(self) -> str:
         return self.creator.username

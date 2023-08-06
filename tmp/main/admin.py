@@ -22,6 +22,23 @@ class CustomUserAdmin(admin.ModelAdmin):
         }),
     )
 
+@admin.register(Category)
+class CategoryAdmin(admin.ModelAdmin):
+    """
+        Описание пользователей в админской панели
+    """
+    list_display = ("id", "name", "table")
+    search_fields = ("id", "name", "table")
+
+    fieldsets = (
+
+        ("Информация", {
+            "fields": ["name", "table"]
+
+        }),
+
+    )
+
 @admin.register(Table)
 class TableAdmin(admin.ModelAdmin):
     """
@@ -42,13 +59,13 @@ class OperationAdmin(admin.ModelAdmin):
     """
         Описание операций в админской панели 
     """
-    list_display = ("type", "amount", "date", "creator")
+    list_display = ("type", "amount", "date", "table", "category")
     search_fields = ("id", "type", "amount", "date", "description")
 
     readonly_fields = ["id", "date"]
 
     fieldsets = (
         ("Основные параметры", {
-            "fields": ["type", "amount", "table", "creator", "description"]
+            "fields": ["type", "amount", "table", "creator", "description","category"]
         }),
     )
