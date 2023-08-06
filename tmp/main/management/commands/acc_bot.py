@@ -1130,7 +1130,7 @@ def main() -> None:
             3: [MessageHandler(filters.TEXT, create_operation)]
 
         },
-        fallbacks=[CallbackQueryHandler(start, "menu")]
+        fallbacks=[CallbackQueryHandler(start, "menu"), CommandHandler("start", start)]
     ))
     
 
@@ -1139,7 +1139,7 @@ def main() -> None:
         states={
             0: [MessageHandler(filters.TEXT, create_table)],
         },
-        fallbacks=[CallbackQueryHandler(start, "menu")]
+        fallbacks=[CallbackQueryHandler(start, "menu"), CommandHandler("start", start)]
     ))
     
 
@@ -1148,7 +1148,7 @@ def main() -> None:
         states={
             0: [CallbackQueryHandler(choose_table, "^choose_table_")],
         },
-        fallbacks=[CallbackQueryHandler(start, "menu")]
+        fallbacks=[CallbackQueryHandler(start, "menu"), CommandHandler("start", start)]
     ))
     
     application.add_handler(ConversationHandler(
@@ -1156,7 +1156,7 @@ def main() -> None:
         states={
             0: [MessageHandler(filters.TEXT, create_category)]
         },
-        fallbacks=[CallbackQueryHandler(start, "menu")]
+        fallbacks=[CallbackQueryHandler(start, "menu"), CommandHandler("start", start)]
     ))    
 
     application.add_handler(ConversationHandler(
@@ -1164,7 +1164,7 @@ def main() -> None:
         states={
             0: [MessageHandler(filters.TEXT, show_history)]
         },
-        fallbacks=[CallbackQueryHandler(start, "menu")]
+        fallbacks=[CallbackQueryHandler(start, "menu"), CommandHandler("start", start)]
     ))
     
     application.add_handler(CallbackQueryHandler(analyse_history, "analyse_history"))
