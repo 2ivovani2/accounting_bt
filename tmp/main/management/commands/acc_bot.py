@@ -1068,7 +1068,7 @@ async def analyse_history(update: Update, context: CallbackContext):
                     for operation in cat_data_dict[category]:
                         amounts.append(operation.amount)
                         
-                    end_msg += f"🔸 <b><u>Категория</u></b>: <i>{category}</i>\n\n∙ Тип категории: <b>{category_type}ная</b>\n∙ Общий объем денег: <b>{sum(amounts)}₽</b>\n∙ Средний объем денег: <b>{sum(amounts) / len(amounts) if len(amounts) != 0 else 0}₽</b>\n\n"
+                    end_msg += f"🔸 <b><u>Категория</u></b>: <i>{category}</i>\n\n∙ Тип категории: <b>{category_type}ная</b>\n∙ Общий объем денег: <b>{sum(amounts)}₽</b>\n∙ Средний объем денег: <b>{sum(amounts) / len(amounts) if len(amounts) != 0 else 0:.2f}₽</b>\n\n"
                     
                 await context.bot.send_message(
                     usr.telegram_chat_id,
