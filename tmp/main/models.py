@@ -149,7 +149,7 @@ class Operation(models.Model):
     creator = models.ForeignKey(
         CustomUser,
         verbose_name="Отвественный",
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         null=True,
     )
 
