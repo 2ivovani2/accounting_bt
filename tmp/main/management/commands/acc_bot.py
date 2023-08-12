@@ -57,6 +57,7 @@ def user_get_by_update(update: Update):
 async def start(update: Update, context: CallbackContext):
     """
         Обработчик команды /start
+
     """
     usr, created, _ = await user_get_by_update(update)
 
@@ -78,10 +79,6 @@ async def start(update: Update, context: CallbackContext):
 
         if active_table_id in [tbl.id for tbl in usr.get_tables()]:
             markup = InlineKeyboardMarkup([
-                [InlineKeyboardButton(
-                    text="White Paper 📝",
-                    url="https://teletype.in/@ivovani/acc_bot_manual"
-                )],
                 [InlineKeyboardButton(
                     text="Создать таблицу ➕",
                     callback_data="create_table",
@@ -108,6 +105,14 @@ async def start(update: Update, context: CallbackContext):
                     callback_data="operation_history",
                 )
                 ],
+                [InlineKeyboardButton(
+                    text="White Paper 📝",
+                    url="https://teletype.in/@ivovani/acc_bot_manual"
+                ),
+                InlineKeyboardButton(
+                    text="Поддержка 🌻",
+                    url="https://t.me/i_vovani"
+                ),],
                 
             ])
 
@@ -136,10 +141,6 @@ async def start(update: Update, context: CallbackContext):
         else:
             markup = InlineKeyboardMarkup([
                 [InlineKeyboardButton(
-                    text="White Paper 📝",
-                    url="https://teletype.in/@ivovani/acc_bot_manual"
-                )],
-                [InlineKeyboardButton(
                     text="Создать таблицу ➕",
                     callback_data="create_table",
                 )],
@@ -150,7 +151,15 @@ async def start(update: Update, context: CallbackContext):
                 [InlineKeyboardButton(
                     text="Сводка 📊",
                     callback_data="table_analytics",
-                )]
+                )],
+                [InlineKeyboardButton(
+                    text="White Paper 📝",
+                    url="https://teletype.in/@ivovani/acc_bot_manual"
+                ),
+                InlineKeyboardButton(
+                    text="Поддержка 🌻",
+                    url="https://t.me/i_vovani"
+                ),],
             ])
 
             await context.bot.send_video(
@@ -1017,7 +1026,7 @@ async def show_history(update: Update, context: CallbackContext):
 
 async def analyse_history(update: Update, context: CallbackContext):
     """
-        TODO переписать подсчеты среденго на классы в моделях
+        Аналитика истории, в качестве категорий
     """
     usr, _, _ = await user_get_by_update(update)
     table_id = context.user_data.get("active_table_id",'')
@@ -1125,7 +1134,7 @@ async def garbage_callback(update: Update, context: CallbackContext):
 
     await context.bot.send_message(
         usr.telegram_chat_id,
-        f"Мы такое не обрабатываем. Во всем виновата Америка <b>Z</b> <b>V</b>",
+        f"🍄 Мои создатели пока не научили меня отвечать на такое.",
         parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton(
@@ -1147,6 +1156,7 @@ def main() -> None:
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CallbackQueryHandler(table_analytics, "table_analytics"))
 
+    # хэндлер для добавления операции в активную таблицу
     application.add_handler(ConversationHandler(
         entry_points=[CallbackQueryHandler(ask_for_operation_type, "add_operation")],
         states={
@@ -1159,7 +1169,7 @@ def main() -> None:
         fallbacks=[CallbackQueryHandler(start, "menu"), CommandHandler("start", start)]
     ))
     
-
+    # хэндлер для создания новой таблицы
     application.add_handler(ConversationHandler(
         entry_points=[CallbackQueryHandler(ask_for_table_name, "create_table")],
         states={
@@ -1168,7 +1178,7 @@ def main() -> None:
         fallbacks=[CallbackQueryHandler(start, "menu"), CommandHandler("start", start)]
     ))
     
-
+    # хэндлер для выбора активной таблицы
     application.add_handler(ConversationHandler(
         entry_points=[CallbackQueryHandler(list_table, "list_table")],
         states={
@@ -1177,6 +1187,7 @@ def main() -> None:
         fallbacks=[CallbackQueryHandler(start, "menu"), CommandHandler("start", start)]
     ))
     
+    # хэндлер для добавления категории в активную таблицу
     application.add_handler(ConversationHandler(
         entry_points=[CallbackQueryHandler(ask_for_category_name, "add_category")],
         states={
@@ -1186,6 +1197,7 @@ def main() -> None:
         fallbacks=[CallbackQueryHandler(start, "menu"), CommandHandler("start", start)]
     ))    
 
+    # хэндлер для добавления отображения истории
     application.add_handler(ConversationHandler(
         entry_points=[CallbackQueryHandler(ask_for_history_type, "operation_history")],
         states={
