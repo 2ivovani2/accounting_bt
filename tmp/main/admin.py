@@ -27,13 +27,13 @@ class CategoryAdmin(admin.ModelAdmin):
     """
         Описание пользователей в админской панели
     """
-    list_display = ("id", "name", "table")
-    search_fields = ("id", "name", "table")
+    list_display = ("id", "name", "type", "table")
+    search_fields = ("id", "name", "table", "type")
 
     fieldsets = (
 
         ("Информация", {
-            "fields": ["name", "table"]
+            "fields": ["name", "table", "type"]
 
         }),
 

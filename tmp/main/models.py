@@ -32,6 +32,18 @@ class Category(models.Model):
     """
         Категория операции по таблице
     """
+    CATEGORY_TYPE = (
+        ("Доход", "Доход"),
+        ("Расход", "Расход"),
+    )
+
+    type = models.CharField(
+        verbose_name="Тип категории",
+        max_length=255,
+        choices=CATEGORY_TYPE,
+        null=False,
+        default="Не определен",
+    )
 
     name = models.CharField(
         verbose_name="Название категории",

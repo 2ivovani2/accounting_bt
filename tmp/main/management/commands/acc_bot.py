@@ -63,7 +63,7 @@ async def start(update: Update, context: CallbackContext):
     if created:
         await context.bot.send_message(
             usr.telegram_chat_id,
-            f"😼 <b>{usr.username}</b>, добро пожаловать.\n\n Так как вы только зарегистрировались, рекомендуем вам прочитать мануал, где описан принцип работы с ботом.",
+            f"😼 <b>{usr.username}</b>, добро пожаловать.\n\n😶‍🌫️ Так как вы только зарегистрировались, рекомендуем вам прочитать мануал, где описан принцип работы с ботом.",
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton(
@@ -112,11 +112,22 @@ async def start(update: Update, context: CallbackContext):
             ])
 
             active_table = Table.objects.get(pk=active_table_id)
+            income_cats, consumption_cats = "\n".join(["🔹 " + cat.name for cat in Category.objects.filter(table=active_table, type="Доход").all()]), "\n".join(["🔸 " + cat.name for cat in Category.objects.filter(table=active_table, type="Расход")])
+            
+            if income_cats != "" and consumption_cats != "":
+                cats_msg = f"<i><u>Доходные категории</u></i>:\n\n{income_cats}\n\n<i><u>Расходные категории</u></i>:\n\n{consumption_cats}"
+            elif income_cats == "" and consumption_cats != "":
+                cats_msg = f"<i><u>Доходные категории</u></i>:\n\n😵 У вас пока нет ни одной доходной категории.\n\n<i><u>Расходные категории</u></i>:\n\n{consumption_cats}"
+            elif income_cats != "" and consumption_cats == "":
+                cats_msg = f"<i><u>Доходные категории</u></i>:\n\n{income_cats}\n\n<i><u>Расходные категории</u></i>:\n\n😵 У вас пока нет ни одной расходной категории."
+            else:
+                cats_msg = f"<i><u>Доходные категории</u></i>:\n\n😵 У вас пока нет ни одной доходной категории.\n\n<i><u>Расходные категории</u></i>:\n\n😵 У вас пока нет ни одной расходной категории."
+                   
 
             await context.bot.send_video(
                 usr.telegram_chat_id,
                 "https://media2.giphy.com/media/67ThRZlYBvibtdF9JH/giphy.gif?cid=ecf05e47u0hkmcznkfg7hju8bo77hffom4asrl76jmv4xlpd&ep=v1_gifs_search&rid=giphy.gif&ct=g",
-                caption=f"😽 С возвращением, <b>{usr.username}</b>\n💰 Уже подсчитываю ваши миллионы\n\n<u><i>Ваша активная таблица</i></u>:\n\n🔗 Название: <b>{active_table.name}</b>\n⚰️ id: <b>{active_table.id}</b>",
+                caption=f"😽 С возвращением, <b>{usr.username}</b>\n💰 Уже подсчитываю ваши миллионы\n\n<u><i>Ваша активная таблица</i></u>:\n\n🔗 Название: <b>{active_table.name}</b>\n⚰️ id: <b>{active_table.id}</b>\n\n{cats_msg}",
                 parse_mode="HTML",
                 width=150,
                 height=150,
@@ -199,6 +210,33 @@ async def ask_for_category_name(update:Update, context: CallbackContext):
 
         return ConversationHandler.END
 
+async def ask_for_category_type(update: Update, context: CallbackContext):
+    usr, _, _ = await user_get_by_update(update)
+    category_name = update.message.text.strip()
+
+    context.user_data["category_name"] = category_name
+    await context.bot.send_message(
+        usr.telegram_chat_id,
+        f"🔫 Отлично! Запомним имя категории - <b>{category_name}</b>.\n\nТеперь выберите тип категории ниже.",
+        parse_mode="HTML",
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton(
+                text="Доходная ➕",
+                callback_data="category_income"
+            )],
+            [InlineKeyboardButton(
+                text="Расходная ➖",
+                callback_data="category_consumption"
+            )],
+            [InlineKeyboardButton(
+                text="В меню 🍺",
+                callback_data="menu"
+            )]
+        ])
+    )
+    
+    return 1
+
 async def create_category(update: Update, context: CallbackContext):
     usr, _, _ = await user_get_by_update(update)
 
@@ -206,27 +244,39 @@ async def create_category(update: Update, context: CallbackContext):
     if Table.objects.filter(id=table_id).exists():
         if Table.objects.get(pk=table_id) in usr.get_tables():
             try:
+                category_name = context.user_data["category_name"]
+
+                if update.callback_query.data.split("_")[-1] == "income":
+                    category_type = "Доход"
+                else:
+                    category_type = "Расход"
+
                 Category(
-                    name=update.message.text.strip().capitalize(),
-                    table=Table.objects.get(pk=table_id)
+                    name=category_name,
+                    table=Table.objects.get(pk=table_id),
+                    type=category_type
                 ).save()
 
                 await context.bot.send_message(
                     usr.telegram_chat_id,
-                    f"✅ Категория успешно добавлена",
+                    f"✅ Категория <b>{category_name}</b> с типом <i>{category_type}</i> успешно добавлена",
                     parse_mode="HTML",
                     reply_markup=InlineKeyboardMarkup([
                         [InlineKeyboardButton(
                             text="В меню 🍺",
                             callback_data="menu"
-                        )]
+                        ),
+                        InlineKeyboardButton(
+                            text="Добавить еще категорию 🐋",
+                            callback_data="add_category",
+                        )],
                     ])
                 )
 
             except Exception as e:
                 await context.bot.send_message(
                     usr.telegram_chat_id,
-                    f"❌ Не удалось добавить операцию.\n\n<b>Ошибка:</b><i>{e}</i>",
+                    f"❌ Не удалось добавить категорию.\n\n<b>Ошибка:</b><i>{e}</i>",
                     parse_mode="HTML",
                     reply_markup=InlineKeyboardMarkup([
                         [InlineKeyboardButton(
@@ -532,7 +582,7 @@ async def add_operation(update: Update, context: CallbackContext):
                 ])
         )
 
-        context.user_data["payment_type"] = "Доход"
+        context.user_data["operation_type"] = "Доход"
         return 1
 
     elif oper_type == "consumption":
@@ -548,7 +598,7 @@ async def add_operation(update: Update, context: CallbackContext):
                 ])
         )
 
-        context.user_data["payment_type"] = "Расход"
+        context.user_data["operation_type"] = "Расход"
         return 1
     else:
         await context.bot.send_message(
@@ -568,11 +618,11 @@ async def add_operation(update: Update, context: CallbackContext):
 async def get_operation_amount(update: Update, context: CallbackContext):
     usr, _, _ = await user_get_by_update(update)
     try:
-        context.user_data["payment_amount"] = int(update.message.text.strip())
+        context.user_data["operation_amount"] = int(update.message.text.strip())
         table_id = context.user_data.get("active_table_id", "")
         
         if table_id != "":
-            cats = Category.objects.filter(table=Table.objects.get(pk=table_id)).all()
+            cats = Category.objects.filter(table=Table.objects.get(pk=table_id),type=context.user_data["operation_type"]).all()
             
             if len(cats) != 0:
                 cats_keyboard = []
@@ -594,7 +644,7 @@ async def get_operation_amount(update: Update, context: CallbackContext):
 
                 await context.bot.send_message(
                     usr.telegram_chat_id,
-                    f"🥶 Отлично, фиксируем сумму = <b>{int(update.message.text.strip())}₽</b> \n\nТеперь выбери категорию твоего платежа.",
+                    f"🥶 Отлично, фиксируем сумму = <b>{int(update.message.text.strip())}₽</b> \n\nТеперь выберите категорию вашего платежа.",
                     parse_mode="HTML",
                     reply_markup=InlineKeyboardMarkup(cats_keyboard)
                 )
@@ -646,7 +696,7 @@ async def get_operation_amount(update: Update, context: CallbackContext):
 
 async def choose_operation_category(update: Update, context: CallbackContext):
     usr, _, _ = await user_get_by_update(update)
-    category_id = update.callback_query.data.lower().strip().split("_")[-1]
+    category_id = update.callback_query.data.split("_")[-1]
     if Category.objects.filter(id=category_id).exists():
         context.user_data["category_id"] = category_id
         
@@ -680,8 +730,9 @@ async def choose_operation_category(update: Update, context: CallbackContext):
 
 async def create_operation(update: Update, context: CallbackContext):
     usr, _, _ = await user_get_by_update(update)
-    desc = update.message.text.strip().capitalize()
+    desc = update.message.text.strip()
     table_id = context.user_data.get("active_table_id",'')
+
     if Table.objects.filter(id=table_id).exists():
         if Table.objects.get(pk=table_id) in usr.get_tables():
             try:
@@ -690,62 +741,34 @@ async def create_operation(update: Update, context: CallbackContext):
                 else:
                     cat = None
 
-                if context.user_data["payment_type"] == "Доход":
-                    new_operation = Operation(
-                        type="Доход",
-                        amount=context.user_data["payment_amount"],
-                        description=desc,
-                        creator=usr,
-                        category=cat,
-                        table=Table.objects.get(pk=table_id)
-                    )
+                operation_type = context.user_data["operation_type"]
 
-                    new_operation.save()
+                new_operation = Operation(
+                    type=operation_type,
+                    amount=context.user_data["operation_amount"],
+                    description=desc,
+                    creator=usr,
+                    category=cat,
+                    table=Table.objects.get(pk=table_id)
+                )
 
-                    await context.bot.send_message(
-                        usr.telegram_chat_id,
-                        f"✅ Операция с типом <b>Доход</b> успешно добавлена.",
-                        parse_mode="HTML",
-                        reply_markup=InlineKeyboardMarkup([
-                            [InlineKeyboardButton(
-                                text="В меню 🍺",
-                                callback_data="menu"
-                            )]
-                        ])
-                    )
+                new_operation.save()
 
-                    return ConversationHandler.END
+                await context.bot.send_message(
+                    usr.telegram_chat_id,
+                    f"✅ Операция с типом <b>{operation_type}</b> успешно добавлена.",
+                    parse_mode="HTML",
+                    reply_markup=InlineKeyboardMarkup([
+                        [InlineKeyboardButton(
+                            text="В меню 🍺",
+                            callback_data="menu"
+                        )]
+                    ])
+                )
+
+                return ConversationHandler.END
 
 
-                elif context.user_data["payment_type"] == "Расход":
-                    new_operation = Operation(
-                        type="Расход",
-                        amount=context.user_data["payment_amount"],
-                        description=desc,
-                        creator=usr,
-                        category=cat,
-                        table=Table.objects.get(pk=table_id)
-                    )
-
-                    new_operation.save()
-
-                    await context.bot.send_message(
-                        usr.telegram_chat_id,
-                        f"✅ Операция с типом <b>Расход</b> успешно добавлена.",
-                        parse_mode="HTML",
-                        reply_markup=InlineKeyboardMarkup([
-                            [InlineKeyboardButton(
-                                text="В меню 🍺",
-                                callback_data="menu"
-                            )]
-                        ])
-                    )
-
-                    return ConversationHandler.END
-
-                else:
-                    raise Exception("Ошибка внутреннего хранилища. Попробуйте перезапустить бота")
-                
             except Exception as e:
                 await context.bot.send_message(
                     usr.telegram_chat_id,
@@ -1006,12 +1029,13 @@ async def analyse_history(update: Update, context: CallbackContext):
                 date_start, date_end = context.user_data.get("date_start", ""), context.user_data.get("date_end", ""), 
                 active_table_operations = Operation.objects.filter(
                     date__range=[date_start, date_end],
-                    table=active_table
+                    table=active_table, 
                 ).all().order_by('-date')
 
                 cat_data_dict = {
                     "Без категории":[]
                 }
+
                 for operation in active_table_operations:
                     if operation.category:
                         if operation.category.name not in cat_data_dict.keys():
@@ -1025,15 +1049,17 @@ async def analyse_history(update: Update, context: CallbackContext):
 
                 end_msg = f"🦉 <b><u>Анализ категорий</u></b>\n\n<b>🧩 Таблица:</b> <i>{active_table.name}</i>\n\n<b>🕐 Дата начала:</b> {date_start}\n<b>🕤 Дата конца:</b> {date_end}\n\n"
                 
+                if len(cat_data_dict["Без категории"]) == 0:
+                    del cat_data_dict["Без категории"]
+
                 for category in cat_data_dict.keys():
-                    incomes, consumptions = [], []
-                    for operation in cat_data_dict[category]:
-                        if operation.type.lower() == "доход":
-                            incomes.append(operation.amount)
-                        else:
-                            consumptions.append(operation.amount)
+                    amounts = []
+                    category_type = Category.objects.filter(name=category).first().type
                     
-                    end_msg += f"🔸 <b><u>Категория</u></b>: <i>{category.capitalize()}</i>\n\n∙ Общий доход: <b>{sum(incomes)}₽</b>\n∙ Общий расход: <b>{sum(consumptions)}₽</b>\n∙ Общая прибыль: <b>{sum(incomes) - sum(consumptions)}₽</b>\n\n∙ Средний доход: <b>{np.array(incomes).mean():.2f}₽</b>\n∙ Средний расход: <b>{np.array(consumptions).mean():.2f}₽</b>\n∙ Кол-во доходных операций: <b>{len(incomes)}</b>\n∙ Кол-во расходных операций: <b>{len(consumptions)}</b>\n\n"
+                    for operation in cat_data_dict[category]:
+                        amounts.append(operation.amount)
+                        
+                    end_msg += f"🔸 <b><u>Категория</u></b>: <i>{category}</i>\n\n∙ Тип категории: <b>{category_type}ная</b>\n∙ Общий объем денег: <b>{sum(amounts)}₽</b>\n∙ Средний объем денег: <b>{sum(amounts) / len(amounts) if len(amounts) != 0 else 0}₽</b>\n\n"
                     
                 await context.bot.send_message(
                     usr.telegram_chat_id,
@@ -1154,7 +1180,8 @@ def main() -> None:
     application.add_handler(ConversationHandler(
         entry_points=[CallbackQueryHandler(ask_for_category_name, "add_category")],
         states={
-            0: [MessageHandler(filters.TEXT, create_category)]
+            0: [MessageHandler(filters.TEXT, ask_for_category_type)],
+            1: [CallbackQueryHandler(create_category, "^category_")]
         },
         fallbacks=[CallbackQueryHandler(start, "menu"), CommandHandler("start", start)]
     ))    
