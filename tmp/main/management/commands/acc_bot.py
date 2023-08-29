@@ -3,7 +3,7 @@ from main.models import *
 from asgiref.sync import sync_to_async
 from rest_framework.authtoken.models import Token
 
-import os, django, logging, warnings, re, numpy as np
+import os, django, logging, warnings, re
 warnings.filterwarnings("ignore")
 
 from django.core.management.base import BaseCommand

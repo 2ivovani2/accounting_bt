@@ -12,6 +12,7 @@ services:
       - db
     volumes:
       - ./tmp/main:/usr/src/app/main
+      - ./tmp/fin_plan:/usr/app/fin_plan
       - ./tmp:/usr/src/app
     # networks:
     #   test_network:
@@ -39,6 +40,14 @@ services:
     env_file:
       - ./.env.dev
     
+  fin_bot:
+    build: ./tmp
+    command: python manage.py fin_bot
+    ports:
+      - 8002:8002
+    env_file:
+      - ./.env.dev
+
     # networks:
     #   test_network:
     #     ipv4_address: 172.16.238.12

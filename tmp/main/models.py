@@ -85,10 +85,6 @@ class CustomUser(AbstractUser):
         default=False
     )
 
-    can_create_categories = models.BooleanField(
-        verbose_name="Возможность создавать новые категории",
-        default=False
-    )
 
     tables = models.ManyToManyField(
         Table,

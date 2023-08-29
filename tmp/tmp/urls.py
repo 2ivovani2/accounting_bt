@@ -22,3 +22,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', main_render),
 ]
+
+admin.site.site_header = "NAEB.tech 🥩🍖"
+admin.site.index_title = "Админка naeb.tech 🥰"
