@@ -68,7 +68,7 @@ def check_user_status(function):
         )
 
         if usr.verified_usr:
-            return function(update, context)
+            return await function(update, context)
         else:
             await context.bot.send_message(
                 usr.telegram_chat_id,

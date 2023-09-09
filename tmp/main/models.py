@@ -16,7 +16,7 @@ class Table(models.Model):
 
     name = models.CharField(
         verbose_name="Название таблицы",
-        max_length=12,
+        max_length=255,
         null=False,
         default="Без названия"
     )
@@ -159,8 +159,7 @@ class Operation(models.Model):
     description = models.CharField(
         verbose_name="Описание платежа",
         max_length=255,
-        null=False,
-        default="Без описания"
+        null=True,
     )
     
 

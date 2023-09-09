@@ -3,7 +3,7 @@ from main.models import *
 from asgiref.sync import sync_to_async
 from rest_framework.authtoken.models import Token
 
-import os, django, logging, warnings, re
+import os, django, logging, warnings, re, random
 warnings.filterwarnings("ignore")
 
 from django.core.management.base import BaseCommand
@@ -54,138 +54,166 @@ def user_get_by_update(update: Update):
     
     return instance, created, token[0].key
 
+def check_user_status(function):
+    """
+        Функция декоратор для проверки аутентификации пользователя
+    """
+    async def wrapper(update: Update, context:CallbackContext):   
+        if update.message:
+            message = update.message
+        else:
+            message = update.callback_query.message
+
+        if not message.chat.username:
+            username = "Anonymous"
+        else:
+            username = message.chat.username
+
+        usr, _ = CustomUser.objects.update_or_create(
+            telegram_chat_id = message.chat.id,
+            username=username
+        )
+
+        if usr.verified_usr:
+            return await function(update, context)
+            
+        else:
+            await context.bot.send_message(
+                usr.telegram_chat_id,
+                f"⛔️ <b>{usr.username}</b>, это приватный бот.\n\nДля того, чтобы им пользоваться нужно получить к нему доступ.",
+                parse_mode="HTML",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton(
+                        text="Запросить доступ 💅🏽",
+                        url="https://t.me/i_vovani"
+                    )]
+                ])
+        )
+        
+    return wrapper
+
+@check_user_status
 async def start(update: Update, context: CallbackContext):
     """
         Обработчик команды /start
 
     """
-    usr, created, _ = await user_get_by_update(update)
 
-    if created:
-        await context.bot.send_message(
-            usr.telegram_chat_id,
-            f"😼 <b>{usr.username}</b>, добро пожаловать.\n\n😶‍🌫️ Так как вы только зарегистрировались, рекомендуем вам прочитать мануал, где описан принцип работы с ботом.",
-            parse_mode="HTML",
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton(
-                    text="White Paper 📝",
-                    url="https://teletype.in/@ivovani/acc_bot_manual"
-                )]
-            ])
-        )
+    usr, _, _ = await user_get_by_update(update)
+    active_table_id = context.user_data.get("active_table_id", "")
 
-    if usr.verified_usr:
-        active_table_id = context.user_data.get("active_table_id", "")
-
-        if active_table_id in [tbl.id for tbl in usr.get_tables()]:
-            markup = InlineKeyboardMarkup([
-                [InlineKeyboardButton(
-                    text="Создать таблицу ➕",
-                    callback_data="create_table",
-                )],
-                [InlineKeyboardButton(
-                    text="Выбор таблицы 📃",
-                    callback_data="list_table",
-                )],
-                [InlineKeyboardButton(
-                    text="Добавить запись 💸",
-                    callback_data="add_operation",
-                )],
-                [InlineKeyboardButton(
-                    text="Добавить категорию 🐋",
-                    callback_data="add_category",
-                ),
-                ],
-                [InlineKeyboardButton(
-                    text="Сводка 📊",
-                    callback_data="table_analytics",
-                ),
-                InlineKeyboardButton(
-                    text="История 📟",
-                    callback_data="operation_history",
-                )
-                ],
-                [InlineKeyboardButton(
-                    text="White Paper 📝",
-                    url="https://teletype.in/@ivovani/acc_bot_manual"
-                ),
-                InlineKeyboardButton(
-                    text="Поддержка 🌻",
-                    url="https://t.me/i_vovani"
-                ),],
-                
-            ])
-
-            active_table = Table.objects.get(pk=active_table_id)
-            income_cats, consumption_cats = "\n".join(["🔹 " + cat.name for cat in Category.objects.filter(table=active_table, type="Доход").all()]), "\n".join(["🔸 " + cat.name for cat in Category.objects.filter(table=active_table, type="Расход")])
+    pictures_for_menu = [
+        "https://media2.giphy.com/media/67ThRZlYBvibtdF9JH/giphy.gif?cid=ecf05e47u0hkmcznkfg7hju8bo77hffom4asrl76jmv4xlpd&ep=v1_gifs_search&rid=giphy.gif&ct=g",
+        "https://media.giphy.com/media/JtBZm3Getg3dqxK0zP/giphy-downsized-large.gif",
+        "https://media.giphy.com/media/xTiTnqUxyWbsAXq7Ju/giphy.gif",
+        "https://media.giphy.com/media/YRw676NBrmPeM/giphy.gif",
+        "https://media.giphy.com/media/3oEdvbpl0X32bXD2Vi/giphy.gif",
+        "https://media.giphy.com/media/XGP7mf38Vggik/giphy.gif",
+        "https://media.giphy.com/media/x33Pp717M1gc0/giphy.gif"
             
-            if income_cats != "" and consumption_cats != "":
-                cats_msg = f"<i><u>Доходные категории</u></i>:\n\n{income_cats}\n\n<i><u>Расходные категории</u></i>:\n\n{consumption_cats}"
-            elif income_cats == "" and consumption_cats != "":
-                cats_msg = f"<i><u>Доходные категории</u></i>:\n\n😵 У вас пока нет ни одной доходной категории.\n\n<i><u>Расходные категории</u></i>:\n\n{consumption_cats}"
-            elif income_cats != "" and consumption_cats == "":
-                cats_msg = f"<i><u>Доходные категории</u></i>:\n\n{income_cats}\n\n<i><u>Расходные категории</u></i>:\n\n😵 У вас пока нет ни одной расходной категории."
-            else:
-                cats_msg = f"<i><u>Доходные категории</u></i>:\n\n😵 У вас пока нет ни одной доходной категории.\n\n<i><u>Расходные категории</u></i>:\n\n😵 У вас пока нет ни одной расходной категории."
-                   
+    ]
 
-            await context.bot.send_video(
-                usr.telegram_chat_id,
-                "https://media2.giphy.com/media/67ThRZlYBvibtdF9JH/giphy.gif?cid=ecf05e47u0hkmcznkfg7hju8bo77hffom4asrl76jmv4xlpd&ep=v1_gifs_search&rid=giphy.gif&ct=g",
-                caption=f"😽 С возвращением, <b>{usr.username}</b>\n💰 Уже подсчитываю ваши миллионы\n\n<u><i>Ваша активная таблица</i></u>:\n\n🔗 Название: <b>{active_table.name}</b>\n⚰️ id: <b>{active_table.id}</b>\n\n{cats_msg}",
-                parse_mode="HTML",
-                width=150,
-                height=150,
-                reply_markup=markup
+    if active_table_id in [tbl.id for tbl in usr.get_tables()]:
+        markup = InlineKeyboardMarkup([
+            [InlineKeyboardButton(
+                text="Создать таблицу ➕",
+                callback_data="create_table",
+            )],
+            [InlineKeyboardButton(
+                text="Выбор таблицы 📃",
+                callback_data="list_table",
+            )],
+            [InlineKeyboardButton(
+                text="Добавить запись 💸",
+                callback_data="add_operation",
+            )],
+            [InlineKeyboardButton(
+                text="Категории 🐋",
+                callback_data="category_work",
+            ),
+            ],
+            [InlineKeyboardButton(
+                text="Сводка 📊",
+                callback_data="table_analytics",
+            ),
+            InlineKeyboardButton(
+                text="История 📟",
+                callback_data="operation_history",
             )
+            ],
+            [InlineKeyboardButton(
+                text="White Paper 📝",
+                url="https://teletype.in/@ivovani/acc_bot_manual"
+            ),
+            InlineKeyboardButton(
+                text="Поддержка 🌻",
+                url="https://t.me/i_vovani"
+            ),],
+            
+        ])
+
+        active_table = Table.objects.get(pk=active_table_id)
+        income_cats, consumption_cats = "\n".join(["🔹 " + cat.name for cat in Category.objects.filter(table=active_table, type="Доход").all()]), "\n".join(["🔸 " + cat.name for cat in Category.objects.filter(table=active_table, type="Расход")])
+        
+        if income_cats != "" and consumption_cats != "":
+            cats_msg = f"<i><u>Доходные категории</u></i>:\n\n{income_cats}\n\n<i><u>Расходные категории</u></i>:\n\n{consumption_cats}"
+        elif income_cats == "" and consumption_cats != "":
+            cats_msg = f"<i><u>Доходные категории</u></i>:\n\n😵 У вас пока нет ни одной доходной категории.\n\n<i><u>Расходные категории</u></i>:\n\n{consumption_cats}"
+        elif income_cats != "" and consumption_cats == "":
+            cats_msg = f"<i><u>Доходные категории</u></i>:\n\n{income_cats}\n\n<i><u>Расходные категории</u></i>:\n\n😵 У вас пока нет ни одной расходной категории."
         else:
-            markup = InlineKeyboardMarkup([
-                [InlineKeyboardButton(
-                    text="Создать таблицу ➕",
-                    callback_data="create_table",
-                )],
-                [InlineKeyboardButton(
-                    text="Выбор таблицы 📃",
-                    callback_data="list_table",
-                )],
-                [InlineKeyboardButton(
-                    text="Сводка 📊",
-                    callback_data="table_analytics",
-                )],
-                [InlineKeyboardButton(
-                    text="White Paper 📝",
-                    url="https://teletype.in/@ivovani/acc_bot_manual"
-                ),
-                InlineKeyboardButton(
-                    text="Поддержка 🌻",
-                    url="https://t.me/i_vovani"
-                ),],
-            ])
+            cats_msg = f"<i><u>Доходные категории</u></i>:\n\n😵 У вас пока нет ни одной доходной категории.\n\n<i><u>Расходные категории</u></i>:\n\n😵 У вас пока нет ни одной расходной категории."
+                
 
-            await context.bot.send_video(
-                usr.telegram_chat_id,
-                "https://media2.giphy.com/media/67ThRZlYBvibtdF9JH/giphy.gif?cid=ecf05e47u0hkmcznkfg7hju8bo77hffom4asrl76jmv4xlpd&ep=v1_gifs_search&rid=giphy.gif&ct=g",
-                caption=f"😽 С возвращением, <b>{usr.username}</b>\n💰 Уже подсчитываю ваши миллионы.\n\n⚠️ Чтобы получить доступ к операциям, выберите активную таблицу.",
-                parse_mode="HTML",
-                width=150,
-                height=150,
-                reply_markup=markup
-            )
-    else:
-        await context.bot.send_message(
+
+        await context.bot.send_video(
             usr.telegram_chat_id,
-            f"⛔️ <b>{usr.username}</b>, это приватный бот.\n\nДля того, чтобы им пользоваться нужно получить к нему доступ.",
+            random.choice(pictures_for_menu),
+            caption=f"😽 С возвращением, <b>{usr.username}</b>\n💰 Уже подсчитываю ваши миллионы\n\n<u><i>Ваша активная таблица</i></u>:\n\n🔗 Название: <b>{active_table.name}</b>\n⚰️ id: <b>{active_table.id}</b>\n\n{cats_msg}",
             parse_mode="HTML",
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton(
-                    text="Запросить доступ 💅🏽",
-                    url="https://t.me/i_vovani"
-                )]
-            ])
+            width=150,
+            height=150,
+            reply_markup=markup
         )
+    else:
+        markup = InlineKeyboardMarkup([
+            [InlineKeyboardButton(
+                text="Создать таблицу ➕",
+                callback_data="create_table",
+            )],
+            [InlineKeyboardButton(
+                text="Выбор таблицы 📃",
+                callback_data="list_table",
+            )],
+            [InlineKeyboardButton(
+                text="Сводка 📊",
+                callback_data="table_analytics",
+            )],
+            [InlineKeyboardButton(
+                text="White Paper 📝",
+                url="https://teletype.in/@ivovani/acc_bot_manual"
+            ),
+            InlineKeyboardButton(
+                text="Поддержка 🌻",
+                url="https://t.me/i_vovani"
+            ),],
+        ])
 
+
+
+        await context.bot.send_video(
+            usr.telegram_chat_id,
+            random.choice(pictures_for_menu),
+            caption=f"😽 С возвращением, <b>{usr.username}</b>\n💰 Уже подсчитываю ваши миллионы.\n\n⚠️ Чтобы получить доступ к операциям, выберите активную таблицу.",
+            parse_mode="HTML",
+            width=150,
+            height=150,
+            reply_markup=markup
+        )
+    
     return ConversationHandler.END
 
+@check_user_status
 async def ask_for_category_name(update:Update, context: CallbackContext):
     usr, _, _ = await user_get_by_update(update)
 
@@ -196,7 +224,7 @@ async def ask_for_category_name(update:Update, context: CallbackContext):
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton(
-                    text="В меню 🍺",
+                    text="Отменить ⛔️",
                     callback_data="menu"
                 )]
             ])
@@ -219,6 +247,7 @@ async def ask_for_category_name(update:Update, context: CallbackContext):
 
         return ConversationHandler.END
 
+@check_user_status
 async def ask_for_category_type(update: Update, context: CallbackContext):
     usr, _, _ = await user_get_by_update(update)
     category_name = update.message.text.strip()
@@ -238,7 +267,7 @@ async def ask_for_category_type(update: Update, context: CallbackContext):
                 callback_data="category_consumption"
             )],
             [InlineKeyboardButton(
-                text="В меню 🍺",
+                text="Отменить ⛔️",
                 callback_data="menu"
             )]
         ])
@@ -246,6 +275,7 @@ async def ask_for_category_type(update: Update, context: CallbackContext):
     
     return 1
 
+@check_user_status
 async def create_category(update: Update, context: CallbackContext):
     usr, _, _ = await user_get_by_update(update)
 
@@ -272,13 +302,13 @@ async def create_category(update: Update, context: CallbackContext):
                     parse_mode="HTML",
                     reply_markup=InlineKeyboardMarkup([
                         [InlineKeyboardButton(
-                            text="В меню 🍺",
-                            callback_data="menu"
-                        ),
-                        InlineKeyboardButton(
                             text="Добавить еще категорию 🐋",
                             callback_data="add_category",
                         )],
+                        [InlineKeyboardButton(
+                            text="В меню 🍺",
+                            callback_data="menu"
+                        ),]
                     ])
                 )
 
@@ -327,17 +357,268 @@ async def create_category(update: Update, context: CallbackContext):
 
         return ConversationHandler.END
 
+@check_user_status
+async def ask_category_to_change(update: Update, context: CallbackContext):
+    usr, _, _ = await user_get_by_update(update)
+
+    table_id = context.user_data.get("active_table_id", "")
+        
+    if table_id != "":
+        active_table = Table.objects.get(pk=table_id)
+        cats = Category.objects.filter(table=active_table).all()
+
+        if len(cats) != 0:
+            cats_keyboard = []
+            for index in range(0, len(cats), 2):
+                try:
+                    c1, c2 = cats[index: index + 2]
+                    cats_keyboard.append([InlineKeyboardButton(text=f"{c1.name}", callback_data=f"change_cat_{c1.id}"), InlineKeyboardButton(text=f"{c2.name}", callback_data=f"choose_cat_{c2.id}")])
+                
+                except ValueError:
+                    c1 = cats[index: index + 2][0]
+                    cats_keyboard.append([InlineKeyboardButton(text=f"{c1.name}", callback_data=f"change_cat_{c1.id}"),])
+            
+            cats_keyboard.append([
+                InlineKeyboardButton(
+                        text="Отмена ⛔️",
+                        callback_data="menu"
+                )
+            ])
+
+            await context.bot.send_message(
+                usr.telegram_chat_id,
+                f"🥴 Выберите категорию, которую хотите изменить, из списка ниже.",
+                parse_mode="HTML",
+                reply_markup=InlineKeyboardMarkup(cats_keyboard)
+            )
+
+            return 0
+
+        else:
+            await context.bot.send_message(
+                usr.telegram_chat_id,
+                f"🥶 У вас не создано ни одной категории для изменения. Пожалуйста, создайте ее в главном меню.",
+                parse_mode="HTML",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton(
+                        text="В меню 🍺",
+                        callback_data="menu"
+                    )]
+                ])
+            )
+
+    else:
+        await context.bot.send_message(
+            usr.telegram_chat_id, 
+            f"🍔 <b>{usr.username}</b>, вы не выбрали активную таблицу.\n\n🧩 Пожалуйста, вернитесь в меню и выберите таблицу. ",
+            parse_mode="HTML",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton(
+                    text="В меню 🍺",
+                    callback_data="menu"
+                ),]
+            ])
+        )
+
+    return ConversationHandler.END   
+
+@check_user_status
+async def ask_category_to_delete(update: Update, context: CallbackContext):
+    usr, _, _ = await user_get_by_update(update)
+
+    table_id = context.user_data.get("active_table_id", "")
+        
+    if table_id != "":
+        active_table = Table.objects.get(pk=table_id)
+        cats = Category.objects.filter(table=active_table).all()
+
+        if len(cats) != 0:
+            cats_keyboard = []
+            for index in range(0, len(cats), 2):
+                try:
+                    c1, c2 = cats[index: index + 2]
+                    cats_keyboard.append([InlineKeyboardButton(text=f"{c1.name}", callback_data=f"delete_cat_{c1.id}"), InlineKeyboardButton(text=f"{c2.name}", callback_data=f"delete_cat_{c2.id}")])
+                
+                except ValueError:
+                    c1 = cats[index: index + 2][0]
+                    cats_keyboard.append([InlineKeyboardButton(text=f"{c1.name}", callback_data=f"delete_cat_{c1.id}"),])
+            
+            cats_keyboard.append([
+                InlineKeyboardButton(
+                        text="Отмена ⛔️",
+                        callback_data="menu"
+                )
+            ])
+
+            await context.bot.send_message(
+                usr.telegram_chat_id,
+                f"🥴 Выберите категорию, которую хотите удалить, из списка ниже.",
+                parse_mode="HTML",
+                reply_markup=InlineKeyboardMarkup(cats_keyboard)
+            )
+
+            return 0
+
+        else:
+            await context.bot.send_message(
+                usr.telegram_chat_id,
+                f"🥶 У вас не создано ни одной категории для удаления. Пожалуйста, создайте ее в главном меню.",
+                parse_mode="HTML",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton(
+                        text="В меню 🍺",
+                        callback_data="menu"
+                    )]
+                ])
+            )
+
+    else:
+        await context.bot.send_message(
+            usr.telegram_chat_id, 
+            f"🍔 <b>{usr.username}</b>, вы не выбрали активную таблицу.\n\n🧩 Пожалуйста, вернитесь в меню и выберите таблицу. ",
+            parse_mode="HTML",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton(
+                    text="В меню 🍺",
+                    callback_data="menu"
+                ),]
+            ])
+        )
+
+    return ConversationHandler.END   
+
+@check_user_status
+async def ask_category_name_to_change(update: Update, context: CallbackContext):
+    usr, _, _ = await user_get_by_update(update)
+    context.user_data["category_id_to_change"] = update.callback_query.data.split("_")[-1]
+    await context.bot.send_message(
+        usr.telegram_chat_id, 
+        f"😽 <b>Отлично!</b> Вы выбрали категорию - <i>{Category.objects.get(pk=context.user_data['category_id_to_change'])}</i>.\n\n👽 Теперь напишите мне новое <b>название</b> для выбранной категории.",
+        parse_mode="HTML",
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton(
+                text="Отмена ⛔️",
+                callback_data="menu"
+            )]
+        ])
+    )
+
+    return 1
+
+@check_user_status
+async def delete_category(update: Update, context: CallbackContext):
+    usr, _, _ = await user_get_by_update(update)
+    try:
+        cat_to_delete = Category.objects.get(pk=update.callback_query.data.split("_")[-1])
+        cat_to_delete_name = cat_to_delete.name
+        cat_to_delete.delete()
+
+        await context.bot.send_message(
+            usr.telegram_chat_id,
+            f"😵‍💫 <b>Сделано!</b> Категория <b>{cat_to_delete_name}</b> успешно удалена.",
+            parse_mode="HTML",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton(
+                    text="В меню 🍺",
+                    callback_data="menu"
+                ),]
+            ])
+        )
+
+    except Exception as e:
+        await context.bot.send_message(
+            usr.telegram_chat_id,
+            f"😳 Во время изменения категории возникла ошибка.\n\n<b>Ошибка:</b> <i>{e}</i>",
+            parse_mode="HTML",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton(
+                    text="В меню 🍺",
+                    callback_data="menu"
+                ),]
+            ])
+        )
+    
+    return ConversationHandler.END
+
+
+@check_user_status
+async def update_category(update: Update, context: CallbackContext):
+    usr, _, _ = await user_get_by_update(update)
+    new_name = update.message.text.strip()
+    try:
+        Category.objects.filter(id=context.user_data["category_id_to_change"]).update(
+            name=new_name
+        )
+
+        await context.bot.send_message(
+            usr.telegram_chat_id,
+            f"✅ Вы успешно изменили название категории на <b>{new_name}</b>",
+            parse_mode="HTML",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton(
+                    text="В меню 🍺",
+                    callback_data="menu"
+                ),]
+            ])
+        )
+
+    except Exception as e:
+        await context.bot.send_message(
+            usr.telegram_chat_id,
+            f"😳 Во время изменения категории возникла ошибка.\n\n<b>Ошибка:</b> <i>{e}</i>",
+            parse_mode="HTML",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton(
+                    text="В меню 🍺",
+                    callback_data="menu"
+                ),]
+            ])
+        )
+    
+    return ConversationHandler.END
+
+@check_user_status
+async def start_category_menu(update: Update, context: CallbackContext):
+    usr, _, _ = await user_get_by_update(update)
+
+    markup = InlineKeyboardMarkup([
+        [InlineKeyboardButton(
+            text="Добавить категорию 🧤",
+            callback_data="add_category",
+        )], 
+        [InlineKeyboardButton(
+            text="Изменить категорию 🎄",
+            callback_data="change_category",
+        )],
+        [InlineKeyboardButton(
+            text="Удалить категорию 🤡",
+            callback_data="delete_category",
+        )],
+        [InlineKeyboardButton(
+            text="В меню 🍺",
+            callback_data="menu"
+        ),]
+    ])
+
+    await context.bot.send_message(
+        usr.telegram_chat_id,
+        f"😳 <b>{usr.username}</b>, Выберите, что вы хотите сделать с категориями",
+        parse_mode="HTML",
+        reply_markup=markup
+    )
+
+@check_user_status
 async def ask_for_table_name(update: Update, context: CallbackContext):
     usr, _, _ = await user_get_by_update(update)
 
     if usr.can_create_tables:
         await context.bot.send_message(
             usr.telegram_chat_id,
-            f"🖍 Напишите название для вашей новой таблицы.\n\n<i>Максимальная длина - 12 символов</i>",
+            f"🖍 Напишите название для вашей новой таблицы.",
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton(
-                    text="В меню 🍺",
+                    text="Отменить ⛔️",
                     callback_data="menu"
                 )]
             ])
@@ -358,16 +639,17 @@ async def ask_for_table_name(update: Update, context: CallbackContext):
             ])
         )
 
-        return ConversationHandler.END
+    return ConversationHandler.END
 
+@check_user_status
 async def create_table(update: Update, context: CallbackContext):
     usr, _, _ = await user_get_by_update(update)
 
     try:
-        if len(update.message.text) > 12:
+        if len(update.message.text) > 255:
             await context.bot.send_message(
                 usr.telegram_chat_id,
-                f"👿 Допустимное количесвто символов превышено.\n\nМаксимум - <b>12</b>\nУ вас - <b>{len(update.message.text)}</b>",
+                f"👿 Допустимное количесвто символов превышено.\n\nМаксимум - <b>255</b>\nУ вас - <b>{len(update.message.text)}</b>",
                 parse_mode="HTML",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton(
@@ -389,7 +671,7 @@ async def create_table(update: Update, context: CallbackContext):
 
         await context.bot.send_message(
             usr.telegram_chat_id,
-            f"✅ Таблица <b>{new_table.name.capitalize()}</b> успешно создана и выбрана в качестве активной.",
+            f"✅ Таблица <b>{new_table.name}</b> успешно создана и выбрана в качестве активной.",
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton(
@@ -418,6 +700,7 @@ async def create_table(update: Update, context: CallbackContext):
 
     return ConversationHandler.END
 
+@check_user_status
 async def list_table(update: Update, context: CallbackContext):
     usr, _, _ = await user_get_by_update(update)
     
@@ -459,6 +742,7 @@ async def list_table(update: Update, context: CallbackContext):
 
         return ConversationHandler.END
 
+@check_user_status
 async def choose_table(update: Update, context: CallbackContext):
     usr, _, _ = await user_get_by_update(update)
     
@@ -477,10 +761,9 @@ async def choose_table(update: Update, context: CallbackContext):
                         callback_data="add_operation",
                     )],
                     [InlineKeyboardButton(
-                        text="Добавить категорию 🐋",
-                        callback_data="add_category",
+                        text="Категории 🐋",
+                        callback_data="category_work",
                     )],
-
                     [InlineKeyboardButton(
                         text="В меню 🍺",
                         callback_data="menu"
@@ -520,6 +803,7 @@ async def choose_table(update: Update, context: CallbackContext):
 
     return ConversationHandler.END
 
+@check_user_status
 async def ask_for_operation_type(update: Update, context: CallbackContext):
     usr, _, _ = await user_get_by_update(update)
 
@@ -540,7 +824,7 @@ async def ask_for_operation_type(update: Update, context: CallbackContext):
                         callback_data="operation_consumption"
                     )],
                     [InlineKeyboardButton(
-                        text="В меню 🍺",
+                        text="Отмена ⛔️",
                         callback_data="menu"
                     )]
                 ])
@@ -575,6 +859,7 @@ async def ask_for_operation_type(update: Update, context: CallbackContext):
 
     return ConversationHandler.END
 
+@check_user_status
 async def add_operation(update: Update, context: CallbackContext):
     usr, _, _ = await user_get_by_update(update)
     oper_type = update.callback_query.data.strip().lower().split("_")[-1]
@@ -585,7 +870,7 @@ async def add_operation(update: Update, context: CallbackContext):
                 parse_mode="HTML",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton(
-                        text="В меню 🍺",
+                        text="Отмена ⛔️",
                         callback_data="menu"
                     )]
                 ])
@@ -601,7 +886,7 @@ async def add_operation(update: Update, context: CallbackContext):
                 parse_mode="HTML",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton(
-                        text="В меню 🍺",
+                        text="Отмена ⛔️",
                         callback_data="menu"
                     )]
                 ])
@@ -612,7 +897,7 @@ async def add_operation(update: Update, context: CallbackContext):
     else:
         await context.bot.send_message(
                 usr.telegram_chat_id,
-                f"❗️ Произошла ошибка. Неверно выбрат тип операции. ВЕрнитесь в меню и попробуйте еще раз.",
+                f"❗️ Произошла ошибка. Неверно выбран тип операции. Вернитесь в меню и попробуйте еще раз.",
                 parse_mode="HTML",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton(
@@ -624,6 +909,7 @@ async def add_operation(update: Update, context: CallbackContext):
 
         return ConversationHandler.END
 
+@check_user_status
 async def get_operation_amount(update: Update, context: CallbackContext):
     usr, _, _ = await user_get_by_update(update)
     try:
@@ -646,7 +932,7 @@ async def get_operation_amount(update: Update, context: CallbackContext):
                 
                 cats_keyboard.append([
                     InlineKeyboardButton(
-                            text="В меню 🍺",
+                            text="Отмена ⛔️",
                             callback_data="menu"
                     )
                 ])
@@ -667,7 +953,7 @@ async def get_operation_amount(update: Update, context: CallbackContext):
                     parse_mode="HTML",
                     reply_markup=InlineKeyboardMarkup([
                         [InlineKeyboardButton(
-                            text="В меню 🍺",
+                            text="Отмена ⛔️",
                             callback_data="menu"
                         )]
                     ])
@@ -703,6 +989,7 @@ async def get_operation_amount(update: Update, context: CallbackContext):
 
     return ConversationHandler.END
 
+@check_user_status
 async def choose_operation_category(update: Update, context: CallbackContext):
     usr, _, _ = await user_get_by_update(update)
     category_id = update.callback_query.data.split("_")[-1]
@@ -711,11 +998,15 @@ async def choose_operation_category(update: Update, context: CallbackContext):
         
         await context.bot.send_message(
             usr.telegram_chat_id,
-            f"✅ Отлично! Категория <b>{Category.objects.get(pk=category_id).name}</b> выбрана.\n\n😃 Теперь напишите описание платежа и на этом закончим.",
+            f"✅ Отлично! Категория <b>{Category.objects.get(pk=category_id).name}</b> выбрана.\n\n😃 Теперь напишите описание платежа или нажмите кнопку 'Пропустить ⏩' и на этом закончим.",
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton(
-                    text="В меню 🍺",
+                    text="Пропустить ⏩",
+                    callback_data="skip_description"
+                )],
+                [InlineKeyboardButton(
+                    text="Отмена ⛔️",
                     callback_data="menu"
                 )]
             ])
@@ -737,9 +1028,15 @@ async def choose_operation_category(update: Update, context: CallbackContext):
     
     return ConversationHandler.END
 
+@check_user_status
 async def create_operation(update: Update, context: CallbackContext):
     usr, _, _ = await user_get_by_update(update)
-    desc = update.message.text.strip()
+    
+    try:
+        desc = update.message.text.strip()
+    except:
+        desc = None
+
     table_id = context.user_data.get("active_table_id",'')
 
     if Table.objects.filter(id=table_id).exists():
@@ -751,10 +1048,11 @@ async def create_operation(update: Update, context: CallbackContext):
                     cat = None
 
                 operation_type = context.user_data["operation_type"]
+                amount = context.user_data["operation_amount"]
 
                 new_operation = Operation(
                     type=operation_type,
-                    amount=context.user_data["operation_amount"],
+                    amount=amount,
                     description=desc,
                     creator=usr,
                     category=cat,
@@ -823,6 +1121,7 @@ async def create_operation(update: Update, context: CallbackContext):
 
         return ConversationHandler.END
 
+@check_user_status
 async def table_analytics(update: Update, context: CallbackContext):
     usr, _, _ = await user_get_by_update(update)
     end_msg = "📊 <u><b>Сводка</b></u>\n\n"
@@ -861,6 +1160,7 @@ async def table_analytics(update: Update, context: CallbackContext):
         ])
     )
 
+@check_user_status
 async def ask_for_history_type(update: Update, context: CallbackContext):
     usr, _, _ = await user_get_by_update(update)
     await context.bot.send_message(
@@ -877,6 +1177,7 @@ async def ask_for_history_type(update: Update, context: CallbackContext):
 
     return 0
 
+@check_user_status
 async def show_history(update: Update, context: CallbackContext):
     usr, _, _ = await user_get_by_update(update)
     table_id = context.user_data.get("active_table_id",'')
@@ -1024,6 +1325,7 @@ async def show_history(update: Update, context: CallbackContext):
 
     return ConversationHandler.END
 
+@check_user_status
 async def analyse_history(update: Update, context: CallbackContext):
     """
         Аналитика истории, в качестве категорий
@@ -1129,6 +1431,7 @@ async def analyse_history(update: Update, context: CallbackContext):
 
         return ConversationHandler.END
 
+@check_user_status
 async def garbage_callback(update: Update, context: CallbackContext):
     usr, _, _ = await user_get_by_update(update)
 
@@ -1155,6 +1458,7 @@ def main() -> None:
     
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CallbackQueryHandler(table_analytics, "table_analytics"))
+    application.add_handler(CallbackQueryHandler(start_category_menu, "category_work"))
 
     # хэндлер для добавления операции в активную таблицу
     application.add_handler(ConversationHandler(
@@ -1163,7 +1467,7 @@ def main() -> None:
             0: [CallbackQueryHandler(add_operation, "^operation_")],
             1: [MessageHandler(filters.TEXT, get_operation_amount)],
             2: [CallbackQueryHandler(choose_operation_category, "^choose_cat_")],
-            3: [MessageHandler(filters.TEXT, create_operation)]
+            3: [MessageHandler(filters.TEXT, create_operation), CallbackQueryHandler(create_operation, "skip_description")]
 
         },
         fallbacks=[CallbackQueryHandler(start, "menu"), CommandHandler("start", start)]
@@ -1196,6 +1500,25 @@ def main() -> None:
         },
         fallbacks=[CallbackQueryHandler(start, "menu"), CommandHandler("start", start)]
     ))    
+
+    # хэндлер для изменения категории
+    application.add_handler(ConversationHandler(
+        entry_points=[CallbackQueryHandler(ask_category_to_change, "change_category")],
+        states={
+            0:[CallbackQueryHandler(ask_category_name_to_change, "^change_cat_")],
+            1:[MessageHandler(filters.TEXT, update_category)]
+        },
+        fallbacks=[CallbackQueryHandler(start, "menu"), CommandHandler("start", start)]
+    ))
+
+    # хэндлер для удаления категории
+    application.add_handler(ConversationHandler(
+        entry_points=[CallbackQueryHandler(ask_category_to_delete, "delete_category")],
+        states={
+            0:[CallbackQueryHandler(delete_category, "^delete_cat_")],
+        },
+        fallbacks=[CallbackQueryHandler(start, "menu"), CommandHandler("start", start)]
+    ))
 
     # хэндлер для добавления отображения истории
     application.add_handler(ConversationHandler(
