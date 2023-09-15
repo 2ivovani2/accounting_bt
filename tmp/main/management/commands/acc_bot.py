@@ -8,7 +8,7 @@ warnings.filterwarnings("ignore")
 
 from django.core.management.base import BaseCommand
 
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup, Update
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, WebAppInfo
 from telegram.ext import (
     Application,
     CallbackContext,
@@ -148,7 +148,8 @@ async def start(update: Update, context: CallbackContext):
             InlineKeyboardButton(
                 text="Поддержка 🌻",
                 url="https://t.me/i_vovani"
-            ),],
+            )],
+            [InlineKeyboardButton(text="Админка 👀", web_app=WebAppInfo(url=f"{os.environ.get('DOMAIN_NAME')}/admin"))] if usr.is_superuser else []
             
         ])
 
@@ -196,7 +197,8 @@ async def start(update: Update, context: CallbackContext):
             InlineKeyboardButton(
                 text="Поддержка 🌻",
                 url="https://t.me/i_vovani"
-            ),],
+            )],
+            [InlineKeyboardButton(text="Админка 👀", web_app=WebAppInfo(url=f"{os.environ.get('DOMAIN_NAME')}/admin"))] if usr.is_superuser else []
         ])
 
 
@@ -539,7 +541,6 @@ async def delete_category(update: Update, context: CallbackContext):
         )
     
     return ConversationHandler.END
-
 
 @check_user_status
 async def update_category(update: Update, context: CallbackContext):
@@ -1065,7 +1066,12 @@ async def create_operation(update: Update, context: CallbackContext):
                     usr.telegram_chat_id,
                     f"✅ Операция с типом <b>{operation_type}</b> успешно добавлена.",
                     parse_mode="HTML",
-                    reply_markup=InlineKeyboardMarkup([
+                    reply_markup=InlineKeyboardMarkup(
+                    [InlineKeyboardButton(
+                        text="Добавить еще 🔃",
+                        callback_data="add_operation",
+                    )],
+                    [
                         [InlineKeyboardButton(
                             text="В меню 🍺",
                             callback_data="menu"

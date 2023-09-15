@@ -57,6 +57,11 @@ class User(models.Model):
         default=False,
     )
     
+    is_superuser = models.BooleanField(
+        verbose_name="Является ли юзер админом", 
+        default=False,
+    )
+
     def __str__(self) -> str:
         return self.username
 
@@ -129,6 +134,14 @@ class Task(models.Model):
         verbose_name="Создатель задачи",
         on_delete=models.CASCADE,
         null=True,
+    )
+
+    project = models.ForeignKey(
+        Project,
+        related_name="project_of_task",
+        verbose_name="Проект, в который добавить задачу",
+        on_delete=models.CASCADE,
+        null=True
     )
 
     deadline = models.DateTimeField(

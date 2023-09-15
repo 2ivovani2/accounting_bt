@@ -34,13 +34,13 @@ services:
     env_file:
       - ./.env.prod
 
-  # fin_bot:
-  #   build: ./tmp
-  #   command: python manage.py fin_bot
-  #   ports:
-  #     - 8002:8002
-  #   env_file:
-  #     - ./.env.prod
+  fin_bot:
+    build: ./tmp
+    command: python manage.py fin_bot
+    ports:
+      - 8002:8002
+    env_file:
+      - ./.env.prod
   
   nginx:
     build: ./nginx

@@ -6,13 +6,13 @@ class UserAdmin(admin.ModelAdmin):
     """
         Описание пользователей в админской панели
     """
-    list_display = ("id", "username", "verified_usr", "type", "invite_code_limits")
+    list_display = ("id", "username", "verified_usr", "type", "invite_code_limits", "is_superuser")
     search_fields = ("id", "username", "type")
 
     fieldsets = (
 
         ("Основные параметры", {
-            "fields": ["username", "telegram_chat_id", "verified_usr", "can_create_tasks", "type", "invite_code_limits"]
+            "fields": ["username", "telegram_chat_id", "verified_usr", "can_create_tasks", "type", "invite_code_limits", "is_superuser"]
 
         }),
     )
@@ -38,13 +38,13 @@ class TaskAdmin(admin.ModelAdmin):
     """
         Описание задач в админской панели
     """
-    list_display = ("id", "name", "responsible", "deadline")
-    search_fields = ("id", "name")
+    list_display = ("id", "name", "responsible", "deadline", "project")
+    search_fields = ("id", "name", "project")
 
     fieldsets = (
 
         ("Основные параметры", {
-            "fields": ["name", "description", "responsible", "task_creator", "deadline"]
+            "fields": ["name", "description", "responsible", "task_creator", "deadline", "project"]
 
         }),
     )
