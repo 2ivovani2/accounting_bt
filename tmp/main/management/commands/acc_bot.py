@@ -201,8 +201,6 @@ async def start(update: Update, context: CallbackContext):
             [InlineKeyboardButton(text="Админка 👀", web_app=WebAppInfo(url=f"{os.environ.get('DOMAIN_NAME')}/admin"))] if usr.is_superuser else []
         ])
 
-
-
         await context.bot.send_video(
             usr.telegram_chat_id,
             random.choice(pictures_for_menu),
@@ -950,9 +948,13 @@ async def get_operation_amount(update: Update, context: CallbackContext):
             else:
                 await context.bot.send_message(
                     usr.telegram_chat_id,
-                    f"🥶 Отлично, фиксируем сумму = <b>{int(update.message.text.strip())}₽</b> \n\n😶‍🌫️ К сожалению, у вас нет ни одной категории, подключенной к этой таблице. Вы можете добавить ее в главном меню.\n\n👁 А сейчас отравьте мне описание данной операции и закончим на этом.",
+                    f"🥶 Отлично, фиксируем сумму = <b>{int(update.message.text.strip())}₽</b> \n\n😶‍🌫️ К сожалению, у вас нет ни одной категории, подключенной к этой таблице. Вы можете добавить ее в главном меню.\n\n👁 А сейчас отравьте мне описание данной операции или нажмите на кнопку 'Пропустить ⏩'.",
                     parse_mode="HTML",
                     reply_markup=InlineKeyboardMarkup([
+                        [InlineKeyboardButton(
+                            text="Пропустить ⏩",
+                            callback_data="skip_description"
+                        )],
                         [InlineKeyboardButton(
                             text="Отмена ⛔️",
                             callback_data="menu"
@@ -1066,12 +1068,11 @@ async def create_operation(update: Update, context: CallbackContext):
                     usr.telegram_chat_id,
                     f"✅ Операция с типом <b>{operation_type}</b> успешно добавлена.",
                     parse_mode="HTML",
-                    reply_markup=InlineKeyboardMarkup(
-                    [InlineKeyboardButton(
-                        text="Добавить еще 🔃",
-                        callback_data="add_operation",
-                    )],
-                    [
+                    reply_markup=InlineKeyboardMarkup([
+                        [InlineKeyboardButton(
+                            text="Добавить еще 🔃",
+                            callback_data="add_operation",
+                        )],
                         [InlineKeyboardButton(
                             text="В меню 🍺",
                             callback_data="menu"
@@ -1080,7 +1081,6 @@ async def create_operation(update: Update, context: CallbackContext):
                 )
 
                 return ConversationHandler.END
-
 
             except Exception as e:
                 await context.bot.send_message(
@@ -1472,7 +1472,7 @@ def main() -> None:
         states={
             0: [CallbackQueryHandler(add_operation, "^operation_")],
             1: [MessageHandler(filters.TEXT, get_operation_amount)],
-            2: [CallbackQueryHandler(choose_operation_category, "^choose_cat_")],
+            2: [CallbackQueryHandler(choose_operation_category, "^choose_cat_"),],
             3: [MessageHandler(filters.TEXT, create_operation), CallbackQueryHandler(create_operation, "skip_description")]
 
         },
