@@ -94,7 +94,6 @@ def check_user_status(function):
         
     return wrapper
 
-
 class Bot:
     """
         Класс, инициализирующий instance бота
