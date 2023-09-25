@@ -404,7 +404,6 @@ class Bot:
             Метод реализующий регистрацию хэндлеров в приложении
         """
         self.application.add_handler(CommandHandler("start", self._start))
-        self.application.add_handler(CallbackQueryHandler(self._start, "menu"))
         
         self.application.add_handler(CallbackQueryHandler(self._table_analytics, "table_analytics"))
         self.application.add_handler(CallbackQueryHandler(self._start_category_menu, "category_work"))
@@ -1591,12 +1590,16 @@ class Command(BaseCommand):
     help = 'Команда запуска телеграм бота'
 
     def handle(self, *args, **kwargs):        
-        application = Bot().register_handlers()
+        main_class_instance = Bot()
+        application = main_class_instance.register_handlers()
         
         TableWork(application=application).register_handlers()
         OperationWork(application=application).register_handlers()
         CategoryWork(application=application).register_handlers()
         HistoryWork(application=application).register_handlers()
+
+        application.add_handler(CallbackQueryHandler(main_class_instance._start, "menu"))
+        
 
         application.run_polling()
 
