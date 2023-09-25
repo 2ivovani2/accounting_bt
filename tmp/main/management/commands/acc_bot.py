@@ -328,7 +328,6 @@ class Bot:
                 if len(cat_data_dict["Без категории"]) == 0:
                     del cat_data_dict["Без категории"]
 
-                logging.info(cat_data_dict)
                 for category in cat_data_dict.keys():
                     amounts = []
                     if category != "Без категории":
