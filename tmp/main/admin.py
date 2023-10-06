@@ -50,7 +50,7 @@ class TableAdmin(admin.ModelAdmin):
     fieldsets = (
 
         ("Основные параметры", {
-            "fields": ["name"]
+            "fields": ["id", "name"]
         }),
     )
 
@@ -59,7 +59,7 @@ class OperationAdmin(admin.ModelAdmin):
     """
         Описание операций в админской панели 
     """
-    list_display = ("type", "amount", "date", "table", "category")
+    list_display = ("id", "type", "amount", "date", "table", "category")
     search_fields = ("id", "type", "amount", "date", "description")
 
     readonly_fields = ["id", "date"]

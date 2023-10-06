@@ -1,0 +1,60 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fragment+Mono&display=swap');
+
+/* TODO цвета кнопок и фона сделать в зависимости от темы пользователя */
+
+html, body{
+    overflow: hidden;
+    /* color: var(--tg-theme-text-color);
+    background: var(--tg-theme-bg-color); */
+}
+
+/* button{
+    color: var(--tg-theme-button-color) !important;
+    background: var(--tg-theme-button-text-color) !important;
+    transition: 0.5s !important;
+}
+
+button:hover{
+    background: var(--tg-theme-secondary-bg-color) !important;
+} */
+
+.container-fluid{
+    min-height: 100vh !important;
+}
+
+#main-app-header{
+    font-family: 'Press Start 2P', cursive;
+}
+
+.operation-date, .operation-amount, .operation-type{
+    font-size: 16px !important;
+}
+
+.form-text-primary, .form-text-secondary, .btn, p, label{
+    font-family: 'Fragment Mono', monospace;
+}
+
+label{
+    font-size: 5px !important;
+}
+
+.error-handler > p{
+    font-size: small;
+}
+#date-search-form, #operations-display-list, #operations-display-p, .category-analysis-wrapper, .form-text-primary, .accordion{
+    width: 90% !important;
+}
+
+.close-app-wrapper, .list-item-wrapper{
+    width: 100% !important;
+}
+
+#operations-display-p{
+    font-size: medium;
+}
+
+#operations-wrapper{
+    max-height:50vh;
+    width: 100% !important;
+}

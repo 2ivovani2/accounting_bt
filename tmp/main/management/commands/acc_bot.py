@@ -157,7 +157,8 @@ class Bot:
                     text="Поддержка 🌻",
                     url="https://t.me/i_vovani"
                 )],
-                [InlineKeyboardButton(text="Админка 👀", web_app=WebAppInfo(url=f"{os.environ.get('DOMAIN_NAME')}/admin"))] if usr.is_superuser else []
+                [InlineKeyboardButton(text="Админка 👀", web_app=WebAppInfo(url=f"{os.environ.get('DOMAIN_NAME')}/admin"))] if usr.is_superuser else [],
+                [InlineKeyboardButton(text="История β", web_app=WebAppInfo(url=f"{os.environ.get('DOMAIN_NAME')}/accounting/webapp/history"))] if usr.is_superuser else []
                 
             ])
 

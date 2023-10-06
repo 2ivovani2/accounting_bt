@@ -144,7 +144,7 @@ class Operation(models.Model):
 
     creator = models.ForeignKey(
         CustomUser,
-        verbose_name="Отвественный",
+        verbose_name="Создатель",
         on_delete=models.SET_NULL,
         null=True,
     )
