@@ -1,6 +1,10 @@
 window.addEventListener("load", () => {
-    const tg = window.Telegram.WebApp,
-          USER_CHAT_ID = tg.initDataUnsafe.chat.id;
+    const tg = window.Telegram.WebApp;
+
+    alert("salam")
+    alert(tg.initDataUnsafe);
+
+    const USER_CHAT_ID = tg.initDataUnsafe.chat.id;
 
     tg.expand();
 

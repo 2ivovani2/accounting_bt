@@ -12,7 +12,7 @@ class CustomUserAdmin(admin.ModelAdmin):
     fieldsets = (
 
         ("Основные параметры", {
-            "fields": ["username", "telegram_chat_id", "verified_usr", "is_superuser", "can_create_tables"]
+            "fields": ["username", "telegram_chat_id", "verified_usr", "is_superuser", "can_create_tables"]�
 
         }),
 
@@ -50,7 +50,7 @@ class TableAdmin(admin.ModelAdmin):
     fieldsets = (
 
         ("Основные параметры", {
-            "fields": ["id", "name"]
+            "fields": ["name"]
         }),
     )
 
@@ -59,8 +59,8 @@ class OperationAdmin(admin.ModelAdmin):
     """
         Описание операций в админской панели 
     """
-    list_display = ("id", "type", "amount", "date", "table", "category")
-    search_fields = ("id", "type", "amount", "date", "description", "table__name")
+    list_display = ("type", "amount", "date", "table", "category")
+    search_fields = ("id", "type", "amount", "date", "description")
 
     readonly_fields = ["id", "date"]
 
