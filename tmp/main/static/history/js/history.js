@@ -1,5 +1,5 @@
 let tg = window.Telegram.WebApp,
-    USER_CHAT_ID = 798710883;
+    USER_CHAT_ID = tg.initDataUnsafe.user.id;
 
 tg.expand();
 
