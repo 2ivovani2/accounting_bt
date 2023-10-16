@@ -6,7 +6,7 @@ services:
       context: ./tmp
       dockerfile: Dockerfile.prod
     restart: always
-    command: gunicorn tmp.wsgi:application --bind 0.0.0.0:8000
+    command: gunicorn tmp.wsgi:application --bind 0.0.0.0:8000 && python manage.py migrate && python manage.py collectstatic
     volumes:
       - static_volume:/home/app/web/staticfiles
       - ./tmp/main:/usr/src/app/main

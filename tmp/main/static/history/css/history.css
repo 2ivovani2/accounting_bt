@@ -54,6 +54,10 @@ label{
     font-size: medium;
 }
 
+.form-label{
+    font-size: medium !important;
+}
+
 #operations-wrapper{
     max-height:50vh;
     width: 100% !important;
