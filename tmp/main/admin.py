@@ -21,7 +21,7 @@ class CustomUserAdmin(admin.ModelAdmin):
 
         }),
     )
-
+	
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
     """
@@ -47,10 +47,12 @@ class TableAdmin(admin.ModelAdmin):
     list_display = ("id", "name")
     search_fields = ("id", "name")
 
+    readonly_fields = ["id"]
+
     fieldsets = (
 
         ("Основные параметры", {
-            "fields": ["id", "name"]
+            "fields": ["name"]
         }),
     )
 
