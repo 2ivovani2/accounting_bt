@@ -182,6 +182,7 @@ const active_table_buttons = () => {
                 if(response.status == 200){
                     localStorage.active_table_id = active_table_id
                     const operations_wrapper = document.querySelector("#operations-wrapper"),
+                            
                             operations = response.data.operations,
                             money_info = response.data.money_info
 
@@ -221,10 +222,17 @@ const active_table_buttons = () => {
                         `
                     }
 
-                    operations_wrapper.innerHTML += `
+                    operations_display_grid.innerHTML += `
                         <p class="form-text-primary m-0 mt-2">Доход:<span class="text-success" id="period-income">${money_info.total_income}₽</span></p>
                         <p class="form-text-primary m-0">Расход:<span class="text-danger" id="period-consumption">${money_info.total_consumption}₽</span></p>
                         <p class="form-text-primary m-0">Расход:<span class="text-warning" id="period-profit">${money_info.total_profit}₽</span></p>
+                    
+                        <div class="d-grid gap-2 mt-3 category-analysis-wrapper">
+                            <button type="button" id="category-analysis" class="btn btn-success" disabled>Анализ категорий 🦍</button>
+                        </div> 
+                        <div class="d-grid gap-2 mt-1 category-analysis-wrapper">
+                            <button type="button" class="btn btn-danger close_app">Закрыть приложение ❌</button>
+                        </div>
                     `
                     
                     set_close_event()

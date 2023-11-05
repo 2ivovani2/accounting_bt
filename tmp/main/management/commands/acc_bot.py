@@ -3,8 +3,12 @@ from main.models import *
 from asgiref.sync import sync_to_async
 from rest_framework.authtoken.models import Token
 
-import os, django, logging, warnings, re, random
+import os, django, logging, warnings, re, random, io
+from datetime import datetime, timedelta
 warnings.filterwarnings("ignore")
+
+import numpy as np, matplotlib.pyplot as plt
+from PIL import Image
 
 from django.core.management.base import BaseCommand
 
@@ -157,6 +161,7 @@ class Bot:
                     text="Поддержка 🌻",
                     url="https://t.me/i_vovani"
                 )],
+
                 [InlineKeyboardButton(text="Админка 👀", web_app=WebAppInfo(url=f"{os.environ.get('DOMAIN_NAME')}/admin"))] if usr.is_superuser else [],
                 [InlineKeyboardButton(text="История β", web_app=WebAppInfo(url=f"{os.environ.get('DOMAIN_NAME')}/accounting/webapp/history"))] if usr.is_superuser else []
                 
@@ -1498,6 +1503,10 @@ class HistoryWork(Bot):
                                         callback_data="analyse_history"
                                     )],
                                     [InlineKeyboardButton(
+                                        text="Графический анализ 📊",
+                                        callback_data="graph_history"
+                                    )],
+                                    [InlineKeyboardButton(
                                         text="Еще раз 🚀",
                                         callback_data="operation_history"
                                     ),
@@ -1586,7 +1595,150 @@ class HistoryWork(Bot):
             },
             fallbacks=[CallbackQueryHandler(self._start, "menu"), CommandHandler("start", self._start)]
         ))
-        
+
+class GraphWork(Bot):
+    """
+        Класс описывающий работу с графиками по анализу дохода/расхода
+    """        
+
+    def __init__(self, application) -> None:
+        self.application = application 
+
+    @check_user_status
+    async def _generate_graph(update: Update, context: CallbackContext) -> None:
+        """
+            Функция для генерации графика по последним 3 неделям пользователя
+        """
+        usr, _, _ = await user_get_by_update(update)
+        table_id = context.user_data.get("active_table_id",'')
+
+        curr_week = (datetime.strptime(context.user_data["date_start"], '%Y-%m-%d').date(), datetime.strptime(context.user_data["date_end"], '%Y-%m-%d').date())
+        week_1 = (curr_week[0] - timedelta(days=7), curr_week[1] - timedelta(days=7))
+        week_2 = (week_1[0] - timedelta(days=7), week_1[1] - timedelta(days=7))
+
+        if Table.objects.filter(id=table_id).exists():
+            if Table.objects.get(pk=table_id) in usr.get_tables():
+                users_table = Table.objects.get(pk=table_id)
+                
+                try:
+                    data = {
+                        "Расход": [0, 0, 0],
+                        "Доход": [0, 0, 0],
+                    }
+
+                    # TODO я это писал под героином, надо переписать))
+
+                    for index, week in enumerate([
+                        Operation.objects.filter(
+                        date__range=[curr_week[0], curr_week[1]],
+                        table=users_table
+                        ).all().order_by('-date'),
+
+                        Operation.objects.filter(
+                        date__range=[week_1[0], week_1[1]],
+                        table=users_table
+                        ).all().order_by('-date'),
+
+                        Operation.objects.filter(
+                        date__range=[week_2[0], week_2[1]],
+                        table=users_table
+                        ).all().order_by('-date'),
+                    ]):
+                        income, consumption = 0, 0
+                        for operation in week:
+                            if operation.type.lower() == "доход":
+                                income += operation.amount
+                            else:
+                                consumption += operation.amount
+
+                        data["Доход"][index] = income
+                        data["Расход"][index] = consumption
+                        
+
+                    await context.bot.send_message(
+                        usr.telegram_chat_id,
+                        f"👽 <b>{usr.username}</b>, готовлю графический анализ...",
+                        parse_mode="HTML",
+                    )
+
+
+                    weeks = ('Текущая неделя', 'Прошлая неделя', 'Позапрошлая неделя')
+                    width = 0.4
+                    bottom = np.zeros(len(weeks))
+
+                    fig, ax = plt.subplots()
+
+                    for money_type, money_count in data.items():
+                        p = ax.bar(weeks, money_count, width, label=money_type, bottom=bottom)
+                        bottom += money_count
+
+                        ax.bar_label(p, label_type='center')
+
+                    ax.set_title('Распределение доход/расход за последние 3 недели')
+                    ax.legend()
+
+                    buf = io.BytesIO()
+                    fig.savefig(buf)
+                    buf.seek(0)
+                    im = buf.getvalue()
+
+                    await context.bot.send_photo(
+                        usr.telegram_chat_id,
+                        im, 
+                        reply_markup=InlineKeyboardMarkup([
+                            [InlineKeyboardButton(
+                                text="В меню 🍺",
+                                callback_data="menu"
+                            )]
+                        ])
+                    )
+
+                except Exception as e:
+                    await context.bot.send_message(
+                        usr.telegram_chat_id,
+                        f"❌ Произошла ошибка во время поиска таблицы.\n\n<b>Ошибка:</b><i>{e}</i>",
+                        parse_mode="HTML",
+                        reply_markup=InlineKeyboardMarkup([
+                            [InlineKeyboardButton(
+                                text="В меню 🍺",
+                                callback_data="menu"
+                            )]
+                        ])
+                    )
+            else:
+                await context.bot.send_message(
+                    usr.telegram_chat_id,
+                    f"❌ Вы не являетесь владельцем таблицы с id = {context.user_data.get('active_table_id','')}",
+                    parse_mode="HTML",
+                    reply_markup=InlineKeyboardMarkup([
+                        [InlineKeyboardButton(
+                            text="В меню 🍺",
+                            callback_data="menu"
+                        )]
+                    ])
+                )
+
+        else:
+            await context.bot.send_message(
+                usr.telegram_chat_id,
+                f"❌ Вы не выбрали активную таблицу. Сделайте это в списке таблиц.",
+                parse_mode="HTML",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton(
+                        text="В меню 🍺",
+                        callback_data="menu"
+                    )]
+                ])
+            )
+
+
+    def register_handlers(self) -> None: 
+        """
+            Метод реализующий регистрацию хэндлеров в приложении по операциям
+        """
+        # хэндлер для добавления отображения истории
+        self.application.add_handler(CallbackQueryHandler(self._generate_graph, "graph_history"))
+
 class Command(BaseCommand):
     help = 'Команда запуска телеграм бота'
 
@@ -1598,6 +1750,7 @@ class Command(BaseCommand):
         OperationWork(application=application).register_handlers()
         CategoryWork(application=application).register_handlers()
         HistoryWork(application=application).register_handlers()
+        GraphWork(application=application).register_handlers()
 
         application.add_handler(CallbackQueryHandler(main_class_instance._start, "menu"))
         
