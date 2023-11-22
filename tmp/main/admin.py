@@ -64,10 +64,10 @@ class OperationAdmin(admin.ModelAdmin):
     list_display = ("id", "type", "amount", "date", "table", "category")
     search_fields = ("id", "type", "amount", "date", "description", "table__name")
 
-    readonly_fields = ["id", "date"]
+    readonly_fields = ["id"]
 
     fieldsets = (
         ("Основные параметры", {
-            "fields": ["type", "amount", "table", "creator", "description","category"]
+            "fields": ["type", "amount", "table", "creator", "description", "category", "date"]
         }),
     )

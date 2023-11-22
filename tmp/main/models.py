@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.utils import timezone
 
 import logging
 
@@ -57,6 +58,7 @@ class Category(models.Model):
         verbose_name="Таблица по категории",
         on_delete=models.CASCADE,
         null=True,
+        default="Не определена"
     )
 
     def __str__(self) -> str:
@@ -73,6 +75,7 @@ class CustomUser(AbstractUser):
     telegram_chat_id = models.PositiveBigIntegerField(
         verbose_name="ID пользователя",
         null=True,
+        default="Не определен"
     )
 
     verified_usr = models.BooleanField(
@@ -129,8 +132,7 @@ class Operation(models.Model):
     )
 
     date = models.DateTimeField(
-        auto_now_add=True,
-        blank=True, 
+        default=timezone.now,
         verbose_name="Дата поступления"
     )
 
@@ -154,12 +156,14 @@ class Operation(models.Model):
         verbose_name="Категория операции",
         on_delete=models.SET_NULL,
         null=True,
+        default="Без категории"
     )
 
     description = models.CharField(
         verbose_name="Описание платежа",
         max_length=255,
         null=True,
+        default="Без описания"
     )
     
 
