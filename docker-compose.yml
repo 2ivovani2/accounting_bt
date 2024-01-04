@@ -39,14 +39,6 @@ services:
       - 8001:8001
     env_file:
       - ./.env.dev
-    
-  fin_bot:
-    build: ./tmp
-    command: python manage.py fin_bot
-    ports:
-      - 8002:8002
-    env_file:
-      - ./.env.dev
 
     # networks:
     #   test_network:

@@ -163,7 +163,6 @@ class Bot:
                 )],
 
                 [InlineKeyboardButton(text="Админка 👀", web_app=WebAppInfo(url=f"{os.environ.get('DOMAIN_NAME')}/admin"))] if usr.is_superuser else [],
-                [InlineKeyboardButton(text="История β", web_app=WebAppInfo(url=f"{os.environ.get('DOMAIN_NAME')}/accounting/webapp/history"))] if usr.is_superuser else []
                 
             ])
 
@@ -1612,9 +1611,11 @@ class GraphWork(Bot):
         usr, _, _ = await user_get_by_update(update)
         table_id = context.user_data.get("active_table_id",'')
 
-        curr_week = (datetime.strptime(context.user_data["date_start"], '%Y-%m-%d').date(), datetime.strptime(context.user_data["date_end"], '%Y-%m-%d').date())
-        week_1 = (curr_week[0] - timedelta(days=7), curr_week[1] - timedelta(days=7))
-        week_2 = (week_1[0] - timedelta(days=7), week_1[1] - timedelta(days=7))
+        curr_delta = (datetime.strptime(context.user_data["date_start"], '%Y-%m-%d').date(), datetime.strptime(context.user_data["date_end"], '%Y-%m-%d').date())
+        time_delta = (curr_delta[1] - curr_delta[0]).days 
+
+        delta_1 = (curr_delta[0] - timedelta(days=time_delta), curr_delta[1] - timedelta(days=time_delta))
+        delta_2 = (delta_1[0] - timedelta(days=time_delta), delta_1[1] - timedelta(days=time_delta))
 
         if Table.objects.filter(id=table_id).exists():
             if Table.objects.get(pk=table_id) in usr.get_tables():
@@ -1630,17 +1631,17 @@ class GraphWork(Bot):
 
                     for index, week in enumerate([
                         Operation.objects.filter(
-                        date__range=[curr_week[0], curr_week[1]],
+                        date__range=[curr_delta[0], curr_delta[1]],
                         table=users_table
                         ).all().order_by('-date'),
 
                         Operation.objects.filter(
-                        date__range=[week_1[0], week_1[1]],
+                        date__range=[delta_1[0], delta_1[1]],
                         table=users_table
                         ).all().order_by('-date'),
 
                         Operation.objects.filter(
-                        date__range=[week_2[0], week_2[1]],
+                        date__range=[delta_2[0], delta_2[1]],
                         table=users_table
                         ).all().order_by('-date'),
                     ]):
@@ -1662,7 +1663,7 @@ class GraphWork(Bot):
                     )
 
 
-                    weeks = ('Текущая неделя', 'Прошлая неделя', 'Позапрошлая неделя')
+                    weeks = ('Текущий период', 'Прошлый период', 'Позапрошлый период')
                     width = 0.4
                     bottom = np.zeros(len(weeks))
 
@@ -1674,7 +1675,7 @@ class GraphWork(Bot):
 
                         ax.bar_label(p, label_type='center')
 
-                    ax.set_title('Распределение доход/расход за последние 3 недели')
+                    ax.set_title(f'Распределение доход/расход за последние 3 периода по {time_delta} дней')
                     ax.legend()
 
                     buf = io.BytesIO()

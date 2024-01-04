@@ -21,7 +21,6 @@ from main.views import main_render
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', main_render),
-    path('accounting/webapp/', include('main.urls'), name="Бухбот"),
 ]
 
 admin.site.site_header = "NAEB.tech 🥩🍖"
