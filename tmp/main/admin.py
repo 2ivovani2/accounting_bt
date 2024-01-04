@@ -62,7 +62,7 @@ class OperationAdmin(admin.ModelAdmin):
         Описание операций в админской панели 
     """
     list_display = ("id", "type", "amount", "date", "table", "category")
-    search_fields = ("id", "type", "amount", "date", "description", "table__name")
+    search_fields = ("id", "type", "amount", "date", "description", "table__name", "category__name")
 
     readonly_fields = ["id"]
 
