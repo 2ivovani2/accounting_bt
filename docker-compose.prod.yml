@@ -10,7 +10,7 @@ services:
     volumes:
       - static_volume:/home/app/web/staticfiles
       - ./tmp/main:/usr/src/app/main
-      - ./tmp/fin_plan:/usr/src/app/fin_plan
+      - ./tmp/tf_maker:/usr/src/app/tf_maker
     expose:
       - 8000
     env_file:
