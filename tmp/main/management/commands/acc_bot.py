@@ -306,73 +306,73 @@ class Bot:
         if Table.objects.filter(id=table_id).exists():
             if Table.objects.get(pk=table_id) in usr.get_tables():
                 active_table = Table.objects.get(pk=table_id)
-                # try:
-                date_start, date_end = context.user_data.get("date_start", ""), context.user_data.get("date_end", ""), 
-                active_table_operations = Operation.objects.filter(
-                    date__range=[date_start, date_end],
-                    table=active_table, 
-                ).all().order_by('-date')
+                try:
+                    date_start, date_end = context.user_data.get("date_start", ""), context.user_data.get("date_end", ""), 
+                    active_table_operations = Operation.objects.filter(
+                        date__range=[date_start, date_end],
+                        table=active_table, 
+                    ).all().order_by('-date')
 
-                cat_data_dict = {
-                    "Без категории":[]
-                }
+                    cat_data_dict = {
+                        "Без категории":[]
+                    }
 
-                for operation in active_table_operations:
-                    if operation.category:
-                        if operation.category.name not in cat_data_dict.keys():
-                            cat_data_dict[operation.category.name] = [
-                                operation
-                            ]
+                    for operation in active_table_operations:
+                        if operation.category:
+                            if operation.category.name not in cat_data_dict.keys():
+                                cat_data_dict[operation.category.name] = [
+                                    operation
+                                ]
+                            else:
+                                cat_data_dict[operation.category.name].append(operation)
                         else:
-                            cat_data_dict[operation.category.name].append(operation)
-                    else:
-                        cat_data_dict["Без категории"].append(operation)
+                            cat_data_dict["Без категории"].append(operation)
 
-                end_msg = f"🦉 <b><u>Анализ категорий</u></b>\n\n<b>🧩 Таблица:</b> <i>{active_table.name}</i>\n\n<b>🕐 Дата начала:</b> {date_start}\n<b>🕤 Дата конца:</b> {date_end}\n\n"
-                
-                if len(cat_data_dict["Без категории"]) == 0:
-                    del cat_data_dict["Без категории"]
-
-                for category in cat_data_dict.keys():
-                    amounts = []
-                    if category != "Без категории":
-                        category_type = Category.objects.filter(name=category).first().type
-                    else:
-                        category_type = "Без тип"    
-
-                    for operation in cat_data_dict[category]:
-                        amounts.append(operation.amount)
-                        
-                    end_msg += f"🔸 <b><u>Категория</u></b>: <i>{category}</i>\n\n∙ Тип категории: <b>{category_type}ная</b>\n∙ Общий объем денег: <b>{sum(amounts)}₽</b>\n∙ Средний объем денег: <b>{sum(amounts) / len(amounts) if len(amounts) != 0 else 0:.2f}₽</b>\n\n"
+                    end_msg = f"🦉 <b><u>Анализ категорий</u></b>\n\n<b>🧩 Таблица:</b> <i>{active_table.name}</i>\n\n<b>🕐 Дата начала:</b> {date_start}\n<b>🕤 Дата конца:</b> {date_end}\n\n"
                     
-                await context.bot.send_message(
-                    usr.telegram_chat_id,
-                    end_msg,
-                    parse_mode="HTML",
-                    reply_markup=InlineKeyboardMarkup([
-                        [InlineKeyboardButton(
-                            text="В меню 🍺",
-                            callback_data="menu"
-                        ),
-                        InlineKeyboardButton(
-                            text="Еще раз 🚀",
-                            callback_data="operation_history"
-                        )]
-                    ])
-                )
+                    if len(cat_data_dict["Без категории"]) == 0:
+                        del cat_data_dict["Без категории"]
+
+                    for category in cat_data_dict.keys():
+                        amounts = []
+                        if category != "Без категории":
+                            category_type = Category.objects.filter(name=category).first().type
+                        else:
+                            category_type = "Без тип"    
+
+                        for operation in cat_data_dict[category]:
+                            amounts.append(operation.amount)
+                            
+                        end_msg += f"🔸 <b><u>Категория</u></b>: <i>{category}</i>\n\n∙ Тип категории: <b>{category_type}ная</b>\n∙ Общий объем денег: <b>{sum(amounts)}₽</b>\n∙ Средний объем денег: <b>{sum(amounts) / len(amounts) if len(amounts) != 0 else 0:.2f}₽</b>\n\n"
+                        
+                    await context.bot.send_message(
+                        usr.telegram_chat_id,
+                        end_msg,
+                        parse_mode="HTML",
+                        reply_markup=InlineKeyboardMarkup([
+                            [InlineKeyboardButton(
+                                text="В меню 🍺",
+                                callback_data="menu"
+                            ),
+                            InlineKeyboardButton(
+                                text="Еще раз 🚀",
+                                callback_data="operation_history"
+                            )]
+                        ])
+                    )
                 
-                # except Exception as e:
-                #     await context.bot.send_message(
-                #         usr.telegram_chat_id,
-                #         f"❌ Произошла ошибка во время формирования аналитики.\n\n<b>Ошибка:</b><i>{e}</i>",
-                #         parse_mode="HTML",
-                #         reply_markup=InlineKeyboardMarkup([
-                #             [InlineKeyboardButton(
-                #                 text="В меню 🍺",
-                #                 callback_data="menu"
-                #             )]
-                #         ])
-                #     )
+                except Exception as e:
+                    await context.bot.send_message(
+                        usr.telegram_chat_id,
+                        f"❌ Произошла ошибка во время формирования аналитики.\n\n<b>Ошибка:</b><i>{e}</i>",
+                        parse_mode="HTML",
+                        reply_markup=InlineKeyboardMarkup([
+                            [InlineKeyboardButton(
+                                text="В меню 🍺",
+                                callback_data="menu"
+                            )]
+                        ])
+                    )
 
             else:
                 await context.bot.send_message(
@@ -1755,7 +1755,6 @@ class Command(BaseCommand):
 
         application.add_handler(CallbackQueryHandler(main_class_instance._start, "menu"))
         
-
         application.run_polling()
 
         

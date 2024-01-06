@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     "main",
+    "tf_maker",
 
     'rest_framework',
     'rest_framework.authtoken',
