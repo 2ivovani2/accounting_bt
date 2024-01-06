@@ -12,6 +12,7 @@ services:
       - db
     volumes:
       - ./tmp/main:/usr/src/app/main
+      - ./tmp/tf_maker:/usr/src/app/tf_maker
       - ./tmp:/usr/src/app
     # networks:
     #   test_network:
