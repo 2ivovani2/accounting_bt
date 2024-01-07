@@ -4,3 +4,4 @@ __pycache
 .DS_Store
 certbot
 .idea
+tmp/tf_maker/users_photo/

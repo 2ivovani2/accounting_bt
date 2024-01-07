@@ -8,8 +8,10 @@ from datetime import datetime, timedelta
 warnings.filterwarnings("ignore")
 
 from PIL import Image
+from tf_maker.generate_tf import TelegraphGenerator
 
 from django.core.management.base import BaseCommand
+from django.conf import settings
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, File
 from telegram.ext import (
@@ -31,7 +33,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-IMAGES_BASE_DIR = "tf_maker/users_photo/"
 
 @sync_to_async
 def user_get_by_update(update: Update):
@@ -102,7 +103,6 @@ class TFBot:
         """
         self.application = Application.builder().token(os.environ.get('TF_MAKER_BOT_TOKEN')).build()
 
-
     @check_user_status
     async def _start(update: Update, context: CallbackContext) -> None:
         """
@@ -114,7 +114,7 @@ class TFBot:
         
         await context.bot.send_message(
             usr.telegram_chat_id,
-            f"😃 <b>{usr.username}</b>, добрый день, я бот для создания <pre>Telegraph</pre> постов.\n\n🤩 Нажмите кнопку ниже для его создания.",
+            f"😃 <b>{usr.username}</b>, добрый день, я бот для создания <pre>Telegraph</pre> постов.\n🤩 Нажмите кнопку ниже для его создания.",
             parse_mode="HTML",
             reply_markup = InlineKeyboardMarkup([
                 [InlineKeyboardButton(
@@ -127,12 +127,12 @@ class TFBot:
         return ConversationHandler.END
     
     @check_user_status
-    async def _ask_for_preview(update: Update, context: CallbackContext) -> int:
+    async def _ask_for_user_channel_link(update: Update, context: CallbackContext) -> int:
         usr, _ = await user_get_by_update(update)
-        
+
         await context.bot.send_message(
             usr.telegram_chat_id,
-            f"🥰 Здравствуйте, пришлите фотографию для превью, пожалуйста.",
+            f"🥰 Здравствуйте, пришлите, пожалуйста, <b>ССЫЛКУ</b> на ваш канал, где будет размещаться архив.",
             parse_mode="HTML",
             reply_markup = InlineKeyboardMarkup([
                 [InlineKeyboardButton(
@@ -143,6 +143,26 @@ class TFBot:
         )
 
         return 0
+
+    @check_user_status
+    async def _ask_for_preview(update: Update, context: CallbackContext) -> int:
+        usr, _ = await user_get_by_update(update)
+        
+        context.user_data["user_channel_link"] = update.message.text.strip()
+
+        await context.bot.send_message(
+            usr.telegram_chat_id,
+            f"🤩 Отлично, <b>ссылку</b> я сохранил, теперь пришлите <b>фотографию</b> для превью, пожалуйста.\n\n👽 Или можете отправить все фото сразу, тогда первое <b>фото</b> будет взято в качестве <b>превью</b>.",
+            parse_mode="HTML",
+            reply_markup = InlineKeyboardMarkup([
+                [InlineKeyboardButton(
+                    text="Отмена 🍎",
+                    callback_data="menu",
+                )],
+            ])
+        )
+
+        return 1
 
     @check_user_status
     async def _download_preview_and_ask_for_content(update: Update, context: CallbackContext) -> None:
@@ -157,14 +177,14 @@ class TFBot:
         preview_img = Image.open(f"{photo_id}-preview.jpg")
         os.remove(f"{photo_id}-preview.jpg")
 
-        os.mkdir(f"{IMAGES_BASE_DIR}{photo_id}")
-        os.mkdir(f"{IMAGES_BASE_DIR}{photo_id}/content")
+        os.mkdir(f"{settings.IMAGES_BASE_DIR}{photo_id}")
+        os.mkdir(f"{settings.IMAGES_BASE_DIR}{photo_id}/content")
         
-        preview_img.save(f"{IMAGES_BASE_DIR}{photo_id}/preview.jpg", "JPEG")
+        preview_img.save(f"{settings.IMAGES_BASE_DIR}{photo_id}/preview.jpg", "JPEG")
 
         await context.bot.send_message(
             usr.telegram_chat_id,
-            f"😈 Отлично! Превью загружено, теперь отправьте фото для заполнения архива.",
+            f"😈 Отлично! <b>Превью</b> загружено, теперь отправьте фото для заполнения архива.",
             parse_mode = "HTML",
             reply_markup = InlineKeyboardMarkup([
                 [InlineKeyboardButton(
@@ -174,7 +194,7 @@ class TFBot:
             ])
         )  
 
-        return 1
+        return 2
     
     @check_user_status
     async def _download_content(update: Update, context: CallbackContext) -> None:
@@ -193,11 +213,11 @@ class TFBot:
         content_img = Image.open(f"{content_id}.jpg")
         os.remove(f"{content_id}.jpg")
 
-        content_img.save(f"{IMAGES_BASE_DIR}{context.user_data['active_tf']}/content/{content_id}.jpg", "JPEG")
+        content_img.save(f"{settings.IMAGES_BASE_DIR}{context.user_data['active_tf']}/content/{content_id}.jpg", "JPEG")
         
         message = await context.bot.send_message(
             usr.telegram_chat_id,
-            f"🥵 Фото <b>{content_id}</b> загружено.",
+            f"🥵 Фото <b>{content_id}</b> загружено.\n\nЕсли вы хотите добавить еще фото для архива, просто отправьте их сюда, затем нажмите кнопку <pre>Создать Telegraph</pre>",
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton(
@@ -217,11 +237,52 @@ class TFBot:
     async def _create_telegraph(update: Update, context: CallbackContext) -> None:
         usr, _ = await user_get_by_update(update)
 
-        shutil.rmtree(f"{IMAGES_BASE_DIR}{context.user_data['active_tf']}", ignore_errors=True)
+        telegraph_generator = TelegraphGenerator(
+            access_token="9f18ea439b7f6620fe777e44a58108e4c3fe2090e659e0a3175e41e05445"
+        )
+
+        msg_about_starting = await context.bot.send_message(
+            usr.telegram_chat_id,
+            f"🥳 Начинаю создание <pre>Telegraph</pre>",
+            parse_mode="HTML",
+        )  
+
+        try:
+            telegraph_link = telegraph_generator._generate_html(
+                preview_path=f"{settings.IMAGES_BASE_DIR}{context.user_data['active_tf']}/preview.jpg",
+                content_dir=f"{settings.IMAGES_BASE_DIR}{context.user_data['active_tf']}/content/",
+                user_channel_link=context.user_data["user_channel_link"],
+                username=usr.username
+            )
+
+            Telegraph(
+                creator=usr,
+                link=telegraph_link
+            ).save()
+
+            shutil.rmtree(f"{settings.IMAGES_BASE_DIR}{context.user_data['active_tf']}", ignore_errors=True)
         
+        except Exception as e:
+            await context.bot.send_message(
+                usr.telegram_chat_id,
+                f"🤬 Возникла ошибка во время создания <pre>Telegraph</pre> - <i>{e}</i>\n\nПожалуйста, свяжитесь с администратором и сообщите об этой ошибке, нажав на кнопку ниже.",
+                parse_mode="HTML",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton(
+                        text="Сообщить об ошибке ☎️",
+                        url="https://t.me/i_vovani"
+                    )]
+                ])
+            )  
+
+        await context.bot.delete_message(
+            usr.telegram_chat_id,
+            msg_about_starting.id
+        )
+
         await context.bot.send_message(
             usr.telegram_chat_id,
-            f"🤩 <pre><b>Telegraph</b></pre> создан.\n\n🔗 <b>Ссылка:</b> https://google.com",
+            f"🤩 <pre>Telegraph</pre> создан.\n🔗 <b>Ссылка:</b> {telegraph_link}",
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton(
@@ -238,10 +299,11 @@ class TFBot:
         """
         self.application.add_handler(CommandHandler("start", self._start))
         self.application.add_handler(ConversationHandler(
-                entry_points=[CommandHandler("create_tf", self._ask_for_preview), CallbackQueryHandler(self._ask_for_preview, "start_tf")],
+                entry_points=[CommandHandler("create_tf", self._ask_for_user_channel_link), CallbackQueryHandler(self._ask_for_user_channel_link, "start_tf")],
                 states={
-                    0: [MessageHandler(filters.PHOTO, self._download_preview_and_ask_for_content)],
-                    1: [MessageHandler(filters.PHOTO, self._download_content)],
+                    0: [MessageHandler(filters.TEXT, self._ask_for_preview)],
+                    1: [MessageHandler(filters.PHOTO, self._download_preview_and_ask_for_content)],
+                    2: [MessageHandler(filters.PHOTO, self._download_content)],
                     
                 },
                 fallbacks=[CommandHandler("start", self._start), CallbackQueryHandler(self._create_telegraph, "create_tf"), CallbackQueryHandler(self._start, "menu")]
