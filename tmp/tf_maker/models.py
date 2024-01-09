@@ -56,6 +56,9 @@ class Telegraph(models.Model):
         null=False
     )
 
+    def __str__(self) -> str:
+        return self.link 
+
     class Meta:
         verbose_name = "Телеграф"
         verbose_name_plural = "Телеграфы"
