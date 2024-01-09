@@ -36,8 +36,11 @@ logger = logging.getLogger(__name__)
 
 @sync_to_async
 def user_get_by_update(update: Update):
-    """
-        Функция обработчик, возвращающая django instance пользователя
+    
+    """Функция обработчик, возвращающая django instance пользователя
+
+    Returns:
+        _type_: instance, created
     """
 
     if update.message:
@@ -61,6 +64,7 @@ def check_user_status(function):
     """
         Функция декоратор для проверки аутентификации пользователя
     """
+    
     async def wrapper(self, update: Update, context:CallbackContext):   
         if update.message:
             message = update.message
@@ -105,9 +109,11 @@ class TFBot:
 
     @check_user_status
     async def _start(update: Update, context: CallbackContext) -> None:
-        """
-            Обработчик команды /start
+        
+        """Обработчик команды /start
 
+        Returns:
+            Завершает диалог, путем вызова ConversationHandler.END
         """
 
         usr, _ = await user_get_by_update(update)
@@ -128,6 +134,13 @@ class TFBot:
     
     @check_user_status
     async def _ask_for_user_channel_link(update: Update, context: CallbackContext) -> int:
+
+        """получение ссылки на канал пользователя
+
+        Returns:
+            стейт - 0
+        """
+
         usr, _ = await user_get_by_update(update)
 
         await context.bot.send_message(
@@ -146,6 +159,13 @@ class TFBot:
 
     @check_user_status
     async def _ask_for_preview(update: Update, context: CallbackContext) -> int:
+
+        """получение первой фотографии всего поста -- превью
+
+        Returns:
+            стейт - 1
+        """
+
         usr, _ = await user_get_by_update(update)
         
         context.user_data["user_channel_link"] = update.message.text.strip()
@@ -166,6 +186,13 @@ class TFBot:
 
     @check_user_status
     async def _download_preview_and_ask_for_content(update: Update, context: CallbackContext) -> None:
+
+        """загрузка превью на локальное хранилище и получение ботом второстепенных фото
+
+        Returns:
+            стейт - 2
+        """
+
         usr, _ = await user_get_by_update(update)
 
         photo_id = update.message.photo[-1].file_id
@@ -198,6 +225,10 @@ class TFBot:
     
     @check_user_status
     async def _download_content(update: Update, context: CallbackContext) -> None:
+
+        """загрузка всех дополнительных фотографий на локальное хранилище(сервер)
+        """
+
         usr, _ = await user_get_by_update(update)
         content_id = update.message.photo[-1].file_id
 
@@ -235,6 +266,15 @@ class TFBot:
         
     @check_user_status
     async def _create_telegraph(update: Update, context: CallbackContext) -> None:
+        """ создание телеграф-поста
+
+        Args:
+            update (Update): чтоб сообщеньки обновлять 
+            context (CallbackContext): чтобы сделать send_message
+
+        Returns:
+            _type_: _description_
+        """
         usr, _ = await user_get_by_update(update)
 
         telegraph_generator = TelegraphGenerator(

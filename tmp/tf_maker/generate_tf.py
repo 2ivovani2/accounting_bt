@@ -13,8 +13,19 @@ class TelegraphGenerator:
 
     def _generate_html(self, preview_path: str, content_dir: str, user_channel_link:str, username:str) -> None:
         
+        """данная функция реализует генерацию телеграф-поста используя html-шаблон
+
+        Args:
+            preview_path (str): путь до заглавной фотки, которая будет видна в превью
+            content_dir (str): путь до остальных фоток
+            user_channel_link (str): ссылка на канал заказчика
+            username (str): юзернейм админа этого канала
+
+        Returns:
+            _type_: ссылка на телеграф-пост
+        """
+
         user_channel_link = self.type_tiny.tinyurl.short(user_channel_link)
-        
         html_header = f'<p dir="auto">Оформление верхнего блока</p>'\
                       f'<hr></hr>'
     
