@@ -3,8 +3,7 @@ from tf_maker.models import *
 from asgiref.sync import sync_to_async
 from rest_framework.authtoken.models import Token
 
-import os, django, logging, warnings, re, random, io, shutil
-from datetime import datetime, timedelta
+import os, django, logging, warnings, re, random, io, shutil, validators
 warnings.filterwarnings("ignore")
 
 from PIL import Image
@@ -32,7 +31,6 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
 logger = logging.getLogger(__name__)
-
 
 @sync_to_async
 def user_get_by_update(update: Update):
@@ -120,12 +118,16 @@ class TFBot:
         
         await context.bot.send_message(
             usr.telegram_chat_id,
-            f"😃 <b>{usr.username}</b>, добрый день, я бот для создания <pre>Telegraph</pre> постов.\n🤩 Нажмите кнопку ниже для его создания.",
+            f"😃 <b>{usr.username}</b>, добрый день, я бот для создания <b>Telegraph</b> постов.\n🤩 Нажмите кнопку ниже для его создания.",
             parse_mode="HTML",
             reply_markup = InlineKeyboardMarkup([
                 [InlineKeyboardButton(
                     text="Создать 🍭",
                     callback_data="start_tf",
+                )],
+                [InlineKeyboardButton(
+                    text="Мануал 🧻",
+                    url="https://teletype.in/@tf_maker/white_paper",
                 )],
             ])
         )
@@ -163,12 +165,34 @@ class TFBot:
         """получение первой фотографии всего поста -- превью
 
         Returns:
-            стейт - 1
+            int: стейт - 1
         """
 
         usr, _ = await user_get_by_update(update)
         
-        context.user_data["user_channel_link"] = update.message.text.strip()
+        user_channel_link = update.message.text.strip()
+        valid = validators.url(user_channel_link)
+
+        if not valid:
+            await context.bot.send_message(
+                usr.telegram_chat_id,
+                f"🥸 Ссылка <b>{user_channel_link}</b> не валидна. Проверьте ее и попробуйте еще раз.",
+                parse_mode="HTML",
+                reply_markup = InlineKeyboardMarkup([
+                    [InlineKeyboardButton(
+                        text="Еще раз 😴",
+                        callback_data="start_tf",
+                    )],
+
+                    [InlineKeyboardButton(
+                        text="В меню 😶‍🌫️",
+                        callback_data="menu",
+                    )],
+                ])
+            )
+            return ConversationHandler.END
+        
+        context.user_data["user_channel_link"] = user_channel_link
 
         await context.bot.send_message(
             usr.telegram_chat_id,
@@ -190,7 +214,7 @@ class TFBot:
         """загрузка превью на локальное хранилище и получение ботом второстепенных фото
 
         Returns:
-            стейт - 2
+            int: стейт - 2
         """
 
         usr, _ = await user_get_by_update(update)
@@ -226,7 +250,8 @@ class TFBot:
     @check_user_status
     async def _download_content(update: Update, context: CallbackContext) -> None:
 
-        """загрузка всех дополнительных фотографий на локальное хранилище(сервер)
+        """
+            Загрузка всех дополнительных фотографий на локальное хранилище(сервер)
         """
 
         usr, _ = await user_get_by_update(update)
@@ -248,7 +273,7 @@ class TFBot:
         
         message = await context.bot.send_message(
             usr.telegram_chat_id,
-            f"🥵 Фото <b>{content_id}</b> загружено.\n\nЕсли вы хотите добавить еще фото для архива, просто отправьте их сюда, затем нажмите кнопку <pre>Создать Telegraph</pre>",
+            f"🥵 Фото <b>{content_id}</b> загружено.\n\nЕсли вы хотите добавить еще фото для архива, просто отправьте их сюда, затем нажмите кнопку <b>Создать Telegraph</b>",
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton(
@@ -273,7 +298,7 @@ class TFBot:
             context (CallbackContext): чтобы сделать send_message
 
         Returns:
-            _type_: _description_
+            ConversationHandler.END: _description_
         """
         usr, _ = await user_get_by_update(update)
 
@@ -283,7 +308,7 @@ class TFBot:
 
         msg_about_starting = await context.bot.send_message(
             usr.telegram_chat_id,
-            f"🥳 Начинаю создание <pre>Telegraph</pre>",
+            f"🥳 Начинаю создание <b>Telegraph</b>",
             parse_mode="HTML",
         )  
 
@@ -305,7 +330,7 @@ class TFBot:
         except Exception as e:
             await context.bot.send_message(
                 usr.telegram_chat_id,
-                f"🤬 Возникла ошибка во время создания <pre>Telegraph</pre> - <i>{e}</i>\n\nПожалуйста, свяжитесь с администратором и сообщите об этой ошибке, нажав на кнопку ниже.",
+                f"🤬 Возникла ошибка во время создания <b>Telegraph</b> - <i>{e}</i>\n\nПожалуйста, свяжитесь с администратором и сообщите об этой ошибке, нажав на кнопку ниже.",
                 parse_mode="HTML",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton(
@@ -322,7 +347,7 @@ class TFBot:
 
         await context.bot.send_message(
             usr.telegram_chat_id,
-            f"🤩 <pre>Telegraph</pre> создан.\n🔗 <b>Ссылка:</b> {telegraph_link}",
+            f"🤩 <b>Telegraph</b> создан.\n🔗 <b>Ссылка:</b> {telegraph_link}",
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton(

@@ -10,3 +10,5 @@ matplotlib==3.8.1
 telegraph==2.2.0
 html-telegraph-poster==0.5.0
 pyshorteners==1.0.1
+pandas==2.1.4
+validators==0.22.0

@@ -55,3 +55,7 @@ class Telegraph(models.Model):
         max_length=255,
         null=False
     )
+
+    class Meta:
+        verbose_name = "Телеграф"
+        verbose_name_plural = "Телеграфы"

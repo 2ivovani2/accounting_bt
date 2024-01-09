@@ -15,3 +15,21 @@ class UserAdmin(admin.ModelAdmin):
             "fields": ["username", "telegram_chat_id", "verified_usr", "is_superuser"]
         }),
     )
+
+@admin.register(Telegraph)
+class TelegraphAdmin(admin.ModelAdmin):
+    """
+        Описание пользователей в админской панели
+    """
+    list_display = ("id", "link", "creator")
+    search_fields = ("id", "link", "creator")
+
+    readonly_fields = ["date_created"]
+
+    fieldsets = (
+
+        ("Основные параметры", {
+            "fields": ["link", "creator"]
+        }),
+    )
+    
