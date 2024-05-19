@@ -1,6 +1,6 @@
 from django.db import models
 
-class TFUser(models.Model):
+class ApplyUser(models.Model):
     """
         Модель, описывающая пользователй TF
     """
@@ -35,30 +35,3 @@ class TFUser(models.Model):
     class Meta:
         verbose_name = "Пользователь"
         verbose_name_plural = "Пользователи"
-
-class Telegraph(models.Model):
-
-    creator = models.ForeignKey(
-        "tf_maker.TFUser",
-        verbose_name="Загрузчик фото",
-        on_delete=models.SET_NULL,
-        null=True
-    )
-
-    date_created = models.DateTimeField(
-        verbose_name="Дата создания TF",
-        auto_now_add=True,
-    )
-
-    link = models.CharField(
-        verbose_name="Ссылка на телеграф",
-        max_length=255,
-        null=False
-    )
-
-    def __str__(self) -> str:
-        return self.link 
-
-    class Meta:
-        verbose_name = "Телеграф"
-        verbose_name_plural = "Телеграфы"

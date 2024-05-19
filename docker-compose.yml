@@ -32,16 +32,14 @@ services:
     #   test_network:
     #     ipv4_address: 172.16.238.11
     
-  tf_maker_bot:
+  applier_bot:
     build: ./tmp
-    command: python manage.py tf_bot
+    command: python manage.py applier_bot
     ports:
       - 8002:8002
     env_file:
       - ./.env.dev
-    volumes:
-      - ./tmp/tf_maker/users_photo:/usr/src/app/tf_maker/users_photo
-
+    
   acc_bot:
     build: ./tmp
     command: python manage.py acc_bot
