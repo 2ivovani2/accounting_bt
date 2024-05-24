@@ -75,7 +75,7 @@ class CustomUser(AbstractUser):
     telegram_chat_id = models.PositiveBigIntegerField(
         verbose_name="ID пользователя",
         null=True,
-        default="Не определен"
+        default=1
     )
 
     verified_usr = models.BooleanField(
@@ -87,7 +87,6 @@ class CustomUser(AbstractUser):
         verbose_name="Возможность создавать новые таблицы",
         default=False
     )
-
 
     tables = models.ManyToManyField(
         Table,
