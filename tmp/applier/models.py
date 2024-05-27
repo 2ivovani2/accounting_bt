@@ -35,6 +35,12 @@ class ApplyUser(models.Model):
         default=0
     )
 
+    comission = models.IntegerField(
+        verbose_name="Комиссия пользователя",
+        null=False,
+        default=8
+    )
+
     def __str__(self) -> str:
         return self.username
     
@@ -142,6 +148,12 @@ class Withdraw(models.Model):
     is_applied = models.BooleanField(
         verbose_name="Подтвержден ли вывод",
         default=False,
+    )
+
+    income = models.FloatField(
+        verbose_name="Наша прибыль",
+        null=False,
+        default=0
     )
 
     def __str__(self) -> str:

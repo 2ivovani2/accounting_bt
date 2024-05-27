@@ -1,17 +1,16 @@
 from applier.models import *
 
 from asgiref.sync import sync_to_async
-from rest_framework.authtoken.models import Token
 
-import os, django, logging, warnings, re, random, io, shutil, validators, secrets
+from datetime import date
+import requests, base58
+import os, django, logging, warnings, secrets
 warnings.filterwarnings("ignore")
 
-import requests, base58
-
 from django.core.management.base import BaseCommand
-from django.conf import settings
+from django.db.models import Q
 
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, File
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, InputFile
 from telegram.ext import (
     Application,
     CallbackContext,
@@ -21,6 +20,8 @@ from telegram.ext import (
     MessageHandler,
     filters,
 )
+
+import pandas as pd
 
 os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
 django.setup()
@@ -215,9 +216,11 @@ class ApplierBot:
                 await context.bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
                 await context.bot.send_message(
                     usr.telegram_chat_id,
-                    f"✅ Вы приняли пользователя <b>{user_to_apply.first().username}</b>",
+                    f"✅ Вы приняли пользователя <b>{user_to_apply.first().username}</b>.\n\n💰 Теперь укажите комиссию, которую мы даем пользователю.",
                     parse_mode="HTML",
                 )
+
+                context.user_data["user_id_applied"] = user_to_apply.first().id
 
                 await context.bot.send_message(
                     user_to_apply.first().telegram_chat_id,
@@ -232,12 +235,17 @@ class ApplierBot:
                     ])
                 )
                 
+                return 0
+
             except Exception as e:
                  await context.bot.send_message(
                     usr.telegram_chat_id,
                     f"💔 Возникла ошибка во время доавления пользователя в семью.\n\n<i>{e}</i>",
                     parse_mode="HTML",
                 )
+                
+            return ConversationHandler.END
+        
         else:
             try:
                 await context.bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
@@ -260,6 +268,53 @@ class ApplierBot:
                     f"💔 Возникла ошибка во время посылания нахуй пользователя.\n\n<i>{e}</i>",
                     parse_mode="HTML",
                 )
+                 
+            return ConversationHandler.END
+
+    @check_user_status
+    async def _set_comission(update: Update, context: CallbackContext) -> None:
+        """Функция подтверждения/отмены принятия пользователя
+
+        Args:
+            Update (_type_): объект update
+            context (CallbackContext): объект context
+        """ 
+        
+        usr, _ = await user_get_by_update(update)
+        try:
+            user = ApplyUser.objects.get(pk=int(context.user_data["user_id_applied"]))
+            comission = int(update.message.text)
+
+            user.comission = comission
+            user.save()
+
+            await context.bot.send_message(
+                usr.telegram_chat_id,
+                f"✅ Вы успешно установили пользователю <b>{usr.username}</b> комиссию в размере - <b>{comission}%</b>.",
+                parse_mode="HTML",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton(
+                            text="В меню 💎",
+                            callback_data="menu",
+                        )],
+                ])
+            )
+            return ConversationHandler.END
+
+        except Exception as e:
+            await context.bot.send_message(
+                usr.telegram_chat_id,
+                f"🟥 Возникла ошибка.\n\nОшибка: <i>{e}</i>",
+                parse_mode="HTML",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton(
+                            text="В меню 💎",
+                            callback_data="menu",
+                        )],
+                ])
+            )
+
+            return ConversationHandler.END
 
     @check_user_status
     async def _ask_for_cheque_amount(update: Update, context: CallbackContext) -> None:
@@ -582,9 +637,10 @@ class ApplierBot:
             )
             return ConversationHandler.END
 
+        amt = usr.balance - (usr.balance * 0.01 * usr.comission)
         await context.bot.send_message(
             usr.telegram_chat_id,
-            f"Вы запросили вывод:\n\n✔️ Сумма: <b>{usr.balance}₽</b>\n✔️ Курс: <b>{context.user_data['usdt_price']}₽</b>\n✔️ Адрес TRC-20: <i>{context.user_data['usdt_address']}₽</i>\n\nИтог: <b><u>{round(usr.balance / context.user_data['usdt_price'], 2)} USDT</u></b>",
+            f"Вы запросили вывод:\n\n✔️ Сумма: <b>{amt}₽</b>\n✔️ Курс: <b>{context.user_data['usdt_price']}₽</b>\n✔️ Адрес TRC-20: <i>{context.user_data['usdt_address']}₽</i>\n✔️ Комиссия: <b>{usr.comission}%</b>\n\nИтог: <b><u>{round(amt / context.user_data['usdt_price'], 2) - 2} USDT</u></b>\n\n* <i>2$ - комиссия на вывод USDT самой биржи.</i>",
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton(
@@ -617,14 +673,16 @@ class ApplierBot:
         
         try:
             admin = ApplyUser.objects.filter(username=os.environ.get("ADMIN_TO_APPLY_USERNAME")).first()
+            amt = usr.balance - (usr.balance * 0.01 * usr.comission)
             
             order = Withdraw(
                 withdraw_id = f"#{secrets.token_urlsafe(5)}",
-                withdraw_sum = usr.balance,
-                withdraw_owner=usr,
-                withdraw_address=context.user_data["usdt_address"],
-                course=context.user_data["usdt_price"],
-                usdt_sum=round(usr.balance / context.user_data["usdt_price"], 2),
+                withdraw_sum = amt,
+                withdraw_owner = usr,
+                withdraw_address = context.user_data["usdt_address"],
+                course = context.user_data["usdt_price"],
+                usdt_sum = round(usr.balance / context.user_data["usdt_price"], 2) - 2,
+                income = usr.balance * usr.comission
             )
 
             order.save()
@@ -634,10 +692,10 @@ class ApplierBot:
                 f"🛜 <b>{usr.username}</b>, ваша заявка <b>{order.withdraw_id}</b> на вывод отправлена. Ожидайте уведомления.",
                 parse_mode="HTML",
             )
-
+            
             await context.bot.send_message(
                 admin.telegram_chat_id,
-                f"<b>{usr.username}</b> запросил вывод <b>{order.withdraw_id}</b>:\n\n✔️ Сумма: <b>{usr.balance}₽</b>\n✔️ Курс: <b>{context.user_data['usdt_price']}₽</b>\n✔️ Адрес TRC-20: <i>{context.user_data['usdt_address']}₽</i>\n\nИтог: <b><u>{round(usr.balance / context.user_data['usdt_price'], 2)} USDT</u></b>",
+                f"<b>{usr.username}</b> запросил вывод <b>{order.withdraw_id}</b>:\n\n✔️ Сумма: <b>{amt}₽</b>\n✔️ Курс: <b>{context.user_data['usdt_price']}₽</b>\n✔️ Комиссия: {usr.comission}%\n✔️ Адрес TRC-20: <i>{context.user_data['usdt_address']}₽</i>\n\nИтог: <b><u>{round(amt / context.user_data['usdt_price'], 2) - 2} USDT</u></b>",
                 parse_mode="HTML",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton(
@@ -723,14 +781,55 @@ class ApplierBot:
                 ])
             )
 
+    @check_user_status
+    async def _get_stat(update: Update, context: CallbackContext) -> None:
+        """Функция для принятия заявки на вывод
+
+        Args:
+            Update (_type_): объект update
+            context (CallbackContext): объект context
+        """ 
+        
+        usr, _ = await user_get_by_update(update)
+
+        if usr.is_superuser:
+            orders = Withdraw.objects.filter(withdraw_date=)
+            print(orders)
+
+            df = pd.DataFrame(orders)
+            print(df)
+
+        else:
+            await context.bot.send_message(
+                usr.telegram_chat_id,
+                f"🆘 К сожалению, у вас недостаточно прав для выполнения данной операции.",
+                parse_mode="HTML",
+                reply_markup = InlineKeyboardMarkup([
+                    [InlineKeyboardButton(
+                        text="В начало 🔰",
+                        callback_data=f"menu",
+                    )], 
+                    
+                ])
+            )
+
 
     def register_handlers(self) -> Application: 
         """
             Метод реализующий регистрацию хэндлеров в приложении
         """
         self.application.add_handler(CommandHandler("start", self._start))
+        self.application.add_handler(CommandHandler("stat", self._get_stat))
         self.application.add_handler(CallbackQueryHandler(self._send_apply_to_admin, "create_apply"))
-        self.application.add_handler(CallbackQueryHandler(self._new_user_acception, "^acception_user_"))
+        
+        self.application.add_handler(ConversationHandler(
+            entry_points=[CallbackQueryHandler(self._new_user_acception, "^acception_user_")],
+            states={
+                0: [MessageHandler(filters.TEXT, self._set_comission)],
+            },
+            fallbacks=[CallbackQueryHandler(self._start, "menu"), CommandHandler("start", self._start)]
+        ))
+
         self.application.add_handler(CallbackQueryHandler(self._new_cheque_acception, "^acception_cheque_"))
 
         self.application.add_handler(ConversationHandler(
