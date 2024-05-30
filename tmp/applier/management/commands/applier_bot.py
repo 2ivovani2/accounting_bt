@@ -793,11 +793,7 @@ class ApplierBot:
         usr, _ = await user_get_by_update(update)
 
         if usr.is_superuser:
-            orders = Withdraw.objects.filter(withdraw_date=)
-            print(orders)
-
-            df = pd.DataFrame(orders)
-            print(df)
+            pass
 
         else:
             await context.bot.send_message(
