@@ -29,6 +29,11 @@ class ApplyUser(models.Model):
         default="Anonim"
     )
 
+    info = models.TextField(
+        verbose_name="Информация о юзере",
+        null=True
+    )
+
     balance = models.PositiveBigIntegerField(
         verbose_name="Баланс пользователя",
         null=False,

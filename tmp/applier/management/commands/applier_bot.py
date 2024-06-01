@@ -105,8 +105,7 @@ class ApplierBot:
         """
         self.application = Application.builder().token(os.environ.get('APPLIER_BOT_TOKEN')).build()
 
-    @check_user_status
-    async def _start(update: Update, context: CallbackContext) -> int:
+    async def _start(self, update: Update, context: CallbackContext) -> int:
         """
             Обработчик команды /start
 
@@ -115,32 +114,119 @@ class ApplierBot:
         """
         usr, _ = await user_get_by_update(update)
 
-        if not usr.is_superuser:
+        if not usr.verified_usr:
             await context.bot.send_message(
                 usr.telegram_chat_id,
-                f"🤩 <b>{usr.username}</b>, добрый день!\n\n💎 Ваш баланс: <b>{usr.balance}₽</b>",
+                f"🤩 <b>{usr.username}</b>, добрый день, если хотите отправить заявку на прием платежей, нажмите кнопку ниже.",
                 parse_mode="HTML",
                 reply_markup = InlineKeyboardMarkup([
                     [InlineKeyboardButton(
-                        text="Отправить чек 💰",
-                        callback_data="send_cheque",
-                    )],
-                    [InlineKeyboardButton(
-                        text="Запросить вывод ⚡️",
-                        callback_data="get_money",
+                        text="Отправить заявку 🤘🏻",
+                        callback_data="create_apply",
                     )]
                 ])
             )
         else:
-            await context.bot.send_message(
-                usr.telegram_chat_id,
-                f"🤩 <b>{usr.username}</b>, здарова админ ебаный!",
-                parse_mode="HTML",
-                reply_markup = None
-            )
+            if not usr.is_superuser:
+                await context.bot.send_message(
+                    usr.telegram_chat_id,
+                    f"🤩 <b>{usr.username}</b>, добрый день!\n\n💎 Ваш баланс: <b>{usr.balance}₽</b>",
+                    parse_mode="HTML",
+                    reply_markup = InlineKeyboardMarkup([
+                        [InlineKeyboardButton(
+                            text="Отправить чек 💰",
+                            callback_data="send_cheque",
+                        )],
+                        [InlineKeyboardButton(
+                            text="Запросить вывод ⚡️",
+                            callback_data="get_money",
+                        )]
+                    ])
+                )
+            else:
+                await context.bot.send_message(
+                    usr.telegram_chat_id,
+                    f"🤩 <b>{usr.username}</b>, здарова админ <b>ЕБАНЫЙ</b>!",
+                    parse_mode="HTML",
+                    reply_markup = InlineKeyboardMarkup([
+                        [InlineKeyboardButton(
+                            text="Статистика 📊",
+                            callback_data="stat",
+                        )],
+                    ])
+                )
 
         return ConversationHandler.END
     
+    async def _ask_for_info(self, update: Update, context: CallbackContext) -> int:
+        """
+            Обработчик команды /start
+
+            Returns:
+                Завершает диалог, путем вызова ConversationHandler.END
+        """
+        usr, _ = await user_get_by_update(update)
+        
+        await context.bot.send_photo(
+            usr.telegram_chat_id,
+            photo="https://i.ibb.co/b1Tj1Fw/photo-2024-06-01-21-05-33.jpg",
+            caption=f"💷 Приветствую, <b>партнер!</b>\n\nОтветь на несколько вопросов, чтобы мы могли принять твою заявку ⬇️\n\n- Откуда ты хочешь лить деньги ( приват/скам/ реклама )\n- Напиши объем, который ты готов загонять на карты\n- Как ты узнал о DRIP MONEY\n\n<i>Скоро ответим, на твою заявку, с любовью команда <b>DRIP MONEY</b></i>",
+            parse_mode="HTML",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton(
+                        text="В меню 💎",
+                        callback_data="menu",
+                )],
+            ])
+        )
+
+        return 0
+
+    async def _set_user_info(self, update: Update, context: CallbackContext) -> int:
+        """
+            Обработчик команды /start
+
+            Returns:
+                Завершает диалог, путем вызова ConversationHandler.END
+        """
+        usr, _ = await user_get_by_update(update)
+        info = update.message.text.strip()
+        
+        try:
+            usr.info = info
+            usr.save()
+            
+            await context.bot.send_message(
+                usr.telegram_chat_id,
+                f"✅ Информацию учли, подтвердите отправку.",
+                parse_mode="HTML",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton(
+                        text="Подтвердить ✔️",
+                        callback_data="accept_sending_to_admin",
+                    )],
+                    [InlineKeyboardButton(
+                        text="Отмена ⛔️",
+                        callback_data="menu",
+                    )],
+                ])
+            )
+
+        except Exception as e:
+            await context.bot.send_message(
+                usr.telegram_chat_id,
+                f"🟥 Возникла ошибка.\n\nОшибка: <i>{e}</i>",
+                parse_mode="HTML",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton(
+                            text="В меню 💎",
+                            callback_data="menu",
+                    )],
+                ])
+            )
+        
+        return 1
+
     async def _send_apply_to_admin(self, update: Update, context: CallbackContext) -> None:
         """Функция отправки заявки админу
 
@@ -151,13 +237,17 @@ class ApplierBot:
         
         usr, _ = await user_get_by_update(update)       
         
+        query = update.callback_query
+        await query.answer()
+        await context.bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
+
         if not usr.verified_usr:
             admin = ApplyUser.objects.filter(username=os.environ.get("ADMIN_TO_APPLY_USERNAME")).first()
 
             try:
                 await context.bot.send_message(
                     admin.telegram_chat_id,
-                    f"🤩 <b>{usr.username}</b>, здарова админ ебаный!\nНовая заявка в бота.\n\nНикнейм: <b>{usr.username}</b>\n\nПоинтересуйся у старших, есть такой или нет.",
+                    f"🤩 <b>{usr.username}</b>, здарова админ ебаный!\nНовая заявка в бота.\n\nНикнейм: <b>{usr.username}</b>\n\n<b>Инфа:</b>{usr.info if usr.info != None else 'Нет информации.'}\n\nПоинтересуйся у старших, есть такой или нет.",
                     parse_mode="HTML",
                     reply_markup = InlineKeyboardMarkup([
                         [InlineKeyboardButton(
@@ -190,6 +280,8 @@ class ApplierBot:
                         
                     ])
                 )
+        
+        return ConversationHandler.END
 
     @check_user_status
     async def _new_user_acception(update: Update, context: CallbackContext) -> None:
@@ -793,7 +885,25 @@ class ApplierBot:
         usr, _ = await user_get_by_update(update)
 
         if usr.is_superuser:
-            pass
+            await context.bot.send_message(
+                usr.telegram_chat_id,
+                f"🪛 Выберите операцию, которая вас интересует.",
+                parse_mode="HTML",
+                reply_markup = InlineKeyboardMarkup([
+                    [InlineKeyboardButton(
+                        text="Стат за день ☀️",
+                        callback_data="day_stat",
+                    )], 
+                    [InlineKeyboardButton(
+                        text="Стат по датам 📆",
+                        callback_data="date_stat",
+                    )], 
+                    [InlineKeyboardButton(
+                        text="Стат за все время ⏳",
+                        callback_data="all_stat",
+                    )],
+                ])
+            )
 
         else:
             await context.bot.send_message(
@@ -809,15 +919,23 @@ class ApplierBot:
                 ])
             )
 
+            return ConversationHandler.END
 
     def register_handlers(self) -> Application: 
         """
             Метод реализующий регистрацию хэндлеров в приложении
         """
         self.application.add_handler(CommandHandler("start", self._start))
-        self.application.add_handler(CommandHandler("stat", self._get_stat))
-        self.application.add_handler(CallbackQueryHandler(self._send_apply_to_admin, "create_apply"))
-        
+
+        self.application.add_handler(ConversationHandler(
+            entry_points=[CallbackQueryHandler(self._ask_for_info, "create_apply")],
+            states={
+                0: [MessageHandler(filters.TEXT, self._set_user_info)],
+                1: [CallbackQueryHandler(self._send_apply_to_admin, "accept_sending_to_admin")]
+            },
+            fallbacks=[CallbackQueryHandler(self._start, "menu"), CommandHandler("start", self._start)]
+        ))
+
         self.application.add_handler(ConversationHandler(
             entry_points=[CallbackQueryHandler(self._new_user_acception, "^acception_user_")],
             states={
