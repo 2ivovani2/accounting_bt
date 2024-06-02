@@ -37,11 +37,11 @@ class ChequeAdmin(admin.ModelAdmin):
     """
         Описание чеков в админской панели
     """
-    list_display = ("cheque_id", "cheque_sum", "cheque_owner", "cheque_date", "is_applied", "is_denied")
+    list_display = ("cheque_id", "cheque_sum", "cheque_owner", "cheque_date", "is_applied", "is_denied",)
     search_fields = ("cheque_id", "cheque_sum", "cheque_owner")
 
     fieldsets = (
         ("Основные параметры", {
-            "fields": ["cheque_id", "cheque_sum", "cheque_owner", "cheque_date", "is_aplied", "is_denied"]
+            "fields": ["cheque_id", "cheque_sum", "cheque_owner", "income", "cheque_date", "is_applied", "is_denied"]
         }),
     )
