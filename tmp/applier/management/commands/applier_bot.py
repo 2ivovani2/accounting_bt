@@ -10,7 +10,7 @@ warnings.filterwarnings("ignore")
 from django.core.management.base import BaseCommand
 from django.db.models import Q
 
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, InputFile
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, WebAppInfo
 from telegram.ext import (
     Application,
     CallbackContext,
@@ -130,7 +130,7 @@ class ApplierBot:
             if not usr.is_superuser:
                 await context.bot.send_message(
                     usr.telegram_chat_id,
-                    f"🤩 <b>{usr.username}</b>, добрый день!\n\n💎 Ваш баланс: <b>{usr.balance}₽</b>\n💰 Ваша комиссия составляет:<b>{usr.comission}%</b>",
+                    f"🤩 <b>{usr.username}</b>, добрый день!\n\n💎 Ваш баланс: <b>{usr.balance}₽</b>\n💰 Ваша комиссия составляет: <b>{usr.comission}%</b>",
                     parse_mode="HTML",
                     reply_markup = InlineKeyboardMarkup([
                         [InlineKeyboardButton(
@@ -153,6 +153,10 @@ class ApplierBot:
                             text="Статистика 📊",
                             callback_data="stat",
                         )],
+                        [InlineKeyboardButton(
+                            text="Админка 👀",
+                            web_app=WebAppInfo(url=f"{os.environ.get('DOMAIN_NAME')}/admin")
+                        )]
                     ])
                 )
 
@@ -1136,7 +1140,8 @@ class ApplierBot:
                 0: [MessageHandler(filters.TEXT & ~filters.COMMAND, self._set_user_info)],
                 1: [CallbackQueryHandler(self._send_apply_to_admin, "accept_sending_to_admin")]
             },
-            fallbacks=[CallbackQueryHandler(self._start, "menu"), CommandHandler("start", self._start)]
+            fallbacks=[CallbackQueryHandler(self._start, "menu"), CommandHandler("start", self._start)],
+            conversation_timeout=300
         ))
 
         self.application.add_handler(ConversationHandler(
@@ -1144,7 +1149,8 @@ class ApplierBot:
             states={
                 0: [MessageHandler(filters.TEXT & ~filters.COMMAND, self._set_comission)],
             },
-            fallbacks=[CallbackQueryHandler(self._start, "menu"), CommandHandler("start", self._start)]
+            fallbacks=[CallbackQueryHandler(self._start, "menu"), CommandHandler("start", self._start)],
+            conversation_timeout=300
         ))
 
         self.application.add_handler(CallbackQueryHandler(self._new_cheque_acception, "^acception_cheque_"))
@@ -1155,7 +1161,8 @@ class ApplierBot:
                 0: [MessageHandler(filters.TEXT & ~filters.COMMAND, self._ask_for_photo)],
                 1: [MessageHandler(filters.PHOTO, self._send_photo_to_admin)],
             },
-            fallbacks=[CallbackQueryHandler(self._start, "menu"), CommandHandler("start", self._start)]
+            fallbacks=[CallbackQueryHandler(self._start, "menu"), CommandHandler("start", self._start)],
+            conversation_timeout=300
         ))
 
         self.application.add_handler(ConversationHandler(
@@ -1163,7 +1170,8 @@ class ApplierBot:
             states={
                 0: [MessageHandler(filters.TEXT & ~filters.COMMAND, self._send_withdraw_appliment)],
             },
-            fallbacks=[CallbackQueryHandler(self._start, "menu"), CommandHandler("start", self._start)]
+            fallbacks=[CallbackQueryHandler(self._start, "menu"), CommandHandler("start", self._start)],
+            conversation_timeout=300
         ))
 
         self.application.add_handler(ConversationHandler(
@@ -1172,7 +1180,8 @@ class ApplierBot:
                 0: [MessageHandler(filters.TEXT & ~filters.COMMAND, self._ask_for_stat)],
                 1: [CallbackQueryHandler(self._get_stat, "^stat_")]
             },
-            fallbacks=[CallbackQueryHandler(self._start, "menu"), CommandHandler("start", self._start)]
+            fallbacks=[CallbackQueryHandler(self._start, "menu"), CommandHandler("start", self._start)],
+            conversation_timeout=300
         ))
 
         self.application.add_handler(CallbackQueryHandler(self._send_withdraw_appliment_to_admin, "apply_withdraw"))
