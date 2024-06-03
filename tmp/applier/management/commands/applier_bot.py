@@ -1129,6 +1129,7 @@ class ApplierBot:
         """
             Метод реализующий регистрацию хэндлеров в приложении
         """
+
         self.application.add_handler(CommandHandler("start", self._start))
 
         self.application.add_handler(ConversationHandler(

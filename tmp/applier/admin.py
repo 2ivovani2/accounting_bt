@@ -12,7 +12,7 @@ class UserAdmin(admin.ModelAdmin):
     fieldsets = (
 
         ("Основные параметры", {
-            "fields": ["username", "telegram_chat_id", "verified_usr", "is_superuser", "balance", "comission"]
+            "fields": ["username", "telegram_chat_id", "verified_usr", "is_superuser", "balance", "comission", "info"]
         }),
     )
 
@@ -42,6 +42,6 @@ class ChequeAdmin(admin.ModelAdmin):
 
     fieldsets = (
         ("Основные параметры", {
-            "fields": ["cheque_id", "cheque_sum", "cheque_owner", "income", "cheque_date", "is_applied", "is_denied"]
+            "fields": ["cheque_id", "cheque_sum", "cheque_owner", "cheque_date", "is_applied", "is_denied"]
         }),
     )
