@@ -105,7 +105,7 @@ class ApplierBot:
         """
         self.application = Application.builder().token(os.environ.get('APPLIER_BOT_TOKEN')).build()
 
-    async def _start(self, update: Update, context: CallbackContext) -> int:
+    async def _start(self, update: Update, context: CallbackContext):
         """
             Обработчик команды /start
 
@@ -130,7 +130,7 @@ class ApplierBot:
             if not usr.is_superuser:
                 await context.bot.send_message(
                     usr.telegram_chat_id,
-                    f"🤩 <b>{usr.username}</b>, добрый день!\n\n💎 Ваш баланс: <b>{usr.balance}₽</b>",
+                    f"🤩 <b>{usr.username}</b>, добрый день!\n\n💎 Ваш баланс: <b>{usr.balance}₽</b>\n💰 Ваша комиссия составляет:<b>{usr.comission}%</b>",
                     parse_mode="HTML",
                     reply_markup = InlineKeyboardMarkup([
                         [InlineKeyboardButton(
@@ -316,7 +316,7 @@ class ApplierBot:
 
                 await context.bot.send_message(
                     user_to_apply.first().telegram_chat_id,
-                    f"❤️‍🔥 <b>{user_to_apply.first().username}</b>, ваша заявка успешно принята!\n\nВаша комиссия составляет:<b>{user_to_apply.first().comission}%</b>",
+                    f"❤️‍🔥 <b>{user_to_apply.first().username}</b>, ваша заявка успешно принята!\n</b>",
                     parse_mode="HTML",
                     reply_markup = InlineKeyboardMarkup([
                         [InlineKeyboardButton(
@@ -1130,21 +1130,10 @@ class ApplierBot:
             Метод реализующий регистрацию хэндлеров в приложении
         """
 
-        self.application.add_handler(CommandHandler("start", self._start))
-
-        self.application.add_handler(ConversationHandler(
-            entry_points=[CallbackQueryHandler(self._ask_for_username_in_stat, "stat")],
-            states={
-                0: [MessageHandler(filters.TEXT, self._ask_for_stat)],
-                1: [CallbackQueryHandler(self._get_stat, "^stat_")]
-            },
-            fallbacks=[CallbackQueryHandler(self._start, "menu"), CommandHandler("start", self._start)]
-        ))
-
         self.application.add_handler(ConversationHandler(
             entry_points=[CallbackQueryHandler(self._ask_for_info, "create_apply")],
             states={
-                0: [MessageHandler(filters.TEXT, self._set_user_info)],
+                0: [MessageHandler(filters.TEXT & ~filters.COMMAND, self._set_user_info)],
                 1: [CallbackQueryHandler(self._send_apply_to_admin, "accept_sending_to_admin")]
             },
             fallbacks=[CallbackQueryHandler(self._start, "menu"), CommandHandler("start", self._start)]
@@ -1153,7 +1142,7 @@ class ApplierBot:
         self.application.add_handler(ConversationHandler(
             entry_points=[CallbackQueryHandler(self._new_user_acception, "^acception_user_")],
             states={
-                0: [MessageHandler(filters.TEXT, self._set_comission)],
+                0: [MessageHandler(filters.TEXT & ~filters.COMMAND, self._set_comission)],
             },
             fallbacks=[CallbackQueryHandler(self._start, "menu"), CommandHandler("start", self._start)]
         ))
@@ -1163,7 +1152,7 @@ class ApplierBot:
         self.application.add_handler(ConversationHandler(
             entry_points=[CallbackQueryHandler(self._ask_for_cheque_amount, "send_cheque")],
             states={
-                0: [MessageHandler(filters.TEXT, self._ask_for_photo)],
+                0: [MessageHandler(filters.TEXT & ~filters.COMMAND, self._ask_for_photo)],
                 1: [MessageHandler(filters.PHOTO, self._send_photo_to_admin)],
             },
             fallbacks=[CallbackQueryHandler(self._start, "menu"), CommandHandler("start", self._start)]
@@ -1172,13 +1161,25 @@ class ApplierBot:
         self.application.add_handler(ConversationHandler(
             entry_points=[CallbackQueryHandler(self._ask_for_money_withdraw, "get_money")],
             states={
-                0: [MessageHandler(filters.TEXT, self._send_withdraw_appliment)],
+                0: [MessageHandler(filters.TEXT & ~filters.COMMAND, self._send_withdraw_appliment)],
+            },
+            fallbacks=[CallbackQueryHandler(self._start, "menu"), CommandHandler("start", self._start)]
+        ))
+
+        self.application.add_handler(ConversationHandler(
+            entry_points=[CallbackQueryHandler(self._ask_for_username_in_stat, "stat")],
+            states={
+                0: [MessageHandler(filters.TEXT & ~filters.COMMAND, self._ask_for_stat)],
+                1: [CallbackQueryHandler(self._get_stat, "^stat_")]
             },
             fallbacks=[CallbackQueryHandler(self._start, "menu"), CommandHandler("start", self._start)]
         ))
 
         self.application.add_handler(CallbackQueryHandler(self._send_withdraw_appliment_to_admin, "apply_withdraw"))
         self.application.add_handler(CallbackQueryHandler(self._apply_withdraw_appliment, "^order_paid_"))
+
+        self.application.add_handler(CommandHandler("start", self._start))
+        self.application.add_handler(CallbackQueryHandler(self._start, "menu"))
 
         return self.application
 
