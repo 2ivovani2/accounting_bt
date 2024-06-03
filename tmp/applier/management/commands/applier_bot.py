@@ -140,7 +140,11 @@ class ApplierBot:
                         [InlineKeyboardButton(
                             text="Запросить вывод ⚡️",
                             callback_data="get_money",
-                        )]
+                        )], 
+                        [InlineKeyboardButton(
+                            text="Операции за сегодня 📆",
+                            callback_data="today_hist",
+                        )],
                     ])
                 )
             else:
@@ -170,7 +174,7 @@ class ApplierBot:
                 Завершает диалог, путем вызова ConversationHandler.END
         """
         usr, _ = await user_get_by_update(update)
-        
+
         await context.bot.send_photo(
             usr.telegram_chat_id,
             photo="https://i.ibb.co/b1Tj1Fw/photo-2024-06-01-21-05-33.jpg",
@@ -317,26 +321,13 @@ class ApplierBot:
                 )
 
                 context.user_data["user_id_applied"] = user_to_apply.first().id
-
-                await context.bot.send_message(
-                    user_to_apply.first().telegram_chat_id,
-                    f"❤️‍🔥 <b>{user_to_apply.first().username}</b>, ваша заявка успешно принята!\n</b>",
-                    parse_mode="HTML",
-                    reply_markup = InlineKeyboardMarkup([
-                        [InlineKeyboardButton(
-                            text="В меню 🔰",
-                            callback_data=f"menu",
-                        )], 
-                        
-                    ])
-                )
                 
                 return 0
 
             except Exception as e:
                  await context.bot.send_message(
                     usr.telegram_chat_id,
-                    f"💔 Возникла ошибка во время доавления пользователя в семью.\n\n<i>{e}</i>",
+                    f"💔 Возникла ошибка во время добавления пользователя в семью.\n\n<i>{e}</i>",
                     parse_mode="HTML",
                 )
                 
@@ -395,6 +386,20 @@ class ApplierBot:
                         )],
                 ])
             )
+
+            await context.bot.send_message(
+                user.telegram_chat_id,
+                f"❤️‍🔥 <b>{user.username}</b>, ваша заявка успешно принята!\nВаша комиссия составит: <b>{user.comission}%</b>",
+                parse_mode="HTML",
+                reply_markup = InlineKeyboardMarkup([
+                    [InlineKeyboardButton(
+                        text="В меню 🔰",
+                        callback_data=f"menu",
+                    )], 
+                    
+                ])
+            )
+
             return ConversationHandler.END
 
         except Exception as e:
@@ -1018,10 +1023,11 @@ class ApplierBot:
             end_msg = f"💰 Статистика о пользователе <b>{ApplyUser.objects.filter(username=user_info_about).first().username}</b> за сегодня:\n\n<b>Чеки:</b>\n"
             
             if len(cheques) == 0:
-                end_msg += "🙁 Сегодня чеков не было."
+                end_msg += "🙁 Сегодня чеков не было.\n"
             else:
                 for cheque in cheques:
-                    total_cheques_sum += cheque.cheque_sum
+                    if cheque.is_applied:
+                        total_cheques_sum += cheque.cheque_sum
 
                     if not cheque.is_applied and not cheque.is_denied:
                         status = "В работе"
@@ -1035,11 +1041,12 @@ class ApplierBot:
             end_msg += "\n<b>Выводы:</b>\n"
 
             if len(withdraws) == 0:
-                end_msg += "🙁 Сегодня выводов не было."
+                end_msg += "🙁 Сегодня выводов не было.\n"
             else:
                 for withdraw in withdraws:
-                    total_withdraw_sum += withdraw.withdraw_sum
-                    total_income += withdraw.income
+                    if withdraw.is_applied:
+                        total_withdraw_sum += withdraw.withdraw_sum
+                        total_income += withdraw.income
 
                     if not withdraw.is_applied:
                         status = "В работе"
@@ -1129,6 +1136,81 @@ class ApplierBot:
 
         return ConversationHandler.END
 
+    @check_user_status
+    async def _today_hist(update: Update, context: CallbackContext) -> None:
+        """Функция для получения статистики за день для юзера
+
+        Args:
+            Update (_type_): объект update
+            context (CallbackContext): объект context
+        """ 
+        
+        usr, _ = await user_get_by_update(update)
+
+        query = update.callback_query
+        await query.answer()
+        await context.bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
+
+        cheques = Cheque.objects.filter(
+            cheque_owner=ApplyUser.objects.filter(username=usr).first(),
+            cheque_date__date=timezone.now()
+        ).all()
+
+        withdraws = Withdraw.objects.filter(
+            withdraw_owner=ApplyUser.objects.filter(username=usr).first(),
+            withdraw_date__date=timezone.now()    
+        ).all()
+
+        total_cheques_sum, total_withdraw_sum = 0, 0
+        end_msg = f"💰 Статистика за сегодня:\n\n<b>Чеки:</b>\n"
+        
+        if len(cheques) == 0:
+            end_msg += "🙁 Сегодня чеков не было.\n"
+        else:
+            for cheque in cheques:
+                if cheque.is_applied:
+                    total_cheques_sum += cheque.cheque_sum
+
+                if not cheque.is_applied and not cheque.is_denied:
+                    status = "В работе"
+                elif cheque.is_applied:
+                    status = "Принят"
+                else:
+                    status = "Не принят"
+            
+                end_msg += f"<i>{cheque.cheque_id} - {cheque.cheque_sum}₽ - {status}</i>\n"
+        
+        end_msg += "\n<b>Выводы:</b>\n"
+
+        if len(withdraws) == 0:
+            end_msg += "🙁 Сегодня выводов не было.\n"
+        else:
+            for withdraw in withdraws:
+                if withdraw.is_applied:
+                    total_withdraw_sum += withdraw.withdraw_sum
+
+                if not withdraw.is_applied:
+                    status = "В работе"
+                elif withdraw.is_applied:
+                    status = "Оплачен"
+                
+                end_msg += f"<i>{withdraw.withdraw_id} - {withdraw.withdraw_sum}₽ - {status} - {withdraw.usdt_sum}USDT - {withdraw.income}₽</i>\n"
+        
+        end_msg += f"\nОбщая сумма по чекам: <b>{total_cheques_sum}₽</b>\nОбщая сумма по выводам: <b>{total_withdraw_sum}₽</b>"
+
+        await context.bot.send_message(
+                usr.telegram_chat_id,
+                end_msg,
+                parse_mode="HTML",
+                reply_markup = InlineKeyboardMarkup([
+                    [InlineKeyboardButton(
+                        text="В начало 🔰",
+                        callback_data=f"menu",
+                    )], 
+                    
+                ])
+            )
+
     def register_handlers(self) -> Application: 
         """
             Метод реализующий регистрацию хэндлеров в приложении
@@ -1186,6 +1268,8 @@ class ApplierBot:
 
         self.application.add_handler(CallbackQueryHandler(self._send_withdraw_appliment_to_admin, "apply_withdraw"))
         self.application.add_handler(CallbackQueryHandler(self._apply_withdraw_appliment, "^order_paid_"))
+
+        self.application.add_handler(CallbackQueryHandler(self._today_hist, "today_hist"))
 
         self.application.add_handler(CommandHandler("start", self._start))
         self.application.add_handler(CallbackQueryHandler(self._start, "menu"))
