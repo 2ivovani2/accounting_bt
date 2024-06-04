@@ -113,6 +113,13 @@ class ApplierBot:
                 Завершает диалог, путем вызова ConversationHandler.END
         """
         usr, _ = await user_get_by_update(update)
+        
+        try:
+            query = update.callback_query
+            await query.answer()
+            await context.bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
+        except:
+            pass
 
         if not usr.verified_usr:
             await context.bot.send_message(
@@ -383,7 +390,7 @@ class ApplierBot:
                     [InlineKeyboardButton(
                             text="В меню 💎",
                             callback_data="menu",
-                        )],
+                    )],
                 ])
             )
 
@@ -741,7 +748,7 @@ class ApplierBot:
         amt = usr.balance - (usr.balance * 0.01 * usr.comission)
         await context.bot.send_message(
             usr.telegram_chat_id,
-            f"Вы запросили вывод:\n\n✔️ Сумма: <b>{amt}₽</b>\n✔️ Курс: <b>{context.user_data['usdt_price']}₽</b>\n✔️ Адрес TRC-20: <i>{context.user_data['usdt_address']}₽</i>\n✔️ Комиссия: <b>{usr.comission}%</b>\n\nИтог: <b><u>{round(amt / context.user_data['usdt_price'], 2) - 2} USDT</u></b>\n\n* <i>2$ - комиссия на вывод USDT самой биржи.</i>",
+            f"Вы запросили вывод:\n\n✔️ Сумма: <b>{amt}₽</b>\n✔️ Курс: <b>{context.user_data['usdt_price']}₽</b>\n✔️ Адрес TRC-20: <i>{context.user_data['usdt_address']}</i>\n✔️ Комиссия: <b>{usr.comission}%</b>\n\nИтог: <b><u>{round(amt / context.user_data['usdt_price'], 2) - 2} USDT</u></b>\n\n* <i>2$ - комиссия на вывод USDT самой биржи.</i>",
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton(
@@ -796,7 +803,7 @@ class ApplierBot:
             
             await context.bot.send_message(
                 admin.telegram_chat_id,
-                f"<b>{usr.username}</b> запросил вывод <b>{order.withdraw_id}</b>:\n\n✔️ Сумма: <b>{amt}₽</b>\n✔️ Курс: <b>{context.user_data['usdt_price']}₽</b>\n✔️ Комиссия: {usr.comission}%\n✔️ Адрес TRC-20: <i>{context.user_data['usdt_address']}₽</i>\n\nИтог: <b><u>{round(amt / context.user_data['usdt_price'], 2) - 2} USDT</u></b>",
+                f"<b>{usr.username}</b> запросил вывод <b>{order.withdraw_id}</b>:\n\n✔️ Сумма: <b>{amt}₽</b>\n✔️ Курс: <b>{context.user_data['usdt_price']}₽</b>\n✔️ Комиссия: {usr.comission}%\n✔️ Адрес TRC-20: <i>{context.user_data['usdt_address']}</i>\n\nИтог: <b><u>{round(amt / context.user_data['usdt_price'], 2) - 2} USDT</u></b>",
                 parse_mode="HTML",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton(
@@ -848,7 +855,7 @@ class ApplierBot:
             order = order.first()
             user_whom_applied = ApplyUser.objects.filter(telegram_chat_id=user_id).first()
             
-            user_whom_applied.balance = 0
+            user_whom_applied.balance -= (order.withdraw_sum + order.income)
             user_whom_applied.save()
 
             await context.bot.send_message(
