@@ -10,7 +10,7 @@ warnings.filterwarnings("ignore")
 from django.core.management.base import BaseCommand
 from django.db.models import Q
 
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, WebAppInfo
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, WebAppInfo, InputMediaPhoto
 from telegram.ext import (
     Application,
     CallbackContext,
@@ -114,12 +114,6 @@ class ApplierBot:
         """
         usr, _ = await user_get_by_update(update)
         
-        try:
-            query = update.callback_query
-            await query.answer()
-            await context.bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
-        except:
-            pass
 
         if not usr.verified_usr:
             await context.bot.send_message(
@@ -462,7 +456,7 @@ class ApplierBot:
             context.user_data["cheque_amount"] = int(update.message.text.strip())
             await context.bot.send_message(
                 usr.telegram_chat_id,
-                f"✔️ Теперь пришлите чек.",
+                f"✔️ Теперь пришлите чек(и).",
                 parse_mode="HTML",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton(
@@ -569,13 +563,13 @@ class ApplierBot:
 
                 await context.bot.send_message(
                     usr.telegram_chat_id,
-                    f"🪛 Вы приняли чек <b>#{cheque_id}</b>",
+                    f"🪛 Вы приняли чек <b>#{cheque_id}</b> от <b>{new_cheque.cheque_owner.username}</b> на сумму <b>{new_cheque.cheque_sum}₽</b>.",
                     parse_mode="HTML",
                 )
 
                 await context.bot.send_message(
                     user_to_update.telegram_chat_id,
-                    f"🧲 Ваш чек <b>#{cheque_id}</b> принят.\nБаланс обновлен.",
+                    f"🧲 Ваш чек <b>#{cheque_id}</b> на сумму <b>{new_cheque.cheque_sum}₽</b> принят.\nБаланс обновлен.",
                     parse_mode="HTML",
                     reply_markup = InlineKeyboardMarkup([
                         [InlineKeyboardButton(
@@ -590,13 +584,13 @@ class ApplierBot:
                 new_cheque.is_denied = True
                 await context.bot.send_message(
                     usr.telegram_chat_id,
-                    f"⚔️ Вы отклонили чек <b>#{cheque_id}</b>",
+                    f"⚔️ Вы отклонили чек <b>#{cheque_id}</b> от <b>{new_cheque.cheque_owner.username}</b> на сумму <b>{new_cheque.cheque_sum}₽</b>.",
                     parse_mode="HTML",
                 )
 
                 await context.bot.send_message(
                     user_to_update.telegram_chat_id,
-                    f"🚬 Ваш чек <b>#{cheque_id}</b> был отклонен.",
+                    f"🚬 Ваш чек <b>#{cheque_id}</b> на сумму <b>{new_cheque.cheque_sum}₽</b> был отклонен.",
                     parse_mode="HTML",
                     reply_markup = InlineKeyboardMarkup([
                         [InlineKeyboardButton(
@@ -872,6 +866,18 @@ class ApplierBot:
                         url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_USERNAME')}"
                     )],
                     
+                ])
+            )
+
+            await context.bot.send_message(
+                user_whom_applied.telegram_chat_id,
+                f"👅 <b>{usr.username}</b>, вы успешно оплатили <b>{order.withdraw_id}</b> на сумму <b>{order.usdt_sum} USDT</b> от <b>{user_whom_applied.username}</b>.",
+                parse_mode="HTML",
+                reply_markup = InlineKeyboardMarkup([
+                    [InlineKeyboardButton(
+                        text="В меню 🔰",
+                        callback_data=f"menu",
+                    )], 
                 ])
             )
 
@@ -1264,7 +1270,7 @@ class ApplierBot:
         ))
 
         self.application.add_handler(ConversationHandler(
-            entry_points=[CallbackQueryHandler(self._ask_for_username_in_stat, "stat")],
+            entry_points=[CallbackQueryHandler(self._ask_for_username_in_stat, "stat"), CommandHandler("stat", self._ask_for_username_in_stat)],
             states={
                 0: [MessageHandler(filters.TEXT & ~filters.COMMAND, self._ask_for_stat)],
                 1: [CallbackQueryHandler(self._get_stat, "^stat_")]
