@@ -3,6 +3,7 @@ from applier.models import *
 from asgiref.sync import sync_to_async
 
 from datetime import date
+from threading import Timer
 import requests, base58
 import os, django, logging, warnings, secrets
 warnings.filterwarnings("ignore")
@@ -493,11 +494,34 @@ class ApplierBot:
         usr, _ = await user_get_by_update(update)
         admin = ApplyUser.objects.filter(username=os.environ.get("ADMIN_TO_APPLY_USERNAME")).first()
 
-        await context.bot.forward_message(
-            chat_id=admin.telegram_chat_id,
-            from_chat_id=usr.telegram_chat_id,
-            message_id=update.message.message_id
-        )
+        media_groups = {}
+        timers = {}
+
+        def complete_media_group(media_group_id, chat_id, context: CallbackContext):
+            try:
+                messages = media_groups.pop(media_group_id)
+                timers.pop(media_group_id, None)
+
+                media_files = []
+                for message in messages:
+                    if message.photo:
+                        media_files.append(InputMediaPhoto(media=message.photo[-1].file_id))
+                    
+                context.bot.send_media_group(chat_id=admin.telegram_chat_id, media=media_files)
+
+            except Exception as e:
+                logging.error(f'Ошибка: {e}')
+
+        media_group_id = update.message.media_group_id
+
+        if media_group_id in media_groups:
+            timers[media_group_id].cancel()
+            media_groups[media_group_id].append(update.message)
+        else:
+            media_groups[media_group_id] = [update.message]
+
+        timers[media_group_id] = Timer(2.0, complete_media_group, [media_group_id, usr.telegram_chat_id, context])
+        timers[media_group_id].start()
 
         await context.bot.send_message(
             admin.telegram_chat_id,
