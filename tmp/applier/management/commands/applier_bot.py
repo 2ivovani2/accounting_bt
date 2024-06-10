@@ -2,16 +2,23 @@ from applier.models import *
 
 from asgiref.sync import sync_to_async
 
-from datetime import date
-from threading import Timer
+import time
+from typing import TypedDict, List, Literal, cast
 import requests, base58
 import os, django, logging, warnings, secrets
 warnings.filterwarnings("ignore")
 
 from django.core.management.base import BaseCommand
-from django.db.models import Q
 
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, WebAppInfo, InputMediaPhoto
+from telegram import (
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    Update,
+    WebAppInfo,
+    InputMediaPhoto,
+    InputMediaDocument,
+)
+
 from telegram.ext import (
     Application,
     CallbackContext,
@@ -20,9 +27,11 @@ from telegram.ext import (
     CommandHandler,
     MessageHandler,
     filters,
+    ContextTypes,
+    ApplicationBuilder,
+    PicklePersistence,
 )
-
-import pandas as pd
+from telegram.helpers import effective_message_type
 
 os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
 django.setup()
@@ -32,6 +41,7 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
 logger = logging.getLogger(__name__)
+
 
 @sync_to_async
 def user_get_by_update(update: Update):
@@ -104,8 +114,17 @@ class ApplierBot:
         """"
             Инициализация апа
         """
-        self.application = Application.builder().token(os.environ.get('APPLIER_BOT_TOKEN')).build()
+        async def post_init(application: Application):
+            if "messages" not in application.bot_data:
+                application.bot_data = {"messages": {}}
 
+        self.application = (
+            ApplicationBuilder()
+            .token(os.environ.get('APPLIER_BOT_TOKEN'))
+            .post_init(post_init)
+            .build()
+        )
+       
     async def _start(self, update: Update, context: CallbackContext):
         """
             Обработчик команды /start
@@ -484,75 +503,136 @@ class ApplierBot:
             return ConversationHandler.END
 
     @check_user_status
-    async def _send_photo_to_admin(update: Update, context: CallbackContext) -> None:
+    async def _send_photo_to_admin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Функция пересылки сообщения админу
 
         Args:
             Update (_type_): объект update
             context (CallbackContext): объект context
         """ 
-        usr, _ = await user_get_by_update(update)
         admin = ApplyUser.objects.filter(username=os.environ.get("ADMIN_TO_APPLY_USERNAME")).first()
+        usr, _ = await user_get_by_update(update)
+        
+        MEDIA_GROUP_TYPES = {
+            "document": InputMediaDocument,
+            "photo": InputMediaPhoto,
+        }
+    
+        class MsgDict(TypedDict):
+            media_type: Literal["photo"]
+            media_id: str
+            caption: str
+            post_id: int
+    
+        async def media_group_sender(cont: ContextTypes.DEFAULT_TYPE):
+            bot = cont.bot
+            cont.job.data = cast(List[MsgDict], cont.job.data)
+            media = []
+            for msg_dict in cont.job.data:
+                media.append(
+                    MEDIA_GROUP_TYPES[msg_dict["media_type"]](
+                        media=msg_dict["media_id"], caption=msg_dict["caption"]
+                    )
+                )
+            if not media:
+                return
+            
+            msgs = await bot.send_media_group(chat_id=admin.telegram_chat_id, media=media)
+            await cont.bot.send_message(
+                admin.telegram_chat_id,
+                f"🤩 Новая оплата от <b>{usr.username}</b> на сумму <b>{context.user_data.get('cheque_amount')}</b> рублей.",
+                parse_mode="HTML",
+                reply_markup = InlineKeyboardMarkup([
+                    [InlineKeyboardButton(
+                        text="Принять оплату чека ✅",
+                        callback_data=f"acception_cheque_true_{context.user_data.get('cheque_amount')}_{usr.telegram_chat_id}",
+                    )], 
+                    [InlineKeyboardButton(
+                        text="Пошел он нахуй ⛔️",
+                        callback_data=f"acception_cheque_false_{context.user_data.get('cheque_amount')}_{usr.telegram_chat_id}",
+                    )]
+                ])
+            )
 
-        media_groups = {}
-        timers = {}
-
-        def complete_media_group(media_group_id, chat_id, context: CallbackContext):
-            try:
-                messages = media_groups.pop(media_group_id)
-                timers.pop(media_group_id, None)
-
-                media_files = []
-                for message in messages:
-                    if message.photo:
-                        media_files.append(InputMediaPhoto(media=message.photo[-1].file_id))
+            await cont.bot.send_message(
+                usr.telegram_chat_id,
+                f"💊 Ваш чек отправлен.",
+                parse_mode="HTML",
+                reply_markup = InlineKeyboardMarkup([
+                    [InlineKeyboardButton(
+                        text="В меню 🔰",
+                        callback_data=f"menu",
+                    )], 
                     
-                context.bot.send_media_group(chat_id=admin.telegram_chat_id, media=media_files)
+                ])
+            )
+            for index, msg in enumerate(msgs):
+                cont.bot_data["messages"][
+                    cont.job.data[index]["post_id"]
+                ] = msg.message_id
+            
+            return ConversationHandler.END
 
-            except Exception as e:
-                logging.error(f'Ошибка: {e}')
-
-        media_group_id = update.message.media_group_id
-
-        if media_group_id in media_groups:
-            timers[media_group_id].cancel()
-            media_groups[media_group_id].append(update.message)
+        message = update.effective_message
+        if message.media_group_id:
+            media_type = effective_message_type(message)
+            media_id = (
+                message.photo[-1].file_id
+                if message.photo
+                else message.effective_attachment.file_id
+            )
+            msg_dict = {
+                "media_type": media_type,
+                "media_id": media_id,
+                "caption": message.caption_html,
+                "post_id": message.message_id,
+            }
+            jobs = context.job_queue.get_jobs_by_name(str(message.media_group_id))
+            if jobs:
+                jobs[0].data.append(msg_dict)
+            else:
+                context.job_queue.run_once(
+                    callback=media_group_sender,
+                    when=2,
+                    data=[msg_dict],
+                    name=str(message.media_group_id),
+                )
         else:
-            media_groups[media_group_id] = [update.message]
+            await context.bot.forward_message(
+                chat_id=admin.telegram_chat_id,
+                from_chat_id=usr.telegram_chat_id,
+                message_id=update.message.message_id
+            )
+         
+            await context.bot.send_message(
+                admin.telegram_chat_id,
+                f"🤩 Новая оплата от <b>{usr.username}</b> на сумму <b>{context.user_data.get('cheque_amount')}</b> рублей.",
+                parse_mode="HTML",
+                reply_markup = InlineKeyboardMarkup([
+                    [InlineKeyboardButton(
+                        text="Принять оплату чека ✅",
+                        callback_data=f"acception_cheque_true_{context.user_data.get('cheque_amount')}_{usr.telegram_chat_id}",
+                    )], 
+                    [InlineKeyboardButton(
+                        text="Пошел он нахуй ⛔️",
+                        callback_data=f"acception_cheque_false_{context.user_data.get('cheque_amount')}_{usr.telegram_chat_id}",
+                    )]
+                ])
+            )
 
-        timers[media_group_id] = Timer(2.0, complete_media_group, [media_group_id, usr.telegram_chat_id, context])
-        timers[media_group_id].start()
-
-        await context.bot.send_message(
-            admin.telegram_chat_id,
-            f"🤩 Новая оплата от <b>{usr.username}</b> на сумму {context.user_data.get('cheque_amount')} рублей.",
-            parse_mode="HTML",
-            reply_markup = InlineKeyboardMarkup([
-                [InlineKeyboardButton(
-                    text="Принять оплату чека ✅",
-                    callback_data=f"acception_cheque_true_{context.user_data.get('cheque_amount')}_{usr.telegram_chat_id}",
-                )], 
-                [InlineKeyboardButton(
-                    text="Пошел он нахуй ⛔️",
-                    callback_data=f"acception_cheque_false_{context.user_data.get('cheque_amount')}_{usr.telegram_chat_id}",
-                )]
-            ])
-        )
-
-        await context.bot.send_message(
-            usr.telegram_chat_id,
-            f"💊 Ваш чек отправлен.",
-            parse_mode="HTML",
-            reply_markup = InlineKeyboardMarkup([
-                [InlineKeyboardButton(
-                    text="В меню 🔰",
-                    callback_data=f"menu",
-                )], 
-                
-            ])
-        )
-
-        return ConversationHandler.END
+            await context.bot.send_message(
+                usr.telegram_chat_id,
+                f"💊 Ваш чек отправлен.",
+                parse_mode="HTML",
+                reply_markup = InlineKeyboardMarkup([
+                    [InlineKeyboardButton(
+                        text="В меню 🔰",
+                        callback_data=f"menu",
+                    )], 
+                    
+                ])
+            )
+            context.bot_data["messages"][message.message_id] = msg.message_id
 
     @check_user_status
     async def _new_cheque_acception(update: Update, context: CallbackContext) -> None:
@@ -862,7 +942,6 @@ class ApplierBot:
         await query.answer()
         
         user_id, withdraw_id = query.data.split("_")[-2], query.data.split("_")[-1] 
-        await context.bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
         
         try:
             order = Withdraw.objects.filter(withdraw_id=withdraw_id)
@@ -1317,6 +1396,7 @@ class Command(BaseCommand):
     help = 'Команда запуска ApplyBot'
 
     def handle(self, *args, **kwargs):        
+    
         main_class_instance = ApplierBot()
         application = main_class_instance.register_handlers()
         
