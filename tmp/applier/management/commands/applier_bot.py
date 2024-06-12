@@ -1287,7 +1287,7 @@ class ApplierBot:
 
         for cheque in cheques:
             total_trans += int(cheque.cheque_sum)
-            total_income += int(cheque.cheque_sum) * int(cheque.cheque_owner.comission)
+            total_income += int(cheque.cheque_sum) * int(cheque.cheque_owner.comission) * 0.01
 
         for withdraw in withdraws:
             total_withdraws += withdraw.withdraw_sum
