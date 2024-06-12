@@ -1294,7 +1294,7 @@ class ApplierBot:
 
         await context.bot.send_message(
             usr.telegram_chat_id,
-            f"🌎 <b>Чеки:</b>\n- Общий оборот: <b>{total_trans}₽</b>\n- Прибыль: <b>{total_income}₽</b>\n- Всего чеков: <b>{len(cheques)} шт.</b>\n\n🌙 <b>Выводы:</b>\n- Общая сумма выводов: <b>{total_withdraws}₽</b>\n- Всего выводов: <b>{len(withdraws)} шт.</b>",
+            f"🌎 <b>Чеки:</b>\n- Общий оборот: <b>{total_trans}₽</b>\n- Прибыль: <b>{round(total_income, 2)}₽</b>\n- Всего чеков: <b>{len(cheques)} шт.</b>\n\n🌙 <b>Выводы:</b>\n- Общая сумма выводов: <b>{total_withdraws}₽</b>\n- Всего выводов: <b>{len(withdraws)} шт.</b>",
             parse_mode="HTML",
             reply_markup = InlineKeyboardMarkup([
                 [InlineKeyboardButton(
