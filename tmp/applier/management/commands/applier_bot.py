@@ -952,7 +952,11 @@ class ApplierBot:
             order = order.first()
             user_whom_applied = ApplyUser.objects.filter(telegram_chat_id=user_id).first()
             
-            user_whom_applied.balance -= (order.withdraw_sum + order.income)
+            if (order.withdraw_sum + order.income) >= user_whom_applied.balance:
+                user_whom_applied.balance = 0
+            else:
+                user_whom_applied.balance -= (order.withdraw_sum + order.income)
+            
             user_whom_applied.save()
 
             await context.bot.send_message(
@@ -973,7 +977,7 @@ class ApplierBot:
             )
 
             await context.bot.send_message(
-                user_whom_applied.telegram_chat_id,
+                usr.telegram_chat_id,
                 f"👅 <b>{usr.username}</b>, вы успешно оплатили <b>{order.withdraw_id}</b> на сумму <b>{order.usdt_sum} USDT</b> от <b>{user_whom_applied.username}</b>.",
                 parse_mode="HTML",
                 reply_markup = InlineKeyboardMarkup([
