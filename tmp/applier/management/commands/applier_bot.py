@@ -1286,11 +1286,13 @@ class ApplierBot:
         ).all()
 
         for cheque in cheques:
-            total_trans += int(cheque.cheque_sum)
-            total_income += int(cheque.cheque_sum) * int(cheque.cheque_owner.comission) * 0.01
+            if cheque.is_applied:
+                total_trans += int(cheque.cheque_sum)
+                total_income += int(cheque.cheque_sum) * int(cheque.cheque_owner.comission) * 0.01
 
         for withdraw in withdraws:
-            total_withdraws += withdraw.withdraw_sum
+            if withdraw.is_applied:
+                total_withdraws += withdraw.withdraw_sum
 
         await context.bot.send_message(
             usr.telegram_chat_id,
