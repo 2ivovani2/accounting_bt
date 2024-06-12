@@ -179,6 +179,10 @@ class ApplierBot:
                             callback_data="stat",
                         )],
                         [InlineKeyboardButton(
+                            text="Метрики дня ⭐️",
+                            callback_data="metrics",
+                        )],
+                        [InlineKeyboardButton(
                             text="Админка 👀",
                             web_app=WebAppInfo(url=f"{os.environ.get('DOMAIN_NAME')}/admin")
                         )]
@@ -1257,6 +1261,51 @@ class ApplierBot:
         return ConversationHandler.END
 
     @check_user_status
+    async def _today_metrics(update: Update, context: CallbackContext) -> None:
+        """Функция для получения метрик за день для админа
+
+        Args:
+            Update (_type_): объект update
+            context (CallbackContext): объект context
+        """ 
+        
+        usr, _ = await user_get_by_update(update)
+
+        query = update.callback_query
+        await query.answer()
+        await context.bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
+
+        total_trans, total_income, total_withdraws = 0, 0, 0
+
+        cheques = Cheque.objects.filter(
+            cheque_date__date=timezone.now()
+        ).all()
+
+        withdraws = Withdraw.objects.filter(
+            withdraw_date__date=timezone.now()    
+        ).all()
+
+        for cheque in cheques:
+            total_trans += int(cheque.cheque_sum)
+            total_income += int(cheque.cheque_sum) * int(cheque.cheque_owner.comission)
+
+        for withdraw in withdraws:
+            total_withdraws += withdraw.withdraw_sum
+
+        await context.bot.send_message(
+            usr.telegram_chat_id,
+            f"🌎 <b>Чеки:</b>\n- Общий оборот: <b>{total_trans}₽</b>\n- Прибыль: <b>{total_income}₽</b>\n- Всего чеков: <b>{len(cheques)} шт.</b>\n\n🌙 <b>Выводы:</b>\n- Общая сумма выводов: <b>{total_withdraws}₽</b>\n- Всего выводов: <b>{len(withdraws)} шт.</b>",
+            parse_mode="HTML",
+            reply_markup = InlineKeyboardMarkup([
+                [InlineKeyboardButton(
+                    text="В начало 🔰",
+                    callback_data=f"menu",
+                )], 
+                
+            ])
+        )
+
+    @check_user_status
     async def _today_hist(update: Update, context: CallbackContext) -> None:
         """Функция для получения статистики за день для юзера
 
@@ -1390,6 +1439,7 @@ class ApplierBot:
         self.application.add_handler(CallbackQueryHandler(self._apply_withdraw_appliment, "^order_paid_"))
 
         self.application.add_handler(CallbackQueryHandler(self._today_hist, "today_hist"))
+        self.application.add_handler(CallbackQueryHandler(self._today_metrics, "metrics"))
 
         self.application.add_handler(CommandHandler("start", self._start))
         self.application.add_handler(CallbackQueryHandler(self._start, "menu"))
