@@ -1305,6 +1305,7 @@ class ApplierBot:
                 for cheque in cheques:
                     if cheque.is_applied:
                         total_cheques_sum += cheque.cheque_sum
+                        total_income += cheque.income
 
                     if not cheque.is_applied and not cheque.is_denied:
                         status = "В работе"
@@ -1313,7 +1314,7 @@ class ApplierBot:
                     else:
                         status = "Не принят"
                 
-                    end_msg += f"<i>{cheque.cheque_id} - {cheque.cheque_sum}₽ - {status}</i>\n"
+                    end_msg += f"<i>{cheque.cheque_id} - {cheque.cheque_sum}₽ - {status} - {cheque.income}₽</i>\n"
             
             end_msg += "\n<b>Выводы:</b>\n"
 
@@ -1323,14 +1324,13 @@ class ApplierBot:
                 for withdraw in withdraws:
                     if withdraw.is_applied:
                         total_withdraw_sum += withdraw.withdraw_sum
-                        total_income += withdraw.income
 
                     if not withdraw.is_applied:
                         status = "В работе"
                     elif withdraw.is_applied:
                         status = "Оплачен"
                     
-                    end_msg += f"<i>{withdraw.withdraw_id} - {withdraw.withdraw_sum}₽ - {status} - {withdraw.usdt_sum}USDT - {withdraw.income}₽</i>\n"
+                    end_msg += f"<i>{withdraw.withdraw_id} - {withdraw.withdraw_sum}₽ - {status} - {withdraw.usdt_sum}USDT</i>\n"
             
             end_msg += f"\nОбщая сумма по чекам: <b>{total_cheques_sum}₽</b>\nОбщая сумма по выводам: <b>{total_withdraw_sum}₽</b>\nОбщая прибыль: <b>{total_income}₽</b>"
 
@@ -1441,7 +1441,7 @@ class ApplierBot:
         for cheque in cheques:
             if cheque.is_applied:
                 total_trans += int(cheque.cheque_sum)
-                total_income += int(cheque.cheque_sum) * int(cheque.cheque_owner.comission) * 0.01
+                total_income += cheque.income
 
         for withdraw in withdraws:
             if withdraw.is_applied:
