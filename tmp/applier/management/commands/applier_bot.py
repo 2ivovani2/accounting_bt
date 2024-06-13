@@ -1366,6 +1366,7 @@ class ApplierBot:
             else:
                 for cheque in cheques:
                     total_cheques_sum += cheque.cheque_sum
+                    total_income += cheque.income
 
                     if not cheque.is_applied and not cheque.is_denied:
                         status = "В работе"
@@ -1375,7 +1376,7 @@ class ApplierBot:
                         status = "Не принят"
 
                     if not cnt1 == os.environ.get("CNT_TO_SHOW_STAT_FOR_ALL_TIME"):
-                        end_msg += f"<i>{cheque.cheque_id} - {cheque.cheque_sum}₽ - {status}</i>\n"
+                        end_msg += f"<i>{cheque.cheque_id} - {cheque.cheque_sum}₽ - {status} - {cheque.income}₽</i>\n"
                         cnt1 += 1
 
             end_msg += "\n<b>Выводы:</b>\n"
@@ -1385,7 +1386,6 @@ class ApplierBot:
             else:
                 for withdraw in withdraws:
                     total_withdraw_sum += withdraw.withdraw_sum
-                    total_income += withdraw.income
 
                     if not withdraw.is_applied:
                         status = "В работе"
@@ -1393,7 +1393,7 @@ class ApplierBot:
                         status = "Оплачен"
                     
                     if not cnt2 == os.environ.get("CNT_TO_SHOW_STAT_FOR_ALL_TIME"):
-                        end_msg += f"<i>{withdraw.withdraw_id} - {withdraw.withdraw_sum}₽ - {status} - {withdraw.usdt_sum}USDT - {withdraw.income}₽</i>\n"
+                        end_msg += f"<i>{withdraw.withdraw_id} - {withdraw.withdraw_sum}₽ - {status} - {withdraw.usdt_sum}USDT</i>\n"
                         cnt2 += 1
 
             end_msg += f"\nОбщая сумма по чекам: <b>{total_cheques_sum}₽</b>\nОбщая сумма по выводам: <b>{total_withdraw_sum}₽</b>\nОбщая прибыль: <b>{total_income}₽</b>"
@@ -1502,7 +1502,7 @@ class ApplierBot:
                 else:
                     status = "Не принят"
             
-                end_msg += f"<i>{cheque.cheque_id} - {cheque.cheque_sum}₽ - {status}</i>\n"
+                end_msg += f"<i>{cheque.cheque_id} - {cheque.cheque_sum}₽ - {status} - {cheque.income}₽</i>\n"
         
         end_msg += "\n<b>Выводы:</b>\n"
 
@@ -1518,7 +1518,7 @@ class ApplierBot:
                 elif withdraw.is_applied:
                     status = "Оплачен"
                 
-                end_msg += f"<i>{withdraw.withdraw_id} - {withdraw.withdraw_sum}₽ - {status} - {withdraw.usdt_sum}USDT - {withdraw.income}₽</i>\n"
+                end_msg += f"<i>{withdraw.withdraw_id} - {withdraw.withdraw_sum}₽ - {status} - {withdraw.usdt_sum}USDT</i>\n"
         
         end_msg += f"\nОбщая сумма по чекам: <b>{total_cheques_sum}₽</b>\nОбщая сумма по выводам: <b>{total_withdraw_sum}₽</b>"
 
