@@ -22,8 +22,8 @@ class WithdrawAdmin(admin.ModelAdmin):
         Описание выводов в админской панели
     """
     
-    list_display = ("withdraw_id", "withdraw_sum", "withdraw_owner", "withdraw_date", "is_applied", "withdraw_address", "course", "usdt_sum", "income")
-    search_fields = ("cheque_id", "cheque_sum", "cheque_owner", "withdraw_address", "course", "usdt_sum")
+    list_display = ("withdraw_id", "withdraw_sum", "withdraw_owner", "withdraw_date", "is_applied", "withdraw_address", "course", "usdt_sum")
+    search_fields = ("withdraw_id", "withdraw_sum", "withdraw_owner", "withdraw_address", "course", "usdt_sum")
 
     fieldsets = (
         ("Основные параметры", {
@@ -37,11 +37,11 @@ class ChequeAdmin(admin.ModelAdmin):
     """
         Описание чеков в админской панели
     """
-    list_display = ("cheque_id", "cheque_sum", "cheque_owner", "cheque_date", "is_applied", "is_denied",)
+    list_display = ("cheque_id", "cheque_sum", "cheque_owner", "cheque_date", "is_applied", "is_denied","income")
     search_fields = ("cheque_id", "cheque_sum", "cheque_owner")
 
     fieldsets = (
         ("Основные параметры", {
-            "fields": ["cheque_id", "cheque_sum", "cheque_owner", "cheque_date", "is_applied", "is_denied"]
+            "fields": ["cheque_id", "cheque_sum", "cheque_owner", "cheque_date", "is_applied", "is_denied", "income"]
         }),
     )

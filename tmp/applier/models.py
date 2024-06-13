@@ -94,6 +94,12 @@ class Cheque(models.Model):
         default=False,    
     )
 
+    income = models.FloatField(
+        verbose_name="Наша прибыль",
+        null=False,
+        default=0
+    )
+
     def __str__(self) -> str:
         return self.cheque_id
     
@@ -128,7 +134,13 @@ class Withdraw(models.Model):
     )
 
     withdraw_address = models.CharField(
-        verbose_name="Адрес вывода",
+        verbose_name="Адрес крипто вывода",
+        max_length=255,
+        null=True
+    )
+
+    withdraw_card_number = models.CharField(
+        verbose_name="Реквизиты фиат вывода",
         max_length=255,
         null=True
     )
@@ -141,7 +153,7 @@ class Withdraw(models.Model):
 
     usdt_sum = models.FloatField(
         verbose_name="Сумма в USDT",
-        null=False,
+        null=True,
         default=0.0
     )
 
@@ -153,12 +165,6 @@ class Withdraw(models.Model):
     is_applied = models.BooleanField(
         verbose_name="Подтвержден ли вывод",
         default=False,
-    )
-
-    income = models.FloatField(
-        verbose_name="Наша прибыль",
-        null=False,
-        default=0
     )
 
     def __str__(self) -> str:
