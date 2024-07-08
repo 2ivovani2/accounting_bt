@@ -665,7 +665,7 @@ class ApplierBot:
         try:
             user_to_update = ApplyUser.objects.filter(telegram_chat_id=user_id).first()
 
-            cheque_id = secrets.token_urlsafe(int(os.environ.get("IDS_LEN")))
+            cheque_id = secrets.token_urlsafe(int(os.environ.get("IDS_LEN"))).replace("_", "")
             new_cheque = Cheque(
                 cheque_id=f"#{cheque_id}",
                 cheque_sum=int(amount),
@@ -972,7 +972,7 @@ class ApplierBot:
         if withdraw_type == "crypto":
             try: 
                 order = Withdraw(
-                    withdraw_id = f"#{secrets.token_urlsafe(int(os.environ.get('IDS_LEN')))}",
+                    withdraw_id = f"#{secrets.token_urlsafe(int(os.environ.get('IDS_LEN')))}".replace("_", ""),
                     withdraw_sum = usr.balance,
                     withdraw_owner = usr,
                     withdraw_address = context.user_data["usdt_address"],
@@ -1023,7 +1023,7 @@ class ApplierBot:
         elif withdraw_type == "fiat":
             try: 
                 order = Withdraw(
-                    withdraw_id = f"#{secrets.token_urlsafe(int(os.environ.get('IDS_LEN')))}",
+                    withdraw_id = f"#{secrets.token_urlsafe(int(os.environ.get('IDS_LEN')))}".replace("_", ""),
                     withdraw_sum = usr.balance,
                     withdraw_owner = usr,
                     withdraw_card_number = context.user_data["card_number"],
@@ -1104,6 +1104,8 @@ class ApplierBot:
         await context.bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
         status, user_id, withdraw_id = query.data.split("_")[-3], query.data.split("_")[-2], query.data.split("_")[-1] 
         
+        print(query.data)
+
         if status == "paid":
             try:
                 order = Withdraw.objects.filter(withdraw_id=withdraw_id)
