@@ -1103,8 +1103,6 @@ class ApplierBot:
         
         await context.bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
         status, user_id, withdraw_id = query.data.split("_")[-3], query.data.split("_")[-2], query.data.split("_")[-1] 
-        
-        print(query.data)
 
         if status == "paid":
             try:
