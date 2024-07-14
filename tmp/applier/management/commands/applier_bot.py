@@ -681,13 +681,13 @@ class ApplierBot:
 
                 await context.bot.send_message(
                     usr.telegram_chat_id,
-                    f"🪛 Вы приняли чек <b>#{cheque_id}</b> от <b>{new_cheque.cheque_owner.username}</b> на сумму <b>{new_cheque.cheque_sum}₽</b>.",
+                    f"🪛 Вы приняли чек <b>#{cheque_id}</b> от <b>{new_cheque.cheque_owner.username}</b> на сумму <b>{new_cheque.cheque_sum}₽</b> от <b>{str(new_cheque.cheque_date).split('.')[:1][0]}</b>.",
                     parse_mode="HTML",
                 )
 
                 await context.bot.send_message(
                     user_to_update.telegram_chat_id,
-                    f"🧲 Ваш чек <b>#{cheque_id}</b> на сумму <b>{new_cheque.cheque_sum}₽</b> принят.\nБаланс обновлен.",
+                    f"🧲 Ваш чек <b>#{cheque_id}</b> на сумму <b>{new_cheque.cheque_sum}₽</b> от <b>{str(new_cheque.cheque_date).split('.')[:1][0]}</b> принят.\nБаланс обновлен.",
                     parse_mode="HTML",
                     reply_markup = InlineKeyboardMarkup([
                         [InlineKeyboardButton(
@@ -702,13 +702,13 @@ class ApplierBot:
                 new_cheque.is_denied = True
                 await context.bot.send_message(
                     usr.telegram_chat_id,
-                    f"⚔️ Вы отклонили чек <b>#{cheque_id}</b> от <b>{new_cheque.cheque_owner.username}</b> на сумму <b>{new_cheque.cheque_sum}₽</b>.",
+                    f"⚔️ Вы отклонили чек <b>#{cheque_id}</b> от <b>{new_cheque.cheque_owner.username}</b> на сумму <b>{new_cheque.cheque_sum}₽</b> от <b>{str(new_cheque.cheque_date).split('.')[:1][0]}</b>.",
                     parse_mode="HTML",
                 )
 
                 await context.bot.send_message(
                     user_to_update.telegram_chat_id,
-                    f"🚬 Ваш чек <b>#{cheque_id}</b> на сумму <b>{new_cheque.cheque_sum}₽</b> был отклонен.",
+                    f"🚬 Ваш чек <b>#{cheque_id}</b> на сумму <b>{new_cheque.cheque_sum}₽</b> от <b>{str(new_cheque.cheque_date).split('.')[:1][0]}</b> был отклонен.",
                     parse_mode="HTML",
                     reply_markup = InlineKeyboardMarkup([
                         [InlineKeyboardButton(
