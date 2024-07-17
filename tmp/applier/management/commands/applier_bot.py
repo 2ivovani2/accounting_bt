@@ -644,7 +644,7 @@ class ApplierBot:
                     
                 ])
             )
-            context.bot_data["messages"][message.message_id] = msg.message_id
+            context.bot_data["messages"][message.message_id] = message.message_id
 
     @check_user_status
     async def _new_cheque_acception(update: Update, context: CallbackContext) -> None:
