@@ -100,7 +100,7 @@ def check_user_status(function):
                 parse_mode="HTML",
                 reply_markup = InlineKeyboardMarkup([
                     [InlineKeyboardButton(
-                        text="Отправить заявку 🤘🏻",
+                        text="🤘🏻 Отправить заявку",
                         callback_data="create_apply",
                     )]
                 ])
@@ -135,6 +135,11 @@ class ApplierBot:
         usr, _ = await user_get_by_update(update)
         
 
+        query = update.callback_query
+        if query:
+            await query.answer()
+            await context.bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
+
         if not usr.verified_usr:
             await context.bot.send_message(
                 usr.telegram_chat_id,
@@ -142,7 +147,7 @@ class ApplierBot:
                 parse_mode="HTML",
                 reply_markup = InlineKeyboardMarkup([
                     [InlineKeyboardButton(
-                        text="Отправить заявку 🤘🏻",
+                        text="🤘🏻 Отправить заявку",
                         callback_data="create_apply",
                     )]
                 ])
@@ -151,25 +156,25 @@ class ApplierBot:
             if not usr.is_superuser:
                 await context.bot.send_message(
                     usr.telegram_chat_id,
-                    f"🤩 <b>{usr.username}</b>, добрый день!\n\n💎 Ваш баланс: <b>{usr.balance}₽</b>\n💰 Ваша комиссия составляет: <b>{usr.comission}%</b>",
+                    f"<b>Приветствую, партнер 💎</b>\nПеред началом работы, ознакомьтесь с условиями и правилами DRIP MONEY\n\n<a href='https://t.me/{os.environ.get('ADMIN_TO_APPLY_USERNAME')}'>Тех. поддержка</a> / <a href='{os.environ.get('NEWS_LINK')}'>Новостной канал</a>",
                     parse_mode="HTML",
                     reply_markup = InlineKeyboardMarkup([
-                        [InlineKeyboardButton(
-                            text="Отправить чек 💰",
-                            callback_data="send_cheque",
-                        )],
-                        [InlineKeyboardButton(
-                            text="Запросить крипто вывод ⚡️",
-                            callback_data="get_money_crypto",
-                        )], 
-                        [InlineKeyboardButton(
-                            text="Запросить фиат вывод 💳",
-                            callback_data="get_money_fiat",
-                        )], 
-                        [InlineKeyboardButton(
-                            text="Операции за сегодня 📆",
-                            callback_data="today_hist",
-                        )],
+                        [
+                            InlineKeyboardButton(
+                                text="💰 Отправить чек",
+                                callback_data="send_cheque",
+                            ),
+                            InlineKeyboardButton(
+                                text="💎 Профиль",
+                                callback_data="profile",
+                            )
+                        ],
+                        [
+                            InlineKeyboardButton(
+                                text="📄 Документация",
+                                url=f"{os.environ.get('DOC_LINK')}"
+                            )
+                        ]
                     ])
                 )
             else:
@@ -215,7 +220,7 @@ class ApplierBot:
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton(
-                        text="В меню 💎",
+                        text="💎 В меню",
                         callback_data="menu",
                 )],
             ])
@@ -243,11 +248,11 @@ class ApplierBot:
                 parse_mode="HTML",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton(
-                        text="Подтвердить ✔️",
+                        text="✔️ Подтвердить",
                         callback_data="accept_sending_to_admin",
                     )],
                     [InlineKeyboardButton(
-                        text="Отмена ⛔️",
+                        text="⛔️ Отмена",
                         callback_data="menu",
                     )],
                 ])
@@ -260,7 +265,7 @@ class ApplierBot:
                 parse_mode="HTML",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton(
-                            text="В меню 💎",
+                            text="💎 В меню",
                             callback_data="menu",
                     )],
                 ])
@@ -315,7 +320,7 @@ class ApplierBot:
                     parse_mode="HTML",
                     reply_markup = InlineKeyboardMarkup([
                         [InlineKeyboardButton(
-                            text="В начало 🔰",
+                            text="🔙 В начало",
                             callback_data=f"menu",
                         )], 
                         
@@ -426,7 +431,7 @@ class ApplierBot:
                 parse_mode="HTML",
                 reply_markup = InlineKeyboardMarkup([
                     [InlineKeyboardButton(
-                        text="В меню 🔰",
+                        text="🔙 В меню",
                         callback_data=f"menu",
                     )], 
                     
@@ -442,13 +447,222 @@ class ApplierBot:
                 parse_mode="HTML",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton(
-                            text="В меню 💎",
+                            text="💎 В меню",
                             callback_data="menu",
                         )],
                 ])
             )
 
             return ConversationHandler.END
+
+    @check_user_status
+    async def _profile(update: Update, context: CallbackContext) -> None:
+        """Функция просмотра профиля юзера
+
+        Args:
+            Update (_type_): объект update
+            context (CallbackContext): объект context
+        """ 
+        
+        usr, _ = await user_get_by_update(update)
+        
+        query = update.callback_query
+        if query:
+            await query.answer()
+            await context.bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
+        
+        total_money = 0
+        for cheque in Cheque.objects.filter(cheque_owner=usr).all():
+            total_money += cheque.cheque_sum * (1 - usr.comission * .01)
+
+        if context.bot_data.get("usdt_price", ""):
+            course = context.bot_data.get["usdt_price"]
+        else:
+            try:
+                url = "https://api.binance.com/api/v3/ticker/price"
+                params = {
+                    "symbol": "USDTRUB"
+                }
+                response = requests.get(url, params=params)
+                ticker_info = response.json()
+
+                if 'price' in ticker_info:
+                    course = round(float(ticker_info['price']), 2) + float(os.environ.get("NADBAVKA"))
+                else:
+                    await context.bot.send_message(
+                        usr.telegram_chat_id,
+                        f"⛔️ Возникла ошибка во время получения цены <b>USDT/RUB</b>.\n\nЕсли проблема повторяется, обратитеь к администратору.",
+                        parse_mode="HTML",
+                        reply_markup=InlineKeyboardMarkup([
+                            [InlineKeyboardButton(
+                                    text="💎 В меню",
+                                    callback_data="menu",
+                            )],
+                            [InlineKeyboardButton(
+                                    text="🆘 Администратор",
+                                    url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_USERNAME')}"
+                            )],
+                        ])
+                    )
+
+            except Exception as e:
+                await context.bot.send_message(
+                    usr.telegram_chat_id,
+                    f"⛔️ Возникла ошибка во время получения цены <b>USDT/RUB</b>.\n\nОшибка: <i>{e}</i>",
+                    parse_mode="HTML",
+                    reply_markup=InlineKeyboardMarkup([
+                        [InlineKeyboardButton(
+                                text="💎 В меню",
+                                callback_data="menu",
+                        )],
+                        [InlineKeyboardButton(
+                                text="🆘 Администратор",
+                                url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_USERNAME')}"
+                        )],
+                    ])
+                )
+
+        await context.bot.send_message(
+            usr.telegram_chat_id,
+            f"<b>Ⓘ <u>ID профиля</u></b> - {usr.telegram_chat_id}\n\n· Текущий баланс: <b>{usr.balance}₽</b>\n· Заработано: <b>{round(total_money, 1)}₽</b>\n· Текущая комиссия: <b>{usr.comission}%</b>\n· Курс USDT/RUB: <b>{course}₽</b>\n\n<b>Возникли тех неполадки ⤵️</b> @{os.environ.get('ADMIN_TO_APPLY_USERNAME')}",
+            parse_mode="HTML",
+            reply_markup=InlineKeyboardMarkup([
+                [
+                    
+                    InlineKeyboardButton(
+                        text="⌛️ Вывод", 
+                        callback_data="withdraw_menu"
+                    ),
+                    InlineKeyboardButton(
+                        text="💸 Отправить чек", 
+                        callback_data="send_cheque"
+                    ),
+                ],
+                [
+                    InlineKeyboardButton(
+                        text="📆 История",
+                        callback_data="today_hist",
+                    ),
+                    InlineKeyboardButton(
+                        text="💵 Реквизиты", 
+                        callback_data="reks"
+                    ),
+                
+                ],
+                [
+                    InlineKeyboardButton(
+                        text="🔗 Рефералы", 
+                        callback_data="refs"
+                    ),
+                    InlineKeyboardButton(
+                        text="🔙 Назад", 
+                        callback_data="menu"
+                    )
+                ],
+            ])
+        )
+
+    @check_user_status
+    async def _withdraw_menu(update: Update, context: CallbackContext) -> None:
+        """ Многофункциональное меню для выбора типа вывода
+        
+            Args:
+                Update (_type_): объект update
+                context (CallbackContext): объект context
+        """ 
+
+        usr, _ = await user_get_by_update(update)
+
+        query = update.callback_query
+        if query:
+            await query.answer()
+            await context.bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
+        
+        await context.bot.send_message(
+            usr.telegram_chat_id,
+            f"<b>Ⓘ Вывод денежных средств</b>\n<blockquote>Выберите удобный для вас способ вывода\nЕсли выбирайте вывод на иностранные реквизиты, деньги будут конвертированы по курсу bybit/okx\nУчитывайте, что мы автоматически спишем доп комиссию в виде 2$ при выводе на USDT TRC20 (комиссия сети) </blockquote>\n\nВаш баланс: <b>{usr.balance}₽</b>",
+            parse_mode="HTML",
+            reply_markup=InlineKeyboardMarkup([
+                [
+                    InlineKeyboardButton(
+                        text="💰 USDT TRC20",
+                        callback_data="get_money_crypto"
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        text="💳 Карта",
+                        callback_data="get_money_fiat"
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        text="🔙 Назад", 
+                        callback_data="profile"
+                    )
+                ]
+            ])
+        )
+
+    @check_user_status
+    async def _reks_info(update: Update, context: CallbackContext) -> None:
+        """Функция просмотра профиля юзера
+
+        Args:
+            Update (_type_): объект update
+            context (CallbackContext): объект context
+        """ 
+        
+        usr, _ = await user_get_by_update(update)
+
+        query = update.callback_query
+        if query:
+            await query.answer()
+            await context.bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
+
+        await context.bot.send_message(
+            usr.telegram_chat_id,
+            f"🛠️ Раздел в разработке...",
+            parse_mode="HTML",
+            reply_markup=InlineKeyboardMarkup([
+                [
+                    InlineKeyboardButton(
+                        text="🔙 Назад", 
+                        callback_data="menu"
+                    )
+                ]
+            ])
+        )
+
+    @check_user_status
+    async def _refs_info(update: Update, context: CallbackContext) -> None:
+        """Функция просмотра профиля юзера
+
+        Args:
+            Update (_type_): объект update
+            context (CallbackContext): объект context
+        """ 
+        
+        usr, _ = await user_get_by_update(update)
+
+        query = update.callback_query
+        if query:
+            await query.answer()
+            await context.bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
+
+        await context.bot.send_message(
+            usr.telegram_chat_id,
+            f"🛠️ Раздел в разработке...",
+            parse_mode="HTML",
+            reply_markup=InlineKeyboardMarkup([
+                [
+                    InlineKeyboardButton(
+                        text="🔙 Назад", 
+                        callback_data="menu"
+                    )
+                ]
+            ])
+        )
 
     @check_user_status
     async def _ask_for_cheque_amount(update: Update, context: CallbackContext) -> None:
@@ -460,13 +674,19 @@ class ApplierBot:
         """ 
         
         usr, _ = await user_get_by_update(update)
+
+        query = update.callback_query
+        if query:
+            await query.answer()
+            await context.bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
+
         await context.bot.send_message(
             usr.telegram_chat_id,
-            f"♾️ Супер, для начала напиши сумму чека.",
+            f"💵 Отправьте сумму чека(ов)",
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton(
-                    text="Отменить ⛔️",
+                    text="🔙 Назад",
                     callback_data="menu",
                 )],
             ])
@@ -484,15 +704,20 @@ class ApplierBot:
         """ 
         usr, _ = await user_get_by_update(update)
         
+        query = update.callback_query
+        if query:
+            await query.answer()
+            await context.bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
+
         try:
             context.user_data["cheque_amount"] = int(update.message.text.strip())
             await context.bot.send_message(
                 usr.telegram_chat_id,
-                f"✔️ Теперь пришлите чек(и).",
+                f"📷 Отправьте фото чека(ов).\n\n<blockquote>Если вы хотите, отправить более 1 чека, то вам необходимо отправлять все чеки одним сообщением, иначе будет обработан только первый чек.</blockquote>",
                 parse_mode="HTML",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton(
-                        text="Отменить ⛔️",
+                        text="🔙 Назад",
                         callback_data="menu",
                     )],
                 ])
@@ -507,7 +732,7 @@ class ApplierBot:
                 parse_mode="HTML",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton(
-                            text="В меню 💎",
+                            text="💎 В меню",
                             callback_data="menu",
                         )],
                 ])
@@ -552,27 +777,31 @@ class ApplierBot:
             msgs = await bot.send_media_group(chat_id=admin.telegram_chat_id, media=media)
             await cont.bot.send_message(
                 admin.telegram_chat_id,
-                f"🤩 Новая оплата от <b>{usr.username}</b> на сумму <b>{context.user_data.get('cheque_amount')}</b> рублей.",
+                f"🤩 Новая оплата от <b>{usr.username}</b> на сумму <b>{amt}</b> рублей.",
                 parse_mode="HTML",
                 reply_markup = InlineKeyboardMarkup([
                     [InlineKeyboardButton(
                         text="Принять оплату чека ✅",
-                        callback_data=f"acception_cheque_true_{context.user_data.get('cheque_amount')}_{usr.telegram_chat_id}",
+                        callback_data=f"acception_cheque_true_{new_cheque.cheque_id}",
                     )], 
                     [InlineKeyboardButton(
                         text="Пошел он нахуй ⛔️",
-                        callback_data=f"acception_cheque_false_{context.user_data.get('cheque_amount')}_{usr.telegram_chat_id}",
+                        callback_data=f"acception_cheque_false_{new_cheque.cheque_id}",
                     )]
                 ])
             )
 
             await cont.bot.send_message(
                 usr.telegram_chat_id,
-                f"💊 Ваш чек отправлен.",
+                f"✅ Ваш чек(и) были успешно отправлены.\n\n<blockquote>Если хотите повторить операцию, нажмите на соответствующую кнопку</blockquote>",
                 parse_mode="HTML",
                 reply_markup = InlineKeyboardMarkup([
                     [InlineKeyboardButton(
-                        text="В меню 🔰",
+                        text="🔄 Отправить еще",
+                        callback_data=f"send_cheque",
+                    )], 
+                    [InlineKeyboardButton(
+                        text="🔙 В меню",
                         callback_data=f"menu",
                     )], 
                     
@@ -583,6 +812,32 @@ class ApplierBot:
                     cont.job.data[index]["post_id"]
                 ] = msg.message_id
             
+            return ConversationHandler.END
+        
+        try:
+            amt = int(context.user_data.get('cheque_amount'))
+            new_cheque = Cheque(
+                cheque_id=f"#{secrets.token_urlsafe(int(os.environ.get('IDS_LEN'))).replace('_', '')}",
+                cheque_sum=amt,
+                cheque_owner=usr,
+                income=(amt * usr.comission * 0.01)
+            )
+            new_cheque.save()
+
+        except Exception as e:
+            await context.bot.send_message(
+                usr.telegram_chat_id,
+                f"⛔️ Во время отправки чека возникла ошибка:\n\n<pre>{e}</pre> ",
+                parse_mode="HTML",
+                reply_markup = InlineKeyboardMarkup([
+                    [InlineKeyboardButton(
+                        text="🔙 В меню",
+                        callback_data=f"menu",
+                    )], 
+                    
+                ])
+            )
+
             return ConversationHandler.END
 
         message = update.effective_message
@@ -623,28 +878,34 @@ class ApplierBot:
                 reply_markup = InlineKeyboardMarkup([
                     [InlineKeyboardButton(
                         text="Принять оплату чека ✅",
-                        callback_data=f"acception_cheque_true_{context.user_data.get('cheque_amount')}_{usr.telegram_chat_id}",
+                        callback_data=f"acception_cheque_true_{new_cheque.cheque_id}",
                     )], 
                     [InlineKeyboardButton(
                         text="Пошел он нахуй ⛔️",
-                        callback_data=f"acception_cheque_false_{context.user_data.get('cheque_amount')}_{usr.telegram_chat_id}",
+                        callback_data=f"acception_cheque_false_{new_cheque.cheque_id}",
                     )]
                 ])
             )
 
             await context.bot.send_message(
                 usr.telegram_chat_id,
-                f"💊 Ваш чек отправлен.",
+                f"✅ Ваш чек были успешно отправлены.\n\n<blockquote>Если хотите повторить операцию, нажмите на соответствующую кнопку</blockquote>",
                 parse_mode="HTML",
                 reply_markup = InlineKeyboardMarkup([
                     [InlineKeyboardButton(
-                        text="В меню 🔰",
+                        text="🔄 Отправить еще",
+                        callback_data=f"send_cheque",
+                    )], 
+                    [InlineKeyboardButton(
+                        text="🔙 В меню",
                         callback_data=f"menu",
                     )], 
                     
                 ])
             )
-            context.bot_data["messages"][message.message_id] = message.message_id
+            context.bot_data["messages"] = {} 
+
+        return ConversationHandler.END
 
     @check_user_status
     async def _new_cheque_acception(update: Update, context: CallbackContext) -> None:
@@ -659,21 +920,14 @@ class ApplierBot:
         query = update.callback_query
         await query.answer()
         
-        user_id, amount, status = query.data.split("_")[-1], query.data.split("_")[-2], query.data.split("_")[-3] 
+        new_cheque = Cheque.objects.filter(cheque_id=query.data.split("_")[-1]).first()
+        amount, status = new_cheque.cheque_sum, query.data.split("_")[-2]
+
         await context.bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
         
         try:
-            user_to_update = ApplyUser.objects.filter(telegram_chat_id=user_id).first()
+            user_to_update = new_cheque.cheque_owner
 
-            cheque_id = secrets.token_urlsafe(int(os.environ.get("IDS_LEN"))).replace("_", "")
-            new_cheque = Cheque(
-                cheque_id=f"#{cheque_id}",
-                cheque_sum=int(amount),
-                cheque_owner=user_to_update,
-                income=(int(amount) * user_to_update.comission * 0.01)
-            )
-            new_cheque.save()
-                
             if status == "true":
                 new_cheque.is_applied = True
                 user_to_update.balance += int(amount) - (int(amount) * user_to_update.comission * 0.01)
@@ -681,17 +935,17 @@ class ApplierBot:
 
                 await context.bot.send_message(
                     usr.telegram_chat_id,
-                    f"🪛 Вы приняли чек <b>#{cheque_id}</b> от <b>{new_cheque.cheque_owner.username}</b> на сумму <b>{new_cheque.cheque_sum}₽</b> от <b>{str(new_cheque.cheque_date).split('.')[:1][0]}</b>.",
+                    f"🪛 Вы приняли чек <b>{new_cheque.cheque_id}</b> от <b>{new_cheque.cheque_owner.username}</b> на сумму <b>{new_cheque.cheque_sum}₽</b> от <b>{str(new_cheque.cheque_date).split('.')[:1][0]}</b>.",
                     parse_mode="HTML",
                 )
 
                 await context.bot.send_message(
                     user_to_update.telegram_chat_id,
-                    f"🧲 Ваш чек <b>#{cheque_id}</b> на сумму <b>{new_cheque.cheque_sum}₽</b> от <b>{str(new_cheque.cheque_date).split('.')[:1][0]}</b> принят.\nБаланс обновлен.",
+                    f"✅ Чек <b>{new_cheque.cheque_id}</b> принят!\n• Сумма чека - <b>{new_cheque.cheque_sum}₽</b>\n• Дата чека - <b>{str(new_cheque.cheque_date).split('.')[:1][0]}(МСК)</b>\n• Ваша доля - <b>{new_cheque.cheque_sum - new_cheque.income}₽</b>\n• Текущий баланс - <b>{user_to_update.balance}₽</b>",
                     parse_mode="HTML",
                     reply_markup = InlineKeyboardMarkup([
                         [InlineKeyboardButton(
-                            text="В меню 🔰",
+                            text="🔙 В меню",
                             callback_data=f"menu",
                         )], 
                         
@@ -702,17 +956,17 @@ class ApplierBot:
                 new_cheque.is_denied = True
                 await context.bot.send_message(
                     usr.telegram_chat_id,
-                    f"⚔️ Вы отклонили чек <b>#{cheque_id}</b> от <b>{new_cheque.cheque_owner.username}</b> на сумму <b>{new_cheque.cheque_sum}₽</b> от <b>{str(new_cheque.cheque_date).split('.')[:1][0]}</b>.",
+                    f"⚔️ Вы отклонили чек <b>{new_cheque.cheque_id}</b> от <b>{new_cheque.cheque_owner.username}</b> на сумму <b>{new_cheque.cheque_sum}₽</b> от <b>{str(new_cheque.cheque_date).split('.')[:1][0]}</b>.",
                     parse_mode="HTML",
                 )
 
                 await context.bot.send_message(
                     user_to_update.telegram_chat_id,
-                    f"🚬 Ваш чек <b>#{cheque_id}</b> на сумму <b>{new_cheque.cheque_sum}₽</b> от <b>{str(new_cheque.cheque_date).split('.')[:1][0]}</b> был отклонен.",
+                    f"📛К сожалению, ваш чек <b>{new_cheque.cheque_id}</b> на сумму {new_cheque.cheque_sum}₽ от <b>{str(new_cheque.cheque_date).split('.')[:1][0]}(МСК)</b> был отклонен.",
                     parse_mode="HTML",
                     reply_markup = InlineKeyboardMarkup([
                         [InlineKeyboardButton(
-                            text="В меню 🔰",
+                            text="🔙 В меню",
                             callback_data=f"menu",
                         )], 
                         
@@ -743,117 +997,137 @@ class ApplierBot:
         
         type_of_withdraw = query.data.split("_")[-1]
 
-        if int(usr.balance) >= int(os.environ.get("MIN_SUM_TO_WITHDRAW")):
-            
-            if type_of_withdraw == "crypto":
-                context.user_data["withdraw_type"] = "crypto"
-                price = context.bot_data.get("usdt_price", None)
-                
-                if not price:
-                    try:
-                        url = "https://api.binance.com/api/v3/ticker/price"
-                        params = {
-                            "symbol": "USDTRUB"
-                        }
-                        response = requests.get(url, params=params)
-                        ticker_info = response.json()
+        if usr.has_active_withdraw:
+            await context.bot.send_message(
+                usr.telegram_chat_id,
+                f"📛 К сожалению, вы не можете подавать заявку на вывод, пока прошлый ордер не будет исполнен.\n\n<blockquote>Если у вас срочное обращение, то нажмите на кнопку ниже и обратитель к админиcтартору.</blockquote>",
+                parse_mode="HTML",
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton(
+                        text="🆘 Помощь",
+                        url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_USERNAME')}"
+                    )],
+                    [InlineKeyboardButton(
+                        text="🔙 Назад",
+                        callback_data="menu",
+                    )],
+                ])
+            )
+        else:
+            if int(usr.balance) >= int(os.environ.get("MIN_SUM_TO_WITHDRAW")):
+                if type_of_withdraw == "crypto":
+                    context.user_data["withdraw_type"] = "crypto"
+                    price = context.bot_data.get("usdt_price", None)
+                    
+                    if not price:
+                        try:
+                            url = "https://api.binance.com/api/v3/ticker/price"
+                            params = {
+                                "symbol": "USDTRUB"
+                            }
+                            response = requests.get(url, params=params)
+                            ticker_info = response.json()
 
-                        if 'price' in ticker_info:
-                            context.user_data["usdt_price"] = round(float(ticker_info['price']), 2) + float(os.environ.get("NADBAVKA"))
+                            if 'price' in ticker_info:
+                                context.user_data["usdt_price"] = round(float(ticker_info['price']), 2) + float(os.environ.get("NADBAVKA"))
+                                await context.bot.send_message(
+                                    usr.telegram_chat_id,
+                                    f"🤩 Отправьте свой адрес для приема <b><u>USDT</u></b> в сети <b><u>TRC20</u></b>.\n\n<blockquote>ВАЖНО!! Если вы введете неверный адрес, то ваши средства могут быть утеряны.</blockquote>",
+                                    parse_mode="HTML",
+                                    reply_markup=InlineKeyboardMarkup([
+                                        [InlineKeyboardButton(
+                                            text="🔙 Назад",
+                                            callback_data="profile",
+                                        )],
+                                    ])
+                                )
+
+                                return 0
+
+                            else:
+                                await context.bot.send_message(
+                                    usr.telegram_chat_id,
+                                    f"⛔️ Возникла ошибка во время получения цены <b>USDT/RUB</b>.\n\nЕсли проблема повторяется, обратитеь к администратору.",
+                                    parse_mode="HTML",
+                                    reply_markup=InlineKeyboardMarkup([
+                                        [InlineKeyboardButton(
+                                                text="💎 В меню",
+                                                callback_data="menu",
+                                        )],
+                                        [InlineKeyboardButton(
+                                                text="🆘 Администратор",
+                                                url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_USERNAME')}"
+                                        )],
+                                    ])
+                                )
+
+                        except Exception as e:
+                            usr.has_active_withdraw = False
+                            usr.save()
                             await context.bot.send_message(
                                 usr.telegram_chat_id,
-                                f"🤩 Отправьте свой адрес для приема <b><u>USDT</u></b> в сети <b><u>TRC20</u></b>.\n\nВАЖНО!! Если вы введете неверный адрес, то ваши средства могут быть утеряны.",
+                                f"⛔️ Возникла ошибка во время получения цены <b>USDT/RUB</b>.\n\nОшибка: <i>{e}</i>",
                                 parse_mode="HTML",
                                 reply_markup=InlineKeyboardMarkup([
                                     [InlineKeyboardButton(
-                                        text="Отмена 💔",
-                                        callback_data="menu",
-                                    )],
-                                ])
-                            )
-
-                            return 0
-
-                        else:
-                            await context.bot.send_message(
-                                usr.telegram_chat_id,
-                                f"⛔️ Возникла ошибка во время получения цены <b>USDT/RUB</b>.\n\nЕсли проблема повторяется, обратитеь к администратору.",
-                                parse_mode="HTML",
-                                reply_markup=InlineKeyboardMarkup([
-                                    [InlineKeyboardButton(
-                                            text="В меню 💎",
+                                            text="💎 В меню",
                                             callback_data="menu",
                                     )],
                                     [InlineKeyboardButton(
-                                            text="Администратор 🆘",
+                                            text="🆘 Администратор",
                                             url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_USERNAME')}"
                                     )],
                                 ])
                             )
-
-                    except Exception as e:
+                    else:
+                        context.user_data["usdt_price"] = price
                         await context.bot.send_message(
                             usr.telegram_chat_id,
-                            f"⛔️ Возникла ошибка во время получения цены <b>USDT/RUB</b>.\n\nОшибка: <i>{e}</i>",
+                            f"🤩 Отправьте свой адрес для приема <b><u>USDT</u></b> в сети <b><u>TRC20</u></b>.\n\nВАЖНО!! Если вы введете неверный адрес, то ваши средства могут быть утеряны.",
                             parse_mode="HTML",
                             reply_markup=InlineKeyboardMarkup([
                                 [InlineKeyboardButton(
-                                        text="В меню 💎",
-                                        callback_data="menu",
-                                )],
-                                [InlineKeyboardButton(
-                                        text="Администратор 🆘",
-                                        url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_USERNAME')}"
+                                    text="🔙 Назад",
+                                    callback_data="menu",
                                 )],
                             ])
                         )
+
+                        return 0
                 else:
-                    context.user_data["usdt_price"] = price
+                    context.user_data["withdraw_type"] = "fiat"
                     await context.bot.send_message(
                         usr.telegram_chat_id,
-                        f"🤩 Отправьте свой адрес для приема <b><u>USDT</u></b> в сети <b><u>TRC20</u></b>.\n\nВАЖНО!! Если вы введете неверный адрес, то ваши средства могут быть утеряны.",
+                        f"💳 Отправьте номер карты и рядом банк получателя.\n\n<blockquote>ВАЖНО!! Если вы введете неверный номер, то ваши средства могут быть утеряны.</blockquote>",
                         parse_mode="HTML",
                         reply_markup=InlineKeyboardMarkup([
                             [InlineKeyboardButton(
-                                text="Отмена 💔",
+                                text="🔙 Назад",
                                 callback_data="menu",
                             )],
                         ])
                     )
 
                     return 0
+
             else:
-                context.user_data["withdraw_type"] = "fiat"
                 await context.bot.send_message(
                     usr.telegram_chat_id,
-                    f"💳 Отправьте <b>номер карты</b> и через пробел <b>название банка</b>, куда необходимо произвести вывод.\n\nВАЖНО!! Если вы введете неверный номер, то ваши средства могут быть утеряны.",
+                    f"📛К сожалению, вы не можете вывести менее <b>{os.environ.get('MIN_SUM_TO_WITHDRAW')}₽</b>.\n\n<blockquote>Если у вас срочное обращение, то нажмите на кнопку ниже и обратитель к админиcтартору.</blockquote>",
                     parse_mode="HTML",
                     reply_markup=InlineKeyboardMarkup([
-                        [InlineKeyboardButton(
-                            text="Отмена 💔",
-                            callback_data="menu",
-                        )],
+                        [
+                            InlineKeyboardButton(
+                                text="🔙 Назад",
+                                callback_data="menu",
+                            ),
+                            InlineKeyboardButton(
+                                text="🆘 Помощь",
+                                url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_USERNAME')}"
+                            )
+                        ],
                     ])
                 )
-
-                return 0
-
-        else:
-            await context.bot.send_message(
-                usr.telegram_chat_id,
-                f"🟥 К сожалению, вы не можете вывести менее <b>5000₽</b>.\n\nЕсли у вас срочное обращение, то нажмите на кнопку ниже и обратитель к админиcтартору.",
-                parse_mode="HTML",
-                reply_markup=InlineKeyboardMarkup([
-                    [InlineKeyboardButton(
-                            text="В меню 💎",
-                            callback_data="menu",
-                    )],
-                    [InlineKeyboardButton(
-                            text="Администратор 🆘",
-                            url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_USERNAME')}"
-                    )],
-                ])
-            )
 
             return ConversationHandler.END
 
@@ -893,7 +1167,7 @@ class ApplierBot:
                     parse_mode="HTML",
                     reply_markup=InlineKeyboardMarkup([
                         [InlineKeyboardButton(
-                            text="В меню 🚬",
+                            text="🔙 Назад",
                             callback_data="menu",
                         )],
                     ])
@@ -906,12 +1180,12 @@ class ApplierBot:
                 parse_mode="HTML",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton(
-                            text="Подтверждаю ✅",
+                            text="✅ Подтверждаю",
                             callback_data="apply_withdraw",
                     )],
                     [InlineKeyboardButton(
-                            text="Отменить ❌",
-                            callback_data="menu",
+                            text="❌ Отменить",
+                            callback_data="profile",
                     )],
                 ])
             )
@@ -924,12 +1198,12 @@ class ApplierBot:
                 parse_mode="HTML",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton(
-                            text="Подтверждаю ✅",
+                            text="✅ Подтверждаю",
                             callback_data="apply_withdraw",
                     )],
                     [InlineKeyboardButton(
-                            text="Отменить ❌",
-                            callback_data="menu",
+                            text="❌ Отменить",
+                            callback_data="profile",
                     )],
                 ])
             )
@@ -940,11 +1214,11 @@ class ApplierBot:
                 parse_mode="HTML",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton(
-                            text="В меню 💎",
+                            text="💎 В меню",
                             callback_data="menu",
                     )],
                     [InlineKeyboardButton(
-                            text="Администратор 🆘",
+                            text="🆘 Помощь",
                             url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_USERNAME')}"
                     )],
                 ])
@@ -968,6 +1242,10 @@ class ApplierBot:
         await query.answer()
         await context.bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
         
+        usr.has_active_withdraw = True
+        usr.save()
+
+
         withdraw_type = context.user_data.get("withdraw_type", None)
         if withdraw_type == "crypto":
             try: 
@@ -984,7 +1262,7 @@ class ApplierBot:
 
                 await context.bot.send_message(
                     usr.telegram_chat_id,
-                    f"🛜 <b>{usr.username}</b>, ваша заявка <b>{order.withdraw_id}</b> на вывод отправлена. Ожидайте уведомления.",
+                    f"Заявка <b>{order.withdraw_id}</b> успешно создана\n\n<blockquote>Ожидайте вывода, обычно это занимает от 3-6 часов.\nВывод производится в вечернее время.</blockquote>",
                     parse_mode="HTML",
                 )
                 
@@ -1011,11 +1289,11 @@ class ApplierBot:
                     parse_mode="HTML",
                     reply_markup = InlineKeyboardMarkup([
                         [InlineKeyboardButton(
-                            text="В начало 🔰",
+                            text="💎 В меню",
                             callback_data=f"menu",
                         )], 
                         [InlineKeyboardButton(
-                            text="Администратор 🆘",
+                            text="🆘 Помощь",
                             url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_USERNAME')}"
                         )],
                     ])
@@ -1033,7 +1311,7 @@ class ApplierBot:
 
                 await context.bot.send_message(
                     usr.telegram_chat_id,
-                    f"🛜 <b>{usr.username}</b>, ваша заявка <b>{order.withdraw_id}</b> на вывод отправлена. Ожидайте уведомления.",
+                    f"Заявка <b>{order.withdraw_id}</b> успешно создана\n\n<blockquote>Ожидайте вывода, обычно это занимает от 3-6 часов.\nВывод производится в вечернее время.</blockquote>",
                     parse_mode="HTML",
                 )
                 
@@ -1060,11 +1338,11 @@ class ApplierBot:
                     parse_mode="HTML",
                     reply_markup = InlineKeyboardMarkup([
                         [InlineKeyboardButton(
-                            text="В начало 🔰",
+                            text="💎 В меню",
                             callback_data=f"menu",
                         )], 
                         [InlineKeyboardButton(
-                            text="Администратор 🆘",
+                            text="🆘 Помощь",
                             url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_USERNAME')}"
                         )],
                     ])
@@ -1076,11 +1354,11 @@ class ApplierBot:
                 parse_mode="HTML",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton(
-                            text="В меню 💎",
+                            text="💎 В меню",
                             callback_data="menu",
                     )],
                     [InlineKeyboardButton(
-                            text="Администратор 🆘",
+                            text="🆘 Помощь",
                             url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_USERNAME')}"
                     )],
                 ])
@@ -1120,18 +1398,13 @@ class ApplierBot:
                 if order.withdraw_address:
                     await context.bot.send_message(
                         user_whom_applied.telegram_chat_id,
-                        f"✅ <b>{user_whom_applied.username}</b>, ваш ордер <b>{order.withdraw_id}</b> на сумму <b>{order.usdt_sum} USDT</b> оплачен.\n\nЕсли у вас возникли какие-то вопросы, то обратитесь к администратору.",
+                        f"✅ Заявка на вывод <b>{order.withdraw_id}</b> исполнена!\n\n<blockquote>Сумма в размере {order.usdt_sum}USDT успешно поступили на ваш счет.</blockquote>",
                         parse_mode="HTML",
                         reply_markup = InlineKeyboardMarkup([
                             [InlineKeyboardButton(
-                                text="В меню 🔰",
+                                text="💎 В меню",
                                 callback_data=f"menu",
                             )], 
-                            [InlineKeyboardButton(
-                                text="Администратор 🆘",
-                                url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_USERNAME')}"
-                            )],
-                            
                         ])
                     )
 
@@ -1141,7 +1414,7 @@ class ApplierBot:
                         parse_mode="HTML",
                         reply_markup = InlineKeyboardMarkup([
                             [InlineKeyboardButton(
-                                text="В меню 🔰",
+                                text="💎 В меню",
                                 callback_data=f"menu",
                             )], 
                         ])
@@ -1149,18 +1422,13 @@ class ApplierBot:
                 else:
                     await context.bot.send_message(
                         user_whom_applied.telegram_chat_id,
-                        f"✅ <b>{user_whom_applied.username}</b>, ваш ордер <b>{order.withdraw_id}</b> на сумму <b>{order.withdraw_sum}₽</b> оплачен фиатом.\n\nЕсли у вас возникли какие-то вопросы, то обратитесь к администратору.",
+                        f"✅ Заявка на вывод <b>{order.withdraw_id}</b> исполнена!\n\n<blockquote>Сумма в размере {order.withdraw_sum}₽ успешно поступили на ваш счет.</blockquote>",
                         parse_mode="HTML",
                         reply_markup = InlineKeyboardMarkup([
                             [InlineKeyboardButton(
-                                text="В меню 🔰",
+                                text="💎 В меню",
                                 callback_data=f"menu",
-                            )], 
-                            [InlineKeyboardButton(
-                                text="Администратор 🆘",
-                                url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_USERNAME')}"
                             )],
-                            
                         ])
                     )
 
@@ -1170,7 +1438,7 @@ class ApplierBot:
                         parse_mode="HTML",
                         reply_markup = InlineKeyboardMarkup([
                             [InlineKeyboardButton(
-                                text="В меню 🔰",
+                                text="💎 В меню",
                                 callback_data=f"menu",
                             )], 
                         ])
@@ -1183,10 +1451,13 @@ class ApplierBot:
                     parse_mode="HTML",
                     reply_markup = InlineKeyboardMarkup([
                         [InlineKeyboardButton(
-                            text="В начало 🔰",
+                            text="💎 В меню",
                             callback_data=f"menu",
                         )], 
-                        
+                        [InlineKeyboardButton(
+                            text="🆘 Помощь",
+                            url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_USERNAME')}"
+                        )],
                     ])
                 )
         else:
@@ -1197,15 +1468,15 @@ class ApplierBot:
                 if order.withdraw_address:
                     await context.bot.send_message(
                         user_whom_applied.telegram_chat_id,
-                        f"🚫 <b>{user_whom_applied.username}</b>, ваш ордер <b>{order.withdraw_id}</b> на сумму <b>{order.usdt_sum} USDT</b> отклонен.\n\nЕсли у вас возникли какие-то вопросы, то обратитесь к администратору.",
+                        f"📛 Заявка на вывод <b>{order.withdraw_id}</b> на сумму <b>{order.usdt_sum}USDT</b> отклонена!\n\n<blockquote>Если у вас возникли вопросы, обратитесь к администартору.</blockquote>",
                         parse_mode="HTML",
                         reply_markup = InlineKeyboardMarkup([
                             [InlineKeyboardButton(
-                                text="В меню 🔰",
+                                text="💎 В меню",
                                 callback_data=f"menu",
                             )], 
                             [InlineKeyboardButton(
-                                text="Администратор 🆘",
+                                text="🆘 Помощь",
                                 url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_USERNAME')}"
                             )],
                             
@@ -1218,7 +1489,7 @@ class ApplierBot:
                         parse_mode="HTML",
                         reply_markup = InlineKeyboardMarkup([
                             [InlineKeyboardButton(
-                                text="В меню 🔰",
+                                text="💎В меню",
                                 callback_data=f"menu",
                             )], 
                         ])
@@ -1226,15 +1497,15 @@ class ApplierBot:
                 else:
                     await context.bot.send_message(
                         user_whom_applied.telegram_chat_id,
-                        f"🛑 <b>{user_whom_applied.username}</b>, ваш ордер <b>{order.withdraw_id}</b> на сумму <b>{order.withdraw_sum}₽</b> фиатом был отклонен.\n\nЕсли у вас возникли какие-то вопросы, то обратитесь к администратору.",
+                        f"📛 Заявка на вывод <b>{order.withdraw_id}</b> на сумму <b>{order.withdraw_sum}USDT</b> отклонена!\n\n<blockquote>Если у вас возникли вопросы, обратитесь к администартору.</blockquote>",
                         parse_mode="HTML",
                         reply_markup = InlineKeyboardMarkup([
                             [InlineKeyboardButton(
-                                text="В меню 🔰",
+                                text="💎 В меню",
                                 callback_data=f"menu",
                             )], 
                             [InlineKeyboardButton(
-                                text="Администратор 🆘",
+                                text="🆘 Помощь",
                                 url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_USERNAME')}"
                             )],
                             
@@ -1247,7 +1518,7 @@ class ApplierBot:
                         parse_mode="HTML",
                         reply_markup = InlineKeyboardMarkup([
                             [InlineKeyboardButton(
-                                text="В меню 🔰",
+                                text="В меню 🔙",
                                 callback_data=f"menu",
                             )], 
                         ])
@@ -1260,12 +1531,18 @@ class ApplierBot:
                     parse_mode="HTML",
                     reply_markup = InlineKeyboardMarkup([
                         [InlineKeyboardButton(
-                            text="В начало 🔰",
+                            text="💎 В меню",
                             callback_data=f"menu",
                         )], 
-                        
+                        [InlineKeyboardButton(
+                            text="🆘 Помощь",
+                            url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_USERNAME')}"
+                        )],
                     ])
                 )
+
+        user_whom_applied.has_active_withdraw = False
+        user_whom_applied.save()
 
     @check_user_status
     async def _ask_for_username_in_stat(update: Update, context: CallbackContext) -> None:
@@ -1778,11 +2055,17 @@ class ApplierBot:
             conversation_timeout=300
         ))
 
+        self.application.add_handler(CallbackQueryHandler(self._withdraw_menu, "withdraw_menu"))
         self.application.add_handler(CallbackQueryHandler(self._send_withdraw_appliment_to_admin, "apply_withdraw"))
         self.application.add_handler(CallbackQueryHandler(self._apply_withdraw_appliment, "^order_"))
 
         self.application.add_handler(CallbackQueryHandler(self._today_hist, "today_hist"))
         self.application.add_handler(CallbackQueryHandler(self._today_metrics, "metrics"))
+
+        self.application.add_handler(CallbackQueryHandler(self._profile, "profile"))
+        self.application.add_handler(CallbackQueryHandler(self._refs_info, "refs"))
+        self.application.add_handler(CallbackQueryHandler(self._reks_info, "reks"))
+
 
         self.application.add_handler(CommandHandler("start", self._start))
         self.application.add_handler(CallbackQueryHandler(self._start, "menu"))

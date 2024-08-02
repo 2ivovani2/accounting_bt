@@ -5,3 +5,4 @@ __pycache
 certbot
 .idea
 tmp/tf_maker/users_photo/
+tmp/tf_maker

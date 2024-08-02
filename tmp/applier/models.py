@@ -17,6 +17,11 @@ class ApplyUser(models.Model):
         default=False
     )
 
+    has_active_withdraw = models.BooleanField(
+        verbose_name="Есть ли активный вывод у юзера",
+        default=False
+    )
+
     is_superuser = models.BooleanField(
         verbose_name="Явлется ли юзер админом",
         default=False
