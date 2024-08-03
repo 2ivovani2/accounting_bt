@@ -628,7 +628,7 @@ class ApplierBot:
                 [
                     InlineKeyboardButton(
                         text="🔙 Назад", 
-                        callback_data="menu"
+                        callback_data="profile"
                     )
                 ]
             ])
@@ -658,7 +658,7 @@ class ApplierBot:
                 [
                     InlineKeyboardButton(
                         text="🔙 Назад", 
-                        callback_data="menu"
+                        callback_data="profile"
                     )
                 ]
             ])
@@ -917,15 +917,16 @@ class ApplierBot:
         """ 
         
         usr, _ = await user_get_by_update(update)
+        
         query = update.callback_query
-        await query.answer()
-        
-        new_cheque = Cheque.objects.filter(cheque_id=query.data.split("_")[-1]).first()
-        amount, status = new_cheque.cheque_sum, query.data.split("_")[-2]
+        if query:
+            await query.answer()
+            await context.bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
 
-        await context.bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
-        
         try:
+            new_cheque = Cheque.objects.filter(cheque_id=query.data.split("_")[-1]).first()
+            amount, status = new_cheque.cheque_sum, query.data.split("_")[-2]
+
             user_to_update = new_cheque.cheque_owner
 
             if status == "true":
