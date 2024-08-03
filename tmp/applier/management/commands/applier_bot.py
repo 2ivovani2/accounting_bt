@@ -903,7 +903,7 @@ class ApplierBot:
                     
                 ])
             )
-            context.bot_data["messages"] = {} 
+            context.bot_data["messages"][message.message_id] = message.message_id 
 
         return ConversationHandler.END
 
