@@ -476,7 +476,7 @@ class ApplierBot:
             total_money += cheque.cheque_sum * (1 - usr.comission * .01)
 
         if context.bot_data.get("usdt_price", ""):
-            course = context.bot_data.get["usdt_price"]
+            course = context.bot_data["usdt_price"]
         else:
             try:
                 url = "https://api.binance.com/api/v3/ticker/price"
