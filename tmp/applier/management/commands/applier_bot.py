@@ -905,8 +905,6 @@ class ApplierBot:
             )
             context.bot_data["messages"][message.message_id] = message.message_id 
 
-        return ConversationHandler.END
-
     @check_user_status
     async def _new_cheque_acception(update: Update, context: CallbackContext) -> None:
         """Функция подтверждения/отмены принятия xtrf
@@ -963,7 +961,7 @@ class ApplierBot:
 
                 await context.bot.send_message(
                     user_to_update.telegram_chat_id,
-                    f"📛К сожалению, ваш чек <b>{new_cheque.cheque_id}</b> на сумму {new_cheque.cheque_sum}₽ от <b>{str(new_cheque.cheque_date).split('.')[:1][0]}(МСК)</b> был отклонен.",
+                    f"📛К сожалению, ваш чек <b>{new_cheque.cheque_id}</b> на сумму <b>{new_cheque.cheque_sum}₽</b> от <b>{str(new_cheque.cheque_date).split('.')[:1][0]}(МСК)</b> был отклонен.",
                     parse_mode="HTML",
                     reply_markup = InlineKeyboardMarkup([
                         [InlineKeyboardButton(
@@ -2024,7 +2022,7 @@ class ApplierBot:
                 0: [MessageHandler(filters.TEXT & ~filters.COMMAND, self._ask_for_photo)],
                 1: [MessageHandler(filters.PHOTO, self._send_photo_to_admin)],
             },
-            fallbacks=[CallbackQueryHandler(self._start, "menu"), CommandHandler("start", self._start)],
+            fallbacks=[CallbackQueryHandler(self._start, "menu"), CommandHandler("start", self._start), CallbackQueryHandler(self._ask_for_cheque_amount, "send_cheque")],
             conversation_timeout=300
         ))
 
