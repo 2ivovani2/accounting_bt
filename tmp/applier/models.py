@@ -39,10 +39,10 @@ class ApplyUser(models.Model):
         null=True
     )
 
-    balance = models.PositiveBigIntegerField(
+    balance = models.FloatField(
         verbose_name="Баланс пользователя",
         null=False,
-        default=0
+        default=0.0
     )
 
     comission = models.IntegerField(
@@ -57,6 +57,43 @@ class ApplyUser(models.Model):
     class Meta:
         verbose_name = "Пользователь"
         verbose_name_plural = "Пользователи"
+
+class Ref(models.Model):
+    """
+        Модель, описывающая реферальные связи
+    """
+
+    who_invited = models.ForeignKey(
+        ApplyUser,
+        verbose_name="Кто пригласил юзера",
+        on_delete=models.CASCADE,
+        null=True,
+        default="Не определен",
+        related_name="who_invited_new_user"
+    )
+
+
+    whom_invited = models.ForeignKey(
+        ApplyUser,
+        verbose_name="Кого пригласили в проект",
+        on_delete=models.CASCADE,
+        null=True,
+        default="Не определен", 
+        related_name="whom_invited_to_project"
+    )
+
+    ref_income = models.PositiveBigIntegerField(
+        verbose_name="Реферальный баланс пользователя",
+        null=False,
+        default=0
+    )
+
+    def __str__(self) -> str:
+        return f"{self.who_invited.username} -> {self.whom_invited.username}"
+    
+    class Meta:
+        verbose_name = "Реферальная связь"
+        verbose_name_plural = "Реферальные связи"
 
 class Cheque(models.Model):
     """

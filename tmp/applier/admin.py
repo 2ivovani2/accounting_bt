@@ -1,6 +1,21 @@
 from django.contrib import admin
 from applier.models import *
 
+@admin.register(Ref)
+class RefAdmin(admin.ModelAdmin):
+    """
+        Описание пользователей в админской панели
+    """
+    list_display = ("id", "who_invited", "whom_invited")
+    search_fields = ("id", "who_invited", "whom_invited")
+
+    fieldsets = (
+
+        ("Основные параметры", {
+            "fields": ["id", "who_invited", "whom_invited", "ref_income"]
+        }),
+    )
+
 @admin.register(ApplyUser)
 class UserAdmin(admin.ModelAdmin):
     """

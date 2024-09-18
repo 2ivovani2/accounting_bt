@@ -1754,7 +1754,6 @@ class Command(BaseCommand):
         GraphWork(application=application).register_handlers()
 
         application.add_handler(CallbackQueryHandler(main_class_instance._start, "menu"))
-        
         application.run_polling()
 
         
