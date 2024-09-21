@@ -6,13 +6,13 @@ class RefAdmin(admin.ModelAdmin):
     """
         Описание пользователей в админской панели
     """
-    list_display = ("id", "who_invited", "whom_invited")
-    search_fields = ("id", "who_invited", "whom_invited")
+    list_display = ("who_invited", "whom_invited")
+    search_fields = ("who_invited", "whom_invited")
 
     fieldsets = (
 
         ("Основные параметры", {
-            "fields": ["id", "who_invited", "whom_invited", "ref_income"]
+            "fields": ["who_invited", "whom_invited", "ref_income"]
         }),
     )
 
