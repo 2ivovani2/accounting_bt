@@ -266,89 +266,89 @@ class ChequeWork(ApplierBot):
             await query.answer()
             await context.bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
 
-        # try:
-        new_cheque = Cheque.objects.filter(cheque_id=query.data.split("_")[-1]).first()
-        amount, status = new_cheque.cheque_sum, query.data.split("_")[-2]
+        try:
+            new_cheque = Cheque.objects.filter(cheque_id=query.data.split("_")[-1]).first()
+            amount, status = new_cheque.cheque_sum, query.data.split("_")[-2]
 
-        user_to_update = new_cheque.cheque_owner
+            user_to_update = new_cheque.cheque_owner
 
-        if status == "true":
-            new_cheque.is_applied = True
-            user_to_update.balance += int(amount) - (int(amount) * user_to_update.comission * 0.01)
-            user_to_update.save()
+            if status == "true":
+                new_cheque.is_applied = True
+                user_to_update.balance += int(amount) - (int(amount) * user_to_update.comission * 0.01)
+                user_to_update.save()
 
-            if Ref.objects.filter(whom_invited=user_to_update).exists():
-                ref_relation = Ref.objects.filter(whom_invited=user_to_update).first()
-                ref_relation.ref_income += int(amount) * 0.01 * int(os.environ.get("REF_PERCENT", 1))
-                ref_relation.save()
+                if Ref.objects.filter(whom_invited=user_to_update).exists():
+                    ref_relation = Ref.objects.filter(whom_invited=user_to_update).first()
+                    ref_relation.ref_income += int(amount) * 0.01 * int(os.environ.get("REF_PERCENT", 1))
+                    ref_relation.save()
 
-                who_invited = ref_relation.who_invited
-                who_invited.balance += int(amount) * 0.01 * int(os.environ.get("REF_PERCENT", 1))
-                who_invited.save()
+                    who_invited = ref_relation.who_invited
+                    who_invited.balance += int(amount) * 0.01 * int(os.environ.get("REF_PERCENT", 1))
+                    who_invited.save()
 
-                await context.bot.send_message(
-                    who_invited.telegram_chat_id,
-                    f"💰 <i>НОВОЕ ПОСТУПЛЕНИЕ</i> 💰\n\n<blockquote>• Ваш реферал - <b>{user_to_update.username}</b>\n• Сумма чека - <b>{new_cheque.cheque_sum}</b>\n• Ваша прибыль - <b>{int(int(new_cheque.cheque_sum) * 0.01 * int(os.environ.get('REF_PERCENT', 1)))}₽</b></blockquote>\n\nСумма уже зачислена на ваш баланс.",
-                    parse_mode="HTML",
-                )
+                    await context.bot.send_message(
+                        who_invited.telegram_chat_id,
+                        f"💰 <i>НОВОЕ ПОСТУПЛЕНИЕ</i> 💰\n\n<blockquote>• Ваш реферал - <b>{user_to_update.username}</b>\n• Сумма чека - <b>{new_cheque.cheque_sum}</b>\n• Ваша прибыль - <b>{int(int(new_cheque.cheque_sum) * 0.01 * int(os.environ.get('REF_PERCENT', 1)))}₽</b></blockquote>\n\nСумма уже зачислена на ваш баланс.",
+                        parse_mode="HTML",
+                    )
 
 
-            gc = gspread.service_account(filename=os.environ.get("GOOGLE_CREDS"))
-            table = gc.open(os.environ.get("TABLE_NAME")).sheet1
+                gc = gspread.service_account(filename=os.environ.get("GOOGLE_CREDS"))
+                table = gc.open(os.environ.get("TABLE_NAME")).sheet1
 
-            def table_update(date, value, user_name):
-                length = len(table.col_values(1)) + 1
+                def table_update(date, value, user_name):
+                    length = len(table.col_values(1)) + 1
 
-                table.update_cell(length, 1, date)
-                table.update_cell(length, 2, int(value))
-                table.update_cell(length, 3, user_name)
+                    table.update_cell(length, 1, date)
+                    table.update_cell(length, 2, int(value))
+                    table.update_cell(length, 3, user_name)
 
-            await context.bot.send_message(
-                usr.telegram_chat_id,
-                f"🪛 Вы приняли чек <b>{new_cheque.cheque_id}</b> от <b>{new_cheque.cheque_owner.username}</b> на сумму <b>{new_cheque.cheque_sum}₽</b> от <b>{str(new_cheque.cheque_date).split('.')[:1][0]}</b>.",
-                parse_mode="HTML",
-            )
-
-            await context.bot.send_message(
-                user_to_update.telegram_chat_id,
-                f"✅ Чек <b>{new_cheque.cheque_id}</b> принят!\n• Сумма чека - <b>{new_cheque.cheque_sum}₽</b>\n• Дата чека - <b>{str(new_cheque.cheque_date).split('.')[:1][0]}(МСК)</b>\n• Ваша доля - <b>{new_cheque.cheque_sum - new_cheque.income}₽</b>\n• Текущий баланс - <b>{user_to_update.balance}₽</b>",
-                parse_mode="HTML",
-                reply_markup = None
-            )
-
-            try:
-                table_update(str(new_cheque.cheque_date), new_cheque.cheque_sum, str(new_cheque.cheque_owner.username))
                 await context.bot.send_message(
                     usr.telegram_chat_id,
-                    f"📄 Google Таблицы успешно обновлены. Чек добавлен.",
+                    f"🪛 Вы приняли чек <b>{new_cheque.cheque_id}</b> от <b>{new_cheque.cheque_owner.username}</b> на сумму <b>{new_cheque.cheque_sum}₽</b> от <b>{str(new_cheque.cheque_date).split('.')[:1][0]}</b>.",
                     parse_mode="HTML",
                 )
-            except Exception as e:
-                logging.info(f"Error in google table update - {e}")
 
-        else:
-            new_cheque.is_denied = True
+                await context.bot.send_message(
+                    user_to_update.telegram_chat_id,
+                    f"✅ Чек <b>{new_cheque.cheque_id}</b> принят!\n• Сумма чека - <b>{new_cheque.cheque_sum}₽</b>\n• Дата чека - <b>{str(new_cheque.cheque_date).split('.')[:1][0]}(МСК)</b>\n• Ваша доля - <b>{new_cheque.cheque_sum - new_cheque.income}₽</b>\n• Текущий баланс - <b>{user_to_update.balance}₽</b>",
+                    parse_mode="HTML",
+                    reply_markup = None
+                )
+
+                try:
+                    table_update(str(new_cheque.cheque_date), new_cheque.cheque_sum, str(new_cheque.cheque_owner.username))
+                    await context.bot.send_message(
+                        usr.telegram_chat_id,
+                        f"📄 Google Таблицы успешно обновлены. Чек добавлен.",
+                        parse_mode="HTML",
+                    )
+                except Exception as e:
+                    logging.info(f"Error in google table update - {e}")
+
+            else:
+                new_cheque.is_denied = True
+                await context.bot.send_message(
+                    usr.telegram_chat_id,
+                    f"⚔️ Вы отклонили чек <b>{new_cheque.cheque_id}</b> от <b>{new_cheque.cheque_owner.username}</b> на сумму <b>{new_cheque.cheque_sum}₽</b> от <b>{str(new_cheque.cheque_date).split('.')[:1][0]}</b>.",
+                    parse_mode="HTML",
+                )
+
+                await context.bot.send_message(
+                    user_to_update.telegram_chat_id,
+                    f"📛К сожалению, ваш чек <b>{new_cheque.cheque_id}</b> на сумму <b>{new_cheque.cheque_sum}₽</b> от <b>{str(new_cheque.cheque_date).split('.')[:1][0]}(МСК)</b> был отклонен.",
+                    parse_mode="HTML",
+                    reply_markup = None
+                )
+
+            new_cheque.save()
+            
+        except Exception as e:
             await context.bot.send_message(
                 usr.telegram_chat_id,
-                f"⚔️ Вы отклонили чек <b>{new_cheque.cheque_id}</b> от <b>{new_cheque.cheque_owner.username}</b> на сумму <b>{new_cheque.cheque_sum}₽</b> от <b>{str(new_cheque.cheque_date).split('.')[:1][0]}</b>.",
+                f"💣 Возникла ошибка.\n\nОшибка: <i>{e}</i>",
                 parse_mode="HTML",
             )
-
-            await context.bot.send_message(
-                user_to_update.telegram_chat_id,
-                f"📛К сожалению, ваш чек <b>{new_cheque.cheque_id}</b> на сумму <b>{new_cheque.cheque_sum}₽</b> от <b>{str(new_cheque.cheque_date).split('.')[:1][0]}(МСК)</b> был отклонен.",
-                parse_mode="HTML",
-                reply_markup = None
-            )
-
-        new_cheque.save()
-        
-        # except Exception as e:
-        #     await context.bot.send_message(
-        #         usr.telegram_chat_id,
-        #         f"💣 Возникла ошибка.\n\nОшибка: <i>{e}</i>",
-        #         parse_mode="HTML",
-        #     )
 
     def reg_handlers(self):
         self.application.add_handler(CallbackQueryHandler(self._new_cheque_acception, "^acception_cheque_"))
