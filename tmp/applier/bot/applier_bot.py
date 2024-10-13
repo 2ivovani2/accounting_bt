@@ -1,5 +1,7 @@
 from .utils.imports import *
 from .utils.helpers import *
+from asgiref.sync import async_to_sync
+
 
 class ApplierBot:
     
@@ -7,14 +9,10 @@ class ApplierBot:
         """"
             Инициализация апа
         """
-        async def post_init(application: Application):
-            if "messages" not in application.bot_data:
-                application.bot_data = {"messages": {}}
-
+            
         self.application = (
             ApplicationBuilder()
             .token(os.environ.get('APPLIER_BOT_TOKEN'))
-            .post_init(post_init)
             .build()
         )
 
@@ -25,6 +23,7 @@ class ApplierBot:
             Returns:
                 Завершает диалог, путем вызова ConversationHandler.END
         """
+
         usr, created = await user_get_by_update(update)
         
         if context.args and created:
@@ -370,23 +369,11 @@ class ApplierBot:
 
         return self.application
 
-class Command(BaseCommand):
-    help = 'Команда запуска ApplyBot'
+    def set_last_handlers(self, application):
+        application.add_handler(CommandHandler("start", self._start))
+        application.add_handler(CallbackQueryHandler(self._start, "menu"))
 
-    def handle(self, *args, **kwargs):        
-        from .utils.cheque_send import ChequeWork
-        from .utils.withdraws import WithdrawsWork
-        from .utils.auth_sys import Auth
-        from .utils.metrics import Metrics
+        return application
 
-        main_class_instance = ApplierBot()
-        application = main_class_instance.register_handlers()
-        
-        Auth(application).reg_handlers()
-        ChequeWork(application).reg_handlers()
-        WithdrawsWork(application).reg_handlers()
-        Metrics(application).reg_handlers()
 
-        application.add_handler(CommandHandler("start", main_class_instance._start))
-        application.add_handler(CallbackQueryHandler(main_class_instance._start, "menu"))
-        application.run_polling()
+

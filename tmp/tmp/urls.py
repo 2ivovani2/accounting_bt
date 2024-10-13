@@ -17,10 +17,12 @@ from django.contrib import admin
 from django.urls import path, include
 
 from main.views import main_render
+from applier.views import telegram_webhook
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', main_render),
+    path('webhook', telegram_webhook)
 ]
 
 admin.site.site_header = "NAEB.tech 🥩🍖"

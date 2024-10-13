@@ -1,8 +1,9 @@
 from ..applier_bot import ApplierBot
 from .imports import *
 from .helpers import *
+from .update_google_doc import update_google_sheet
 
-import logging 
+import logging, asyncio
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
@@ -92,34 +93,63 @@ class ChequeWork(ApplierBot):
             Update (_type_): объект update
             context (CallbackContext): объект context
         """ 
+        from threading import Timer
+
         admin = ApplyUser.objects.filter(username=os.environ.get("ADMIN_TO_APPLY_USERNAME")).first()
         usr, _ = await user_get_by_update(update)
         
-        MEDIA_GROUP_TYPES = {
-            "document": InputMediaDocument,
-            "photo": InputMediaPhoto,
-        }
-    
-        class MsgDict(TypedDict):
-            media_type: Literal["photo"]
-            media_id: str
-            caption: str
-            post_id: int
-    
-        async def media_group_sender(cont: ContextTypes.DEFAULT_TYPE):
+        async def media_group_sender(cont: ContextTypes.DEFAULT_TYPE, group_id=None, msg_data=None):
+            print("media_group_sender called")
+            admin = ApplyUser.objects.filter(username=os.environ.get("ADMIN_TO_APPLY_USERNAME")).first()
             bot = cont.bot
-            cont.job.data = cast(List[MsgDict], cont.job.data)
+
+            media_groups = cont.user_data.get('media_groups', {})
+            media_data = media_groups.pop(group_id, [])
+
+            timers = cont.user_data.get('timers', {})
+            timer = timers.pop(group_id, None)
+            if timer:
+                timer.cancel()
+
+            print(f"Собранные данные медиа-группы: {media_data}")
+
+            if not media_data:
+                print("Нет медиа для отправки")
+                return
+
+            MEDIA_GROUP_TYPES = {
+                "document": InputMediaDocument,
+                "photo": InputMediaPhoto,
+            }
+
             media = []
-            for msg_dict in cont.job.data:
+            for msg in media_data:
+                media_type = msg.get("media_type")
+                media_id = msg.get("media_id")
+                caption = msg.get("caption")
+
+                if media_type not in MEDIA_GROUP_TYPES:
+                    print(f"Неизвестный тип медиа: {media_type}")
+                    continue
+
                 media.append(
-                    MEDIA_GROUP_TYPES[msg_dict["media_type"]](
-                        media=msg_dict["media_id"], caption=msg_dict["caption"]
+                    MEDIA_GROUP_TYPES[media_type](
+                        media=media_id,
+                        caption=caption
                     )
                 )
+
             if not media:
+                print("Нет медиа для отправки после обработки")
                 return
-            
-            msgs = await bot.send_media_group(chat_id=admin.telegram_chat_id, media=media)
+
+            print(f"Отправляем медиа-группу: {media}")
+            try:
+                msgs = await bot.send_media_group(chat_id=admin.telegram_chat_id, media=media)
+                print("Медиа-группа успешно отправлена")
+            except Exception as e:
+                print(f"Ошибка при отправке медиа-группы: {e}")
+
             await cont.bot.send_message(
                 admin.telegram_chat_id,
                 f"🤩 Новая оплата от <b>{usr.username}</b> на сумму <b>{amt}</b> рублей.",
@@ -152,10 +182,6 @@ class ChequeWork(ApplierBot):
                     
                 ])
             )
-            for index, msg in enumerate(msgs):
-                cont.bot_data["messages"][
-                    cont.job.data[index]["post_id"]
-                ] = msg.message_id
             
             return ConversationHandler.END
         
@@ -193,22 +219,28 @@ class ChequeWork(ApplierBot):
                 if message.photo
                 else message.effective_attachment.file_id
             )
+
             msg_dict = {
                 "media_type": media_type,
                 "media_id": media_id,
                 "caption": message.caption_html,
                 "post_id": message.message_id,
             }
-            jobs = context.job_queue.get_jobs_by_name(str(message.media_group_id))
-            if jobs:
-                jobs[0].data.append(msg_dict)
-            else:
-                context.job_queue.run_once(
-                    callback=media_group_sender,
-                    when=2,
-                    data=[msg_dict],
-                    name=str(message.media_group_id),
-                )
+            
+            media_groups = context.user_data.setdefault('media_groups', {})
+            group_id = message.media_group_id
+
+            media_groups.setdefault(group_id, []).append(msg_dict)
+            timers = context.user_data.setdefault('timers', {})
+
+            if group_id not in timers:
+                print(f"Setting up timer for media group {group_id}")
+                loop = asyncio.get_event_loop()
+
+                timer = Timer(2.0, loop.run_until_complete, args=[media_group_sender(context, group_id)])
+                timer.start()
+                timers[group_id] = timer
+            
         else:
             await context.bot.forward_message(
                 chat_id=admin.telegram_chat_id,
@@ -292,17 +324,6 @@ class ChequeWork(ApplierBot):
                         parse_mode="HTML",
                     )
 
-
-                gc = gspread.service_account(filename=os.environ.get("GOOGLE_CREDS"))
-                table = gc.open(os.environ.get("TABLE_NAME")).sheet1
-
-                def table_update(date, value, user_name):
-                    length = len(table.col_values(1)) + 1
-
-                    table.update_cell(length, 1, date)
-                    table.update_cell(length, 2, int(value))
-                    table.update_cell(length, 3, user_name)
-
                 await context.bot.send_message(
                     usr.telegram_chat_id,
                     f"🪛 Вы приняли чек <b>{new_cheque.cheque_id}</b> от <b>{new_cheque.cheque_owner.username}</b> на сумму <b>{new_cheque.cheque_sum}₽</b> от <b>{str(new_cheque.cheque_date).split('.')[:1][0]}</b>.",
@@ -317,7 +338,16 @@ class ChequeWork(ApplierBot):
                 )
 
                 try:
-                    table_update(str(new_cheque.cheque_date), new_cheque.cheque_sum, str(new_cheque.cheque_owner.username))
+                    msg = await context.bot.send_message(
+                        usr.telegram_chat_id,
+                        f"📝 Обновляю Google Таблицы",
+                        parse_mode="HTML",
+                    )
+
+                    update_google_sheet(".".join(reversed(str(new_cheque.cheque_date).split()[0].split("-"))), new_cheque.cheque_sum, str(new_cheque.cheque_owner.username), new_cheque.cheque_owner.balance)
+                    
+                    await context.bot.delete_message(chat_id=msg.chat_id, message_id=msg.message_id)
+
                     await context.bot.send_message(
                         usr.telegram_chat_id,
                         f"📄 Google Таблицы успешно обновлены. Чек добавлен.",
