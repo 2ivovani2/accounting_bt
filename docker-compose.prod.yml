@@ -35,7 +35,7 @@ services:
     build: ./tmp
     command: celery -A tmp worker --loglevel=info
     env_file:
-      - ./.env.dev
+      - ./.env.prod
     depends_on:
       - redis
       - db
@@ -46,7 +46,7 @@ services:
     build: ./tmp
     command: celery -A tmp beat --loglevel=info
     env_file:
-      - ./.env.dev
+      - ./.env.prod
     depends_on:
       - redis
       - db
@@ -56,7 +56,7 @@ services:
   telegram-webhook-updater:
     build: ./webhook_updater
     env_file:
-      - ./.env.dev
+      - ./.env.prod
     depends_on:
       - web
     
