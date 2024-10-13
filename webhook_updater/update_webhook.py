@@ -5,9 +5,11 @@ bot_token = os.getenv('APPLIER_BOT_TOKEN')
 webhook_url = os.getenv('WEBHOOK_URL')
 
 def set_webhook(token, webhook):
+    print(bot_token)
+
     url = f"https://api.telegram.org/bot{token}/deleteWebhook"
     response = requests.post(url, data={'url': webhook})
-    
+
     if response.status_code == 200:
         print(response.text)
         print("Webhook удален успешно.")

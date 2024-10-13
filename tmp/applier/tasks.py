@@ -35,7 +35,7 @@ async def initialize_application(app):
     if "messages" not in app.bot_data:
         app.bot_data = {"messages": {}}
     
-    # await app.start()
+    await app.start()
 
 loop.run_until_complete(initialize_application(application))
 
