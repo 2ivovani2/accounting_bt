@@ -344,7 +344,7 @@ class ChequeWork(ApplierBot):
                         parse_mode="HTML",
                     )
 
-                    update_google_sheet(".".join(reversed(str(new_cheque.cheque_date).split()[0].split("-"))), new_cheque.cheque_sum, str(new_cheque.cheque_owner.username), new_cheque.cheque_owner.balance)
+                    await update_google_sheet(".".join(reversed(str(new_cheque.cheque_date).split()[0].split("-"))), new_cheque.cheque_sum, str(new_cheque.cheque_owner.username), new_cheque.cheque_owner.balance)
                     
                     await context.bot.delete_message(chat_id=msg.chat_id, message_id=msg.message_id)
 

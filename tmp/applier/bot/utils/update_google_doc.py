@@ -1,5 +1,5 @@
 import gspread, os
-def update_google_sheet(date_str, value, username, balance):
+async def update_google_sheet(date_str, value, username, balance):
     gc = gspread.service_account(filename="applier/bot/utils/creds.json")
     
     spreadsheet = gc.open(os.environ.get("TABLE_NAME", "DM_accounting"))
