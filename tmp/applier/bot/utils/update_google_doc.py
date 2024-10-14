@@ -1,10 +1,7 @@
-import gspread, os
+import gspread, os, datetime
 
-async def update_google_sheet(date_str, value, username, balance):
+def update_google_sheet(date_str, value, username, balance):
     date_str = date_str.split()[0]
-    month, date = date_str[-1], date_str[1]
-    date_str = f"{date}.{month}"
-
     gc = gspread.service_account(filename="applier/bot/utils/creds.json")
     
     spreadsheet = gc.open(os.environ.get("TABLE_NAME", "DM_accounting"))
@@ -174,3 +171,4 @@ async def update_google_sheet(date_str, value, username, balance):
 
     # Выполняем запрос на обновление границ
     spreadsheet.batch_update(borders_request)
+    return

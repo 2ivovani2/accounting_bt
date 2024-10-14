@@ -6,7 +6,7 @@ services:
       context: ./tmp
       dockerfile: Dockerfile.prod
     restart: always
-    command: gunicorn tmp.wsgi:application --bind 0.0.0.0:8000
+    command: uvicorn tmp.asgi:application --host 0.0.0.0 --port 8000
     volumes:
       - static_volume:/home/app/web/staticfiles
       - ./tmp/main:/usr/src/app/main
@@ -26,33 +26,6 @@ services:
     env_file:
       - ./.env.prod.db
 
-  redis:
-    image: redis:6-alpine
-    ports:
-      - "6379:6379"
-    
-  celery:
-    build: ./tmp
-    command: celery -A tmp worker --loglevel=info
-    env_file:
-      - ./.env.prod
-    depends_on:
-      - redis
-      - db
-    volumes:
-      - ./tmp:/usr/src/app
-  
-  celery-beat:
-    build: ./tmp
-    command: celery -A tmp beat --loglevel=info
-    env_file:
-      - ./.env.prod
-    depends_on:
-      - redis
-      - db
-    volumes:
-      - ./tmp:/usr/src/app
-  
   telegram-webhook-updater:
     build: ./webhook_updater
     env_file:

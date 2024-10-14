@@ -1,8 +1,8 @@
 services:
   web:
     build: ./tmp
-    command: gunicorn tmp.wsgi:application --bind 0.0.0.0:8000
-    # command: python manage.py runserver 0.0.0.0:8000
+    # command: gunicorn tmp.wsgi:application --bind 0.0.0.0:8000
+    command: uvicorn tmp.asgi:application --host 0.0.0.0 --port 8000
     ports:
       - 8000:8000
     env_file:
@@ -11,39 +11,11 @@ services:
       - db
     volumes:
       - ./tmp/main:/usr/src/app/main
-      - ./tmp/tf_maker:/usr/src/app/tf_maker
       - ./tmp:/usr/src/app
     # networks:
     #   test_network:
     #     ipv4_address: 172.16.238.10
 
-  redis:
-    image: redis:6-alpine
-    ports:
-      - "6379:6379"
-    
-  celery:
-    build: ./tmp
-    command: celery -A tmp worker --loglevel=info
-    env_file:
-      - ./.env.dev
-    depends_on:
-      - redis
-      - db
-    volumes:
-      - ./tmp:/usr/src/app
-  
-  celery-beat:
-    build: ./tmp
-    command: celery -A tmp beat --loglevel=info
-    env_file:
-      - ./.env.dev
-    depends_on:
-      - redis
-      - db
-    volumes:
-      - ./tmp:/usr/src/app
-  
   ngrok:
     image: ngrok/ngrok
     depends_on:

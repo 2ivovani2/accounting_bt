@@ -107,9 +107,8 @@ class ChequeWork(ApplierBot):
             media_data = media_groups.pop(group_id, [])
 
             timers = cont.user_data.get('timers', {})
-            timer = timers.pop(group_id, None)
-            if timer:
-                timer.cancel()
+            timers.pop(group_id, None)
+            
 
             print(f"Собранные данные медиа-группы: {media_data}")
 
@@ -235,11 +234,15 @@ class ChequeWork(ApplierBot):
 
             if group_id not in timers:
                 print(f"Setting up timer for media group {group_id}")
-                loop = asyncio.get_event_loop()
 
-                timer = Timer(2.0, loop.run_until_complete, args=[media_group_sender(context, group_id)])
-                timer.start()
-                timers[group_id] = timer
+                async def delayed_media_group_sender():
+                    await asyncio.sleep(2.0)
+                    await media_group_sender(context, group_id)
+
+                # Запускаем отложенную задачу без блокировки текущего потока
+                asyncio.create_task(delayed_media_group_sender())
+
+                timers[group_id] = True  # Отмечаем, что таймер установлен
             
         else:
             await context.bot.forward_message(
@@ -344,8 +347,18 @@ class ChequeWork(ApplierBot):
                         parse_mode="HTML",
                     )
 
-                    await update_google_sheet(str(new_cheque.cheque_date), new_cheque.cheque_sum, str(new_cheque.cheque_owner.username), new_cheque.cheque_owner.balance)
                     
+                    asyncio.create_task(
+                        asyncio.to_thread(
+                            update_google_sheet,
+                            str(new_cheque.cheque_date),
+                            new_cheque.cheque_sum,
+                            str(new_cheque.cheque_owner.username),
+                            new_cheque.cheque_owner.balance
+                        )
+                    )
+                    
+
                     await context.bot.delete_message(chat_id=msg.chat_id, message_id=msg.message_id)
 
                     await context.bot.send_message(

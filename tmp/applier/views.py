@@ -1,19 +1,19 @@
-# bot/views.py
 import json
+from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse, HttpResponse
 from .tasks import handle_update
-from .tasks import application
 
 @csrf_exempt
-def telegram_webhook(request):
+async def telegram_webhook(request):
     if request.method == 'POST':
         try:
-            update = request.body.decode('utf-8')
-            handle_update.delay(update)
-            return HttpResponse({'status': 'ok'}, status=200)
-
+            update_data = request.body.decode('utf-8')
+            await handle_update(update_data)
+            return JsonResponse({'status': 'ok'}, status=200)
         except json.JSONDecodeError:
-            return HttpResponse({'status': 'invalid json'}, status=400)
+            return JsonResponse({'status': 'invalid json'}, status=400)
+        except Exception as e:
+            print(f"Error: {e}")
+            return JsonResponse({'status': 'error'}, status=500)
     else:
-        return HttpResponse({'status': 'only POST allowed'}, status=405)
+        return JsonResponse({'status': 'only POST allowed'}, status=405)
