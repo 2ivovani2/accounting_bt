@@ -105,9 +105,9 @@ def update_google_sheet(date_str, value, username, balance):
     calls_cell = sheet.cell(user_row, date_col + 2).value
 
     # Инициализация существующих значений
-    existing_value = int(value_cell) if value_cell else 0
-    existing_balance = int(balance_cell) if balance_cell else 0
-    existing_calls = int(calls_cell) if calls_cell else 0
+    existing_value = float(value_cell.replace(",", "")) if value_cell else 0
+    existing_balance = float(balance_cell.replace(",", "")) if balance_cell else 0
+    existing_calls = float(calls_cell.replace(",", "")) if calls_cell else 0
 
     # Обновление значений
     new_value = existing_value + value
