@@ -1,7 +1,14 @@
-import gspread, os, datetime
+import gspread, os, logging, time
+logging.basicConfig(
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
+)
+logger = logging.getLogger(__name__)
+
 
 def update_google_sheet(date_str, value, username, balance):
-    date_str = date_str.split()[0]
+    time.sleep(10)
+    
+    date_str = "'" + ".".join(list(reversed(date_str.split()[0].split("-"))))
     gc = gspread.service_account(filename="applier/bot/utils/creds.json")
     
     spreadsheet = gc.open(os.environ.get("TABLE_NAME", "DM_accounting"))
@@ -22,8 +29,9 @@ def update_google_sheet(date_str, value, username, balance):
 
     # Проверяем, существует ли дата
     date_cols = {date: col for date, col in dates}
-    if date_str in date_cols:
-        date_col = date_cols[date_str]
+    
+    if date_str[1:] in date_cols.keys():
+        date_col = date_cols[date_str[1:]]
     else:
         # Добавляем новую дату в конец
         date_col = len(dates) * 3 + 2  # +2, потому что начинаем с колонки B
@@ -105,14 +113,18 @@ def update_google_sheet(date_str, value, username, balance):
     calls_cell = sheet.cell(user_row, date_col + 2).value
 
     # Инициализация существующих значений
-    existing_value = float(value_cell.replace(",", "")) if value_cell else 0
-    existing_balance = float(balance_cell.replace(",", "")) if balance_cell else 0
-    existing_calls = float(calls_cell.replace(",", "")) if calls_cell else 0
+    existing_value = round(float(value_cell.replace(",", "")), 2) if value_cell else 0
+    existing_balance = round(float(balance_cell.replace(",", "")), 2) if balance_cell else 0
+    existing_calls = round(float(calls_cell.replace(",", "")), 2) if calls_cell else 0
+
+    logging.info(f"{existing_value} - {existing_balance} - {existing_calls}")
 
     # Обновление значений
     new_value = existing_value + value
-    new_balance = existing_balance + balance
+    new_balance = balance
     new_calls = existing_calls + 1
+
+    logging.info(f"{new_value} - {new_balance} - {new_calls}")
 
     # Запись обновленных данных
     sheet.update_cell(user_row, date_col, new_value)

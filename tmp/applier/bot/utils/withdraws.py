@@ -71,7 +71,7 @@ class WithdrawsWork(ApplierBot):
         
         type_of_withdraw = query.data.split("_")[-1]
 
-        if usr.has_active_withdraw:
+        if usr.has_active_withdraw and Withdraw.objects.filter(withdraw_owner=usr, is_applied=False).exists():
             await context.bot.send_message(
                 usr.telegram_chat_id,
                 f"📛 К сожалению, вы не можете подавать заявку на вывод, пока прошлый ордер не будет исполнен.\n\n<blockquote>Если у вас срочное обращение, то нажмите на кнопку ниже и обратитель к админиcтартору.</blockquote>",
@@ -138,6 +138,7 @@ class WithdrawsWork(ApplierBot):
                         except Exception as e:
                             usr.has_active_withdraw = False
                             usr.save()
+                            
                             await context.bot.send_message(
                                 usr.telegram_chat_id,
                                 f"⛔️ Возникла ошибка во время получения цены <b>USDT/RUB</b>.\n\nОшибка: <i>{e}</i>",
@@ -155,6 +156,7 @@ class WithdrawsWork(ApplierBot):
                             )
                     else:
                         context.user_data["usdt_price"] = price
+                        
                         await context.bot.send_message(
                             usr.telegram_chat_id,
                             f"🤩 Отправьте свой адрес для приема <b><u>USDT</u></b> в сети <b><u>TRC20</u></b>.\n\nВАЖНО!! Если вы введете неверный адрес, то ваши средства могут быть утеряны.",
@@ -266,6 +268,7 @@ class WithdrawsWork(ApplierBot):
         elif withdraw_type == "fiat":
             card_number = update.message.text.strip()
             context.user_data["card_number"] = card_number
+            
             await context.bot.send_message(
                 usr.telegram_chat_id,
                 f"Вы запросили вывод:\n\n✔️ Сумма: <b>{usr.balance}₽</b>\n💳 Реквизиты: <pre>{card_number}</pre>\n\n* <i>Может взиматься комиссия на вывод банков.</i>",
@@ -325,11 +328,11 @@ class WithdrawsWork(ApplierBot):
             try: 
                 order = Withdraw(
                     withdraw_id = f"#{secrets.token_urlsafe(int(os.environ.get('IDS_LEN')))}".replace("_", ""),
-                    withdraw_sum = usr.balance,
+                    withdraw_sum = round(usr.balance, 2) - int(os.environ.get("COMISSION_AMT_FOR_UNLIM_SENDS", 2)) * 0.01 * round(usr.balance, 2),
                     withdraw_owner = usr,
                     withdraw_address = context.user_data["usdt_address"],
                     course = context.user_data["usdt_price"],
-                    usdt_sum = round(usr.balance / context.user_data['usdt_price'], 2) - 2,
+                    usdt_sum = round(usr.balance / context.user_data['usdt_price'], 2) - 2 - int(os.environ.get("COMISSION_AMT_FOR_UNLIM_SENDS", 2)) * 0.01 * round(usr.balance, 2),
                 )
 
                 order.save()
@@ -340,7 +343,7 @@ class WithdrawsWork(ApplierBot):
                     parse_mode="HTML",
                 )
                 
-                await context.bot.send_message(
+                msg = await context.bot.send_message(
                     admin.telegram_chat_id,
                     f"<b>{usr.username}</b> запросил вывод <b>{order.withdraw_id}</b>:\n\n✔️ Сумма: <b>{order.withdraw_sum}₽</b>\n✔️ Курс: <b>{context.user_data['usdt_price']}₽</b>\n✔️ Адрес TRC-20: <i>{context.user_data['usdt_address']}</i>\n\nИтог: <b><u>{order.usdt_sum} USDT</u></b>",
                     parse_mode="HTML",
@@ -355,6 +358,8 @@ class WithdrawsWork(ApplierBot):
                         )],
                     ])
                 )
+
+                await msg.pin()
 
             except Exception as e:
                 await context.bot.send_message(
@@ -376,7 +381,7 @@ class WithdrawsWork(ApplierBot):
             try: 
                 order = Withdraw(
                     withdraw_id = f"#{secrets.token_urlsafe(int(os.environ.get('IDS_LEN')))}".replace("_", ""),
-                    withdraw_sum = usr.balance,
+                    withdraw_sum = round(usr.balance, 2) - (int(os.environ.get("COMISSION_AMT_FOR_UNLIM_SENDS", 2)) * 0.01 * round(usr.balance, 2)),
                     withdraw_owner = usr,
                     withdraw_card_number = context.user_data["card_number"],
                 )
@@ -389,7 +394,7 @@ class WithdrawsWork(ApplierBot):
                     parse_mode="HTML",
                 )
                 
-                await context.bot.send_message(
+                msg = await context.bot.send_message(
                     admin.telegram_chat_id,
                     f"<b>{usr.username}</b> запросил вывод <b>{order.withdraw_id}</b>:\n\n✔️ Сумма: <b>{order.withdraw_sum}₽</b>\n💳 Реквизиты: <pre>{order.withdraw_card_number}</pre>",
                     parse_mode="HTML",
@@ -404,6 +409,8 @@ class WithdrawsWork(ApplierBot):
                         )],
                     ])
                 )
+
+                await msg.pin()
 
             except Exception as e:
                 await context.bot.send_message(
@@ -466,7 +473,7 @@ class WithdrawsWork(ApplierBot):
                 order = order.first()
                 user_whom_applied = ApplyUser.objects.filter(telegram_chat_id=user_id).first()
                 
-                user_whom_applied.balance -= order.withdraw_sum
+                user_whom_applied.balance = round(user_whom_applied.balance, 2) - (round(order.withdraw_sum) + (order.withdraw_sum / (1 - os.environ.get("COMISSION_AMT_FOR_UNLIM_SENDS", 2) * 0.01)))
                 user_whom_applied.save()
                 
                 if order.withdraw_address:
@@ -571,7 +578,7 @@ class WithdrawsWork(ApplierBot):
                 else:
                     await context.bot.send_message(
                         user_whom_applied.telegram_chat_id,
-                        f"📛 Заявка на вывод <b>{order.withdraw_id}</b> на сумму <b>{order.withdraw_sum}USDT</b> отклонена!\n\n<blockquote>Если у вас возникли вопросы, обратитесь к администартору.</blockquote>",
+                        f"📛 Заявка на вывод <b>{order.withdraw_id}</b> на сумму <b>{order.withdraw_sum}₽</b> отклонена!\n\n<blockquote>Если у вас возникли вопросы, обратитесь к администартору.</blockquote>",
                         parse_mode="HTML",
                         reply_markup = InlineKeyboardMarkup([
                             [InlineKeyboardButton(

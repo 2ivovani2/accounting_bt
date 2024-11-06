@@ -45,9 +45,10 @@ INSTALLED_APPS = [
 
     "main",
     "applier",
+    "partners_bot",
 
-    # 'rest_framework',
-    # 'rest_framework.authtoken',
+    "rest_framework",
+    "rest_framework.authtoken",
 ]
 
 MIDDLEWARE = [
@@ -130,7 +131,7 @@ USE_I18N = True
 STATIC_URL = "/static/"
 
 STATICFILES_DIRS = [
-    BASE_DIR / 'main/static',
+    BASE_DIR / 'static',
 ]
 
 STATIC_ROOT = BASE_DIR / "staticfiles" 
@@ -138,13 +139,13 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 AUTH_USER_MODEL = 'main.CustomUser'
 
-# REST_FRAMEWORK = {
-#     'DEFAULT_AUTHENTICATION_CLASSES': (
-#         'rest_framework.authentication.TokenAuthentication',
-#     ),
-#     'DEFAULT_PERMISSION_CLASSES': (
-#         'rest_framework.permissions.IsAuthenticated', )
-# }
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.TokenAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated', )
+}
 
 
 # Default primary key field type

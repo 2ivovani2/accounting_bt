@@ -1,12 +1,13 @@
 import requests
 import os
 
-bot_token = os.getenv('APPLIER_BOT_TOKEN')
-webhook_url = os.getenv('WEBHOOK_URL')
+client_bot_token = os.getenv('APPLIER_BOT_TOKEN')
+client_webhook_url = os.getenv('CLIENT_WEBHOOK_URL')
+
+partners_bot_token = os.getenv('PROCESSORS_BOT_TOKEN')
+partners_webhook_url = os.getenv('PARTNERS_WEBHOOK_URL')
 
 def set_webhook(token, webhook):
-    print(bot_token)
-
     url = f"https://api.telegram.org/bot{token}/deleteWebhook"
     response = requests.post(url, data={'url': webhook})
 
@@ -26,7 +27,10 @@ def set_webhook(token, webhook):
         print(f"Ошибка при установке вебхука: {response.text}")
 
 if __name__ == "__main__":
-    if not bot_token or not webhook_url:
-        print("Необходимо установить переменные окружения BOT_TOKEN и WEBHOOK_URL.")
+    if not client_bot_token or not partners_bot_token:
+        print("Необходимо установить переменные окружения BOT_TOKEN для двух ботов")
+    elif not client_webhook_url or not partners_webhook_url:
+        print("Необходимо установить переменные окружения WEBHOOK_URL для двух ботов")
     else:
-        set_webhook(bot_token, webhook_url)
+        set_webhook(client_bot_token, client_webhook_url)
+        set_webhook(partners_bot_token, partners_webhook_url)

@@ -42,7 +42,7 @@ class ApplyUser(models.Model):
     balance = models.FloatField(
         verbose_name="Баланс пользователя",
         null=False,
-        default=0.0
+        default=0.00
     )
 
     comission = models.IntegerField(
@@ -71,7 +71,6 @@ class Ref(models.Model):
         default="Не определен",
         related_name="who_invited_new_user"
     )
-
 
     whom_invited = models.ForeignKey(
         ApplyUser,

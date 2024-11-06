@@ -4,7 +4,7 @@ from django.views.decorators.csrf import csrf_exempt
 from .tasks import handle_update
 
 @csrf_exempt
-async def telegram_webhook(request):
+async def client_telegram_webhook(request):
     if request.method == 'POST':
         try:
             update_data = request.body.decode('utf-8')

@@ -5,7 +5,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# Initialize bot_instance and application as None
 bot_instance = None
 application = None
 

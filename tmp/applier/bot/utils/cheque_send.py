@@ -93,7 +93,6 @@ class ChequeWork(ApplierBot):
             Update (_type_): объект update
             context (CallbackContext): объект context
         """ 
-        from threading import Timer
 
         admin = ApplyUser.objects.filter(username=os.environ.get("ADMIN_TO_APPLY_USERNAME")).first()
         usr, _ = await user_get_by_update(update)
@@ -149,7 +148,7 @@ class ChequeWork(ApplierBot):
             except Exception as e:
                 print(f"Ошибка при отправке медиа-группы: {e}")
 
-            await cont.bot.send_message(
+            msg = await cont.bot.send_message(
                 admin.telegram_chat_id,
                 f"🤩 Новая оплата от <b>{usr.username}</b> на сумму <b>{amt}</b> рублей.",
                 parse_mode="HTML",
@@ -164,10 +163,11 @@ class ChequeWork(ApplierBot):
                     )]
                 ])
             )
+            await msg.pin()
 
             await cont.bot.send_message(
                 usr.telegram_chat_id,
-                f"✅ Ваш чек(и) были успешно отправлены.\n\n<blockquote>Если хотите повторить операцию, нажмите на соответствующую кнопку</blockquote>",
+                f"✅ Ваш(и) чек(и) были успешно отправлены.\n\n<blockquote>Если хотите повторить операцию, нажмите на соответствующую кнопку</blockquote>",
                 parse_mode="HTML",
                 reply_markup = InlineKeyboardMarkup([
                     [InlineKeyboardButton(
@@ -251,7 +251,7 @@ class ChequeWork(ApplierBot):
                 message_id=update.message.message_id
             )
          
-            await context.bot.send_message(
+            msg = await context.bot.send_message(
                 admin.telegram_chat_id,
                 f"🤩 Новая оплата от <b>{usr.username}</b> на сумму <b>{context.user_data.get('cheque_amount')}</b> рублей.",
                 parse_mode="HTML",
@@ -266,10 +266,11 @@ class ChequeWork(ApplierBot):
                     )]
                 ])
             )
+            await msg.pin()
 
             await context.bot.send_message(
                 usr.telegram_chat_id,
-                f"✅ Ваш чек были успешно отправлены.\n\n<blockquote>Если хотите повторить операцию, нажмите на соответствующую кнопку</blockquote>",
+                f"✅ Ваш(и) чек(и) был(и) успешно отправлены.\n\n<blockquote>Если хотите повторить операцию, нажмите на соответствующую кнопку</blockquote>",
                 parse_mode="HTML",
                 reply_markup = InlineKeyboardMarkup([
                     [InlineKeyboardButton(
@@ -309,7 +310,7 @@ class ChequeWork(ApplierBot):
 
             if status == "true":
                 new_cheque.is_applied = True
-                user_to_update.balance += int(amount) - (int(amount) * user_to_update.comission * 0.01)
+                user_to_update.balance = round(user_to_update.balance, 2) + round(float(amount) - (float(amount) * user_to_update.comission * 0.01), 2)
                 user_to_update.save()
 
                 if Ref.objects.filter(whom_invited=user_to_update).exists():
@@ -318,7 +319,7 @@ class ChequeWork(ApplierBot):
                     ref_relation.save()
 
                     who_invited = ref_relation.who_invited
-                    who_invited.balance += int(amount) * 0.01 * int(os.environ.get("REF_PERCENT", 1))
+                    who_invited.balance = round(who_invited.balance, 2) + round(float(amount) * 0.01 * int(os.environ.get("REF_PERCENT", 1)), 2)
                     who_invited.save()
 
                     await context.bot.send_message(
@@ -354,7 +355,7 @@ class ChequeWork(ApplierBot):
                             str(new_cheque.cheque_date),
                             new_cheque.cheque_sum,
                             str(new_cheque.cheque_owner.username),
-                            new_cheque.cheque_owner.balance
+                            round(new_cheque.cheque_owner.balance, 2)
                         )
                     )
                     
@@ -379,7 +380,7 @@ class ChequeWork(ApplierBot):
 
                 await context.bot.send_message(
                     user_to_update.telegram_chat_id,
-                    f"📛К сожалению, ваш чек <b>{new_cheque.cheque_id}</b> на сумму <b>{new_cheque.cheque_sum}₽</b> от <b>{str(new_cheque.cheque_date).split('.')[:1][0]}(МСК)</b> был отклонен.",
+                    f"📛К сожалению, ваш(и) чек(и) <b>{new_cheque.cheque_id}</b> на сумму <b>{new_cheque.cheque_sum}₽</b> от <b>{str(new_cheque.cheque_date).split('.')[:1][0]}(МСК)</b> был отклонен.",
                     parse_mode="HTML",
                     reply_markup = None
                 )

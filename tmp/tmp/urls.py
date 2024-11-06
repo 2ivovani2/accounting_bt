@@ -17,14 +17,15 @@ from django.contrib import admin
 from django.urls import path
 
 from main.views import main_render
-from applier.views import telegram_webhook
-# from applier.views import test_view
+from applier.views import client_telegram_webhook
+from partners_bot.views import partners_telegram_webhook
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', main_render),
-    path('webhook', telegram_webhook, name='telegram_webhook'),
+    path('client_webhook', client_telegram_webhook, name='client_telegram_webhook'),
+    path('processors_webhook', partners_telegram_webhook, name='partners_telegram_webhook'),
 ]
 
-admin.site.site_header = "NAEB.tech 🥩🍖"
-admin.site.index_title = "Админка naeb.tech 🥰"
+admin.site.site_header = "Drip Money"
+admin.site.index_title = "Админка Drip Money 🥰"

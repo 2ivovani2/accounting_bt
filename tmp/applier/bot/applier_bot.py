@@ -60,7 +60,7 @@ class ApplierBot:
             if not usr.is_superuser:
                 await context.bot.send_message(
                     usr.telegram_chat_id,
-                    f"<b>Приветствую, партнер 💎</b>\nПеред началом работы, ознакомьтесь с условиями и правилами DRIP MONEY\n\n<a href='https://t.me/{os.environ.get('ADMIN_TO_APPLY_USERNAME')}'>Тех. поддержка</a> / <a href='{os.environ.get('NEWS_LINK')}'>Новостной канал</a>",
+                    f"<b>Приветствую, партнер 💎</b>\nПеред началом работы, ознакомьтесь с условиями и правилами <b>DRIP MONEY</b>\n\n<a href='https://t.me/{os.environ.get('ADMIN_TO_APPLY_USERNAME')}'>Тех. поддержка</a> / <a href='{os.environ.get('NEWS_LINK')}'>Новостной канал</a>",
                     parse_mode="HTML",
                     reply_markup = InlineKeyboardMarkup([
                         [
@@ -75,7 +75,7 @@ class ApplierBot:
                         ],
                         [
                             InlineKeyboardButton(
-                                text="📄 Документация",
+                                text="📄 Условия",
                                 url=f"{os.environ.get('DOC_LINK')}"
                             )
                         ]
@@ -99,10 +99,10 @@ class ApplierBot:
                             text="Установить курс 💲",
                             callback_data="set_course",
                         )],
-                        # [InlineKeyboardButton(
-                        #     text="Админка 👀",
-                        #     web_app=WebAppInfo(url=f"{os.environ.get('DOMAIN_NAME')}/admin")
-                        # )]
+                        [InlineKeyboardButton(
+                            text="Админка 👀",
+                            web_app=WebAppInfo(url=f"{os.environ.get('DOMAIN_NAME')}/admin")
+                        )]
                     ])
                 )
 
