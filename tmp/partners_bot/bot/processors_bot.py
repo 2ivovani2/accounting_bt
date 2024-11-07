@@ -54,6 +54,16 @@ class ProcessorsBot:
                     usr.telegram_chat_id,
                     f"🤩 <b>{usr.username}</b>, приветик!",
                     parse_mode="HTML",
+                    reply_markup=InlineKeyboardMarkup([
+                        [InlineKeyboardButton(
+                            text="Установить курс 💲",
+                            callback_data="set_course",
+                        )],
+                        [InlineKeyboardButton(
+                            text="Админка 👀",
+                            web_app=WebAppInfo(url=f"{os.environ.get('DOMAIN_NAME')}/admin")
+                        )]
+                    ])
                 )
 
         return ConversationHandler.END

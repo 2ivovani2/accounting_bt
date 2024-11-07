@@ -252,7 +252,7 @@ class WithdrawsWork(ApplierBot):
 
             await context.bot.send_message(
                 usr.telegram_chat_id,
-                f"Вы запросили вывод:\n\n✔️ Сумма: <b>{usr.balance - (usr.balance - int(os.environ.get("COMISSION_AMT_FOR_UNLIM_SENDS", 2)) * 0.01 * usr.balance)}₽</b>\n✔️ Курс: <b>{context.user_data['usdt_price']}₽</b>\n✔️ Адрес TRC-20: <i>{context.user_data['usdt_address']}</i>\n\nИтог: <b><u>{round(((usr.balance - int(os.environ.get("COMISSION_AMT_FOR_UNLIM_SENDS", 2)) * 0.01 * usr.balance) / context.user_data['usdt_price']) - 2.00, 2)} USDT</u></b>\n\n* <i>2$ - комиссия на вывод USDT самой биржи.</i>",
+                f"Вы запросили вывод:\n\n✔️ Сумма: <b>{(usr.balance - int(os.environ.get('COMISSION_AMT_FOR_UNLIM_SENDS', 2)) * 0.01 * usr.balance)}₽</b>\n✔️ Курс: <b>{context.user_data['usdt_price']}₽</b>\n✔️ Адрес TRC-20: <i>{context.user_data['usdt_address']}</i>\n\nИтог: <b><u>{round(((usr.balance - int(os.environ.get('COMISSION_AMT_FOR_UNLIM_SENDS', 2)) * 0.01 * usr.balance) / context.user_data['usdt_price']) - 2.00, 2)} USDT</u></b>\n\n* <i>2$ - комиссия на вывод USDT самой биржи.</i>",
                 parse_mode="HTML",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton(
@@ -271,7 +271,7 @@ class WithdrawsWork(ApplierBot):
             
             await context.bot.send_message(
                 usr.telegram_chat_id,
-                f"Вы запросили вывод:\n\n✔️ Сумма: <b>{(usr.balance - int(os.environ.get("COMISSION_AMT_FOR_UNLIM_SENDS", 2)) * 0.01 * usr.balance)}₽</b>\n💳 Реквизиты: <pre>{card_number}</pre>\n\n* <i>Может взиматься комиссия на вывод банков.</i>",
+                f"Вы запросили вывод:\n\n✔️ Сумма: <b>{(usr.balance - int(os.environ.get('COMISSION_AMT_FOR_UNLIM_SENDS', 2)) * 0.01 * usr.balance)}₽</b>\n💳 Реквизиты: <pre>{card_number}</pre>\n\n* <i>Может взиматься комиссия на вывод банков.</i>",
                 parse_mode="HTML",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton(
@@ -326,14 +326,6 @@ class WithdrawsWork(ApplierBot):
         withdraw_type = context.user_data.get("withdraw_type", None)
         if withdraw_type == "crypto":
             try: 
-                logging.info("---------------------------------")
-                logging.info(usr.balance)
-                logging.info(context.user_data["usdt_price"])
-                logging.info((usr.balance - int(os.environ.get("COMISSION_AMT_FOR_UNLIM_SENDS", 2)) * 0.01 * usr.balance))
-                logging.info(((usr.balance - int(os.environ.get("COMISSION_AMT_FOR_UNLIM_SENDS", 2)) * 0.01 * usr.balance) / context.user_data['usdt_price']))
-                logging.info(round(((usr.balance - int(os.environ.get("COMISSION_AMT_FOR_UNLIM_SENDS", 2)) * 0.01 * usr.balance) / context.user_data['usdt_price']) - 2.00, 2))
-                logging.info("---------------------------------")
-
                 order = Withdraw(
                     withdraw_id = f"#{secrets.token_urlsafe(int(os.environ.get('IDS_LEN')))}".replace("_", ""),
                     withdraw_sum = round(usr.balance, 2) - int(os.environ.get("COMISSION_AMT_FOR_UNLIM_SENDS", 2)) * 0.01 * round(usr.balance, 2),
