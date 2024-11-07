@@ -290,7 +290,7 @@ class ApplierBot:
         usr, _ = await user_get_by_update(update)
         await context.bot.send_message(
             usr.telegram_chat_id,
-            f"😀 Введите курс, который установим на день.",
+            f"😀 Введите курс, который установим.",
             parse_mode="HTML",
             reply_markup = InlineKeyboardMarkup([
                 [InlineKeyboardButton(
@@ -340,10 +340,6 @@ class ApplierBot:
                         text="В начало 🔰",
                         callback_data=f"menu",
                     )], 
-                    [InlineKeyboardButton(
-                        text="Администратор 🆘",
-                        url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_USERNAME')}"
-                    )],
                 ])
             )
 

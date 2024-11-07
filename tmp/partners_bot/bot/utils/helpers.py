@@ -38,7 +38,7 @@ def check_user_status(function):
             message = update.callback_query.message
 
         if not message.chat.username:
-            username = "Anonymous"
+            username = "Спидозная козявка"
         else:
             username = message.chat.username
 
@@ -47,9 +47,24 @@ def check_user_status(function):
             username=username
         )
 
-        if usr.verified_usr:
+        if usr.is_superuser:
             return await function(update, context)
-            
+
+        if usr.verified_usr:
+            if usr.is_ready_to_get_money:
+                return await function(update, context)
+            else:
+                await context.bot.send_message(
+                    usr.telegram_chat_id,
+                    f"😔 Уважаемый <b>{usr.username}</b>, для активации профиля, необходимо внести страховой депозит.\nМинимальная сумма депозита - <b>10.000₽</b>.\n<b>‼️ Обратите внимание</b>, вы не сможете заливаться больше страхового депозита, пока не выведите баланс.\nДля удобной работы, советуем внести сумму выше, чтобы не делать более <b>1-3</b> выводов в день.\n\n<blockquote>Курс устанавливается по 1-2 предложению в ByBit, раздел SBP/SBER/RAIFFEISEN💸</blockquote>",
+                    parse_mode="HTML",
+                    reply_markup = InlineKeyboardMarkup([
+                        [InlineKeyboardButton(
+                            text="💶 Страховой депозит",
+                            callback_data="insurance_deposit",
+                        )]
+                    ])
+                )
         else:
             await context.bot.send_message(
                 usr.telegram_chat_id,
