@@ -64,9 +64,50 @@ class Processor(models.Model):
         null=True,
     )
 
+    has_active_paying_insurance_apply = models.BooleanField(
+        verbose_name="Есть ли у юзера заявка на оплату страхового депозита.",
+        default=False
+    )
+
     def __str__(self) -> str:
         return self.username
     
     class Meta:
         verbose_name = "Пользователь"
         verbose_name_plural = "Пользователи"
+
+class InsurancePayment(models.Model):
+    """
+        Модель, описывающая страховые оплаты DM_partners
+    """
+    owner = models.ForeignKey(
+        Processor,
+        verbose_name="Владелец оплаты",
+        on_delete=models.CASCADE,
+        null=True,
+        default="Не определен"
+    )
+
+    payment_sum_rub = models.FloatField(
+        verbose_name="Сумма страховой оплаты в рублях",
+        null=False,
+        default=0.0
+    )
+
+    payment_sum_usdt = models.FloatField(
+        verbose_name="Сумма страховой оплаты в USDT",
+        null=False,
+        default=0.0
+    )
+
+    is_applied = models.BooleanField(
+        verbose_name="Принята ли страховая выплата",
+        default=False
+    )
+
+    def __str__(self) -> str:
+        return self.owner.username
+    
+    class Meta:
+        verbose_name = "Страховка"
+        verbose_name_plural = "Страховки"

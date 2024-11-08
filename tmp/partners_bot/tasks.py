@@ -17,9 +17,11 @@ async def initialize_bot():
 
         # Register additional handlers
         from partners_bot.bot.utils.auth_sys import Auth
+        from partners_bot.bot.utils.insurance import Insurance
         
+        Insurance(partners_application).reg_handlers()
         Auth(partners_application).reg_handlers()
-
+        
         partners_application = partners_bot_instance.set_last_handlers(partners_application)
 
         # Initialize the application
