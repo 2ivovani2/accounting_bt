@@ -473,7 +473,14 @@ class WithdrawsWork(ApplierBot):
                 order = order.first()
                 user_whom_applied = ApplyUser.objects.filter(telegram_chat_id=user_id).first()
                 
-                user_whom_applied.balance = round(user_whom_applied.balance, 2) - (round(order.withdraw_sum) + (order.withdraw_sum / (1 - int(os.environ.get("COMISSION_AMT_FOR_UNLIM_SENDS", 2)) * 0.01)))
+                logging.info(round(user_whom_applied.balance, 2))
+                logging.info(order.withdraw_sum)
+                logging.info(1 - int(os.environ.get("COMISSION_AMT_FOR_UNLIM_SENDS", 2)) * 0.01)
+                logging.info(order.withdraw_sum / (1 - int(os.environ.get("COMISSION_AMT_FOR_UNLIM_SENDS", 2)) * 0.01))
+                logging.info(round(user_whom_applied.balance, 2) - ((order.withdraw_sum / (1 - int(os.environ.get("COMISSION_AMT_FOR_UNLIM_SENDS", 2)) * 0.01))))
+                logging.info(32 * "-")
+
+                user_whom_applied.balance = round(user_whom_applied.balance, 2) - ((order.withdraw_sum / (1 - int(os.environ.get("COMISSION_AMT_FOR_UNLIM_SENDS", 2)) * 0.01)))
                 user_whom_applied.save()
                 
                 if order.withdraw_address:
