@@ -1,4 +1,5 @@
 from django.db import models
+from applier.models import ApplyUser
 
 class Processor(models.Model):
     """
@@ -8,7 +9,6 @@ class Processor(models.Model):
     telegram_chat_id = models.PositiveBigIntegerField(
         verbose_name="ID пользователя",
         null=True,
-        default="Не определен"
     )
 
     verified_usr = models.BooleanField(
@@ -76,6 +76,66 @@ class Processor(models.Model):
         verbose_name = "Пользователь"
         verbose_name_plural = "Пользователи"
 
+class Reks(models.Model):
+    """
+        Модель, описывающая реквизиты DM_partners
+    """
+
+    reks_owner = models.ForeignKey(
+        Processor,
+        verbose_name="Владелец реквизитов",
+        on_delete=models.CASCADE,
+        null=True,
+    )
+
+    is_archived = models.BooleanField(
+        verbose_name="Флаг для проверки не добавляет ли процессор такие же реквизиты.",
+        default=False
+    )
+
+    who_use_reks = models.ForeignKey(
+        ApplyUser,
+        verbose_name="Клиент, пользующийся реквизитами.",
+        on_delete=models.CASCADE,
+        null=True,
+    )
+
+    card_number = models.CharField(
+        verbose_name="Номер карты реквизитов",
+        max_length=50,
+        null=False,
+        default="0000 0000 0000 0000",
+    )
+
+    sbp_phone_number = models.CharField(
+        verbose_name="Номер телефона для принятия по СБП",
+        max_length=50,
+        null=False,
+        default="+79999999999"
+    )
+
+    card_owner_name = models.CharField(
+        verbose_name="Имя владельца карты",
+        max_length=100,
+        null=False,
+        default="Иванов Иван Иванович"
+    )
+
+    bank_name = models.CharField(
+        verbose_name="Название банка, которому принадлежит карта.",
+        max_length=50,
+        null=True
+    )
+
+
+    def __str__(self) -> str:
+        return self.reks_owner.username
+    
+    class Meta:
+        verbose_name = "Реквизит"
+        verbose_name_plural = "Реквизиты"
+
+
 class InsurancePayment(models.Model):
     """
         Модель, описывающая страховые оплаты DM_partners
@@ -85,7 +145,6 @@ class InsurancePayment(models.Model):
         verbose_name="Владелец оплаты",
         on_delete=models.CASCADE,
         null=True,
-        default="Не определен"
     )
 
     payment_sum_rub = models.FloatField(

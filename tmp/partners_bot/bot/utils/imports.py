@@ -2,7 +2,7 @@ from partners_bot.models import *
 
 from asgiref.sync import sync_to_async
 
-import time
+import time, re
 from typing import TypedDict, List, Literal, cast
 import requests, base58
 import os, django, logging, warnings, secrets

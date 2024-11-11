@@ -18,7 +18,9 @@ async def initialize_bot():
         # Register additional handlers
         from partners_bot.bot.utils.auth_sys import Auth
         from partners_bot.bot.utils.insurance import Insurance
-        
+        from partners_bot.bot.utils.reks import ReksModule
+
+        ReksModule(partners_application).reg_handlers()
         Insurance(partners_application).reg_handlers()
         Auth(partners_application).reg_handlers()
         

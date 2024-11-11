@@ -114,7 +114,7 @@ class ProcessorsBot:
                         ],
                         [
                             InlineKeyboardButton(
-                                text="💵 Ваши реквизиты", 
+                                text="💵 Реквизиты", 
                                 callback_data="reks_profile"
                             ),
                         

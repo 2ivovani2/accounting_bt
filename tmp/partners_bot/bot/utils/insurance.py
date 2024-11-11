@@ -146,7 +146,7 @@ class Insurance(ProcessorsBot):
 
             msg = await context.bot.send_message(
                 admin.telegram_chat_id,
-                f"⭐️ Новая заявка на оплату страхового депозита от <b>{deposit.owner.username}</b>:\n\n· Сумма - <b>{deposit.payment_sum_rub}₽/{deposit.payment_sum_usdt}USDT</b>\n· Курс - <b>{context.bot_data['usdt_price']}</b>",
+                f"⭐️ Новая заявка на оплату страхового депозита от <b>{deposit.owner.username}</b>:\n\n· Сумма - <b>{deposit.payment_sum_rub}₽ / {deposit.payment_sum_usdt}USDT</b>\n· Курс - <b>{context.bot_data['usdt_price']}</b>",
                 parse_mode="HTML",
                 reply_markup = InlineKeyboardMarkup([
                     [InlineKeyboardButton(
@@ -164,7 +164,7 @@ class Insurance(ProcessorsBot):
 
             await context.bot.send_message(
                 usr.telegram_chat_id,
-                f"Заявка успешно создана.\n\n<blockquote>Ожидайте подтверждения, обычно это занимает от 3-6 часов.</blockquote>",
+                f"✅ Заявка успешно создана.\n\n<blockquote>Ожидайте подтверждения админимьтратора, обычно это занимает от 3-6 часов.</blockquote>",
                 parse_mode="HTML",                    
             )
 
@@ -185,6 +185,121 @@ class Insurance(ProcessorsBot):
             )
         return ConversationHandler.END
 
+    async def _apply_insurance_by_admin(self, update: Update, context: CallbackContext) -> int:
+        """
+            Обработчик команды /start
+
+            Returns:
+                Завершает диалог, путем вызова ConversationHandler.END
+        """
+
+        try:
+            query = update.callback_query
+            if query:
+                await query.answer()
+                await context.bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
+        except:
+            pass
+
+        admin, _ = await user_get_by_update(update)
+        splitted_data = query.data.split("_")
+        deposit_id, status = splitted_data[-1], splitted_data[-2]
+        deposit = InsurancePayment.objects.get(pk=deposit_id)
+        usr = deposit.owner  
+
+        if status == "accept":
+            try:
+                usr.insurance_deposit = round(usr.amount_to_accept / 1.10, 2)
+                usr.is_ready_to_get_money = True
+                usr.has_active_paying_insurance_apply = False
+
+                deposit.is_applied = True
+                
+                usr.save()
+                deposit.save()
+
+                await context.bot.send_message(
+                    admin.telegram_chat_id,
+                    f"✅ Вы успешно приняли страховой депозит пользователя <b>{usr.username}</b> на сумму <b>{deposit.payment_sum_rub}₽ / {deposit.payment_sum_usdt}USDT</b>",
+                    parse_mode="HTML",
+                    reply_markup=InlineKeyboardMarkup([
+                        [InlineKeyboardButton(
+                            text="🔙 В меню",
+                            callback_data=f"menu",
+                        )], 
+                    ])
+                )
+
+                await context.bot.send_message(
+                    usr.telegram_chat_id,
+                    f"✅ Ваш страховой депозит на сумму <b>{deposit.payment_sum_rub}₽ / {deposit.payment_sum_usdt}USDT</b> успешно принят.",
+                    parse_mode="HTML",
+                    reply_markup=InlineKeyboardMarkup([
+                        [InlineKeyboardButton(
+                            text="🔙 В меню",
+                            callback_data=f"menu",
+                        )], 
+                    ])
+                )
+
+            except Exception as e:
+                await context.bot.send_message(
+                    admin.telegram_chat_id,
+                    f"🆘 Какая-то ошибка возникла.\n\n<i>{e}</i>",
+                    parse_mode="HTML",
+                    reply_markup = InlineKeyboardMarkup([
+                        [InlineKeyboardButton(
+                            text="🔙 В начало",
+                            callback_data=f"menu",
+                        )], 
+                    ])
+                )
+
+        else:
+            try:
+                usr.has_active_paying_insurance_apply = False
+                usr.save()
+
+                await context.bot.send_message(
+                    admin.telegram_chat_id,
+                    f"⛔️ Вы успешно отклонили страховой депозит пользователя <b>{usr.username}</b> на сумму {deposit.payment_sum_rub}₽ / {deposit.payment_sum_usdt}USDT.",
+                    parse_mode="HTML",
+                    reply_markup=InlineKeyboardMarkup([
+                        [InlineKeyboardButton(
+                            text="🔙 В меню",
+                            callback_data=f"menu",
+                        )], 
+                    ])
+                )
+
+                await context.bot.send_message(
+                    usr.telegram_chat_id,
+                    f"⛔️ Ваш страховой депозит на сумму {deposit.payment_sum_rub}₽ / {deposit.payment_sum_usdt}USDT отклонен.\n\n<blockquote>Если вы считаете, что произошла ошибка, свяжитесь с администратором по кнопке ниже.</blockquote>",
+                    parse_mode="HTML",
+                    reply_markup=InlineKeyboardMarkup([
+                        [InlineKeyboardButton(
+                            text="🆘 Администратор",
+                            url=f"https://t.me/{os.environ.get('PROCESSORS_ADMIN_USERNAME')}",
+                        )], 
+                        [InlineKeyboardButton(
+                            text="🔙 В меню",
+                            callback_data=f"menu",
+                        )], 
+                    ])
+                )
+            except Exception as e:
+                await context.bot.send_message(
+                    admin.telegram_chat_id,
+                    f"🆘 Какая-то ошибка возникла.\n\n<i>{e}</i>",
+                    parse_mode="HTML",
+                    reply_markup = InlineKeyboardMarkup([
+                        [InlineKeyboardButton(
+                            text="🔙 В начало",
+                            callback_data=f"menu",
+                        )], 
+                    ])
+                )
+
     def reg_handlers(self):
         self.application.add_handler(ConversationHandler(
             entry_points=[CallbackQueryHandler(self._info_user_about_deposit, "insurance_deposit")],
@@ -196,3 +311,5 @@ class Insurance(ProcessorsBot):
             fallbacks=[CallbackQueryHandler(self._start, "menu"), CommandHandler("start", self._start)],
             conversation_timeout=600
         ))
+
+        self.application.add_handler(CallbackQueryHandler(self._apply_insurance_by_admin, "^insurance_payment_"))
