@@ -20,10 +20,10 @@ async def initialize_bot():
         from partners_bot.bot.utils.insurance import Insurance
         from partners_bot.bot.utils.reks import ReksModule
 
-        ReksModule(partners_application).reg_handlers()
         Insurance(partners_application).reg_handlers()
         Auth(partners_application).reg_handlers()
-        
+        ReksModule(partners_application).reg_handlers()
+
         partners_application = partners_bot_instance.set_last_handlers(partners_application)
 
         # Initialize the application

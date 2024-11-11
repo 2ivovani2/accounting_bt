@@ -1,5 +1,4 @@
 from django.db import models
-from applier.models import ApplyUser
 
 class Processor(models.Model):
     """
@@ -91,13 +90,6 @@ class Reks(models.Model):
     is_archived = models.BooleanField(
         verbose_name="Флаг для проверки не добавляет ли процессор такие же реквизиты.",
         default=False
-    )
-
-    who_use_reks = models.ForeignKey(
-        ApplyUser,
-        verbose_name="Клиент, пользующийся реквизитами.",
-        on_delete=models.CASCADE,
-        null=True,
     )
 
     card_number = models.CharField(

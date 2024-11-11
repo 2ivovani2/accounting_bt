@@ -36,11 +36,11 @@ class ReksAdmin(admin.ModelAdmin):
     """
         Описание пользователей в админской панели
     """
-    list_display = ("id", "reks_owner", "who_use_reks", "card_number", "card_owner_name" ,"bank_name", "is_archived")
+    list_display = ("id", "reks_owner", "card_number", "card_owner_name" ,"bank_name", "is_archived")
     search_fields = ("id", "reks_owner__username", "bank_name", "card_number", "card_owner_name")
 
     fieldsets = (
         ("Основные параметры", {
-            "fields": ["reks_owner", "who_use_reks", "bank_name", "card_number", "card_owner_name", "sbp_phone_number", "is_archived"]
+            "fields": ["reks_owner", "bank_name", "card_number", "card_owner_name", "sbp_phone_number", "is_archived"]
         }),
     )

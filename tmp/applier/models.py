@@ -1,5 +1,7 @@
 from django.db import models
 from django.utils import timezone
+from partners_bot.models import Reks
+
 
 class ApplyUser(models.Model):
     """
@@ -49,6 +51,13 @@ class ApplyUser(models.Model):
         verbose_name="Комиссия пользователя",
         null=False,
         default=8
+    )
+
+    reks = models.ForeignKey(
+        Reks,
+        verbose_name="Активные реквизиты",
+        on_delete=models.CASCADE,
+        null=True,
     )
 
     def __str__(self) -> str:
