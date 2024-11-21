@@ -315,10 +315,13 @@ class WithdrawsWork(ApplierBot):
         usr, _ = await user_get_by_update(update)
         admin = ApplyUser.objects.filter(username=os.environ.get("ADMIN_TO_APPLY_USERNAME")).first()
         
-        query = update.callback_query
-        await query.answer()
-        await context.bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
-        
+        try:
+            query = update.callback_query
+            await query.answer()
+            await context.bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
+        except:
+            pass
+
         usr.has_active_withdraw = True
         usr.save()
 
@@ -457,10 +460,13 @@ class WithdrawsWork(ApplierBot):
         """ 
         
         usr, _ = await user_get_by_update(update)
-        query = update.callback_query
-        await query.answer()
-        
-        await context.bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
+        try:
+            query = update.callback_query
+            await query.answer()
+            await context.bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
+        except:
+            pass
+
         status, user_id, withdraw_id = query.data.split("_")[-3], query.data.split("_")[-2], query.data.split("_")[-1] 
 
         if status == "paid":
