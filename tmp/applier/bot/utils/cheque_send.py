@@ -208,7 +208,7 @@ class ChequeWork(ApplierBot):
                 # Отправляем сообщение с информацией о платеже
                 msg = await target_bot.send_message(
                     admin.telegram_chat_id,
-                    f"🤩 Новая оплата по реквизитам <b>{usr.reks.card_number if usr.reks else '🌪️'}</b> - <i>{usr.reks.card_owner_name if usr.reks else '🌪️'}</i> на сумму <b>{amt}</b> рублей.",
+                    f"🤩 Новая оплата по реквизитам <b>{usr.reks.card_number if usr.reks else f'от {usr.username}'}</b> - <i>{usr.reks.card_owner_name if usr.reks else '🌪️'}</i> на сумму <b>{amt}</b> рублей.",
                     parse_mode="HTML",
                     reply_markup=InlineKeyboardMarkup([
                         [InlineKeyboardButton(
@@ -327,7 +327,7 @@ class ChequeWork(ApplierBot):
             try:
                 msg = await target_bot.send_message(
                     admin.telegram_chat_id,
-                    f"🤩 Новая оплата по реквизитам <b>{usr.reks.card_number if usr.reks else '🌪️'}</b> - <i>{usr.reks.card_owner_name if usr.reks else '🌪️'}</i> на сумму <b>{amt}</b> рублей.",
+                    f"🤩 Новая оплата по реквизитам <b>{usr.reks.card_number if usr.reks else f'от {usr.username}'}</b> - <i>{usr.reks.card_owner_name if usr.reks else '🌪️'}</i> на сумму <b>{amt}</b> рублей.",
                     parse_mode="HTML",
                     reply_markup=InlineKeyboardMarkup([
                         [InlineKeyboardButton(
