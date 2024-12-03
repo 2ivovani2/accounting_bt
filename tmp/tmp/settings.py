@@ -147,6 +147,14 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated', )
 }
 
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+
+CLIENT_BOT_INSTANCE = None
+CLIENT_APPLICATION = None
+
+PARTNERS_BOT_INSTANCE = None
+PARTNERS_APPLICATION = None
+SCHEDULER = AsyncIOScheduler()
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field

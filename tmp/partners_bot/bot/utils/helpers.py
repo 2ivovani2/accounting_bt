@@ -51,7 +51,7 @@ def check_user_status(function):
             return await function(update, context)
 
         if usr.verified_usr:
-            if usr.is_ready_to_get_money:
+            if usr.is_ready_to_get_money_first:
                 return await function(update, context)
             else:
                 await context.bot.send_message(

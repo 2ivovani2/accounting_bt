@@ -11,7 +11,6 @@ class ApplyUser(models.Model):
     telegram_chat_id = models.PositiveBigIntegerField(
         verbose_name="ID пользователя",
         null=True,
-        default="Не определен"
     )
 
     verified_usr = models.BooleanField(
@@ -58,6 +57,7 @@ class ApplyUser(models.Model):
         verbose_name="Активные реквизиты",
         on_delete=models.CASCADE,
         null=True,
+        blank=True
     )
 
     def __str__(self) -> str:
@@ -77,8 +77,8 @@ class Ref(models.Model):
         verbose_name="Кто пригласил юзера",
         on_delete=models.CASCADE,
         null=True,
-        default="Не определен",
-        related_name="who_invited_new_user"
+        related_name="who_invited_new_user",
+        blank=True
     )
 
     whom_invited = models.ForeignKey(
@@ -86,8 +86,8 @@ class Ref(models.Model):
         verbose_name="Кого пригласили в проект",
         on_delete=models.CASCADE,
         null=True,
-        default="Не определен", 
-        related_name="whom_invited_to_project"
+        related_name="whom_invited_to_project",
+        blank=True
     )
 
     ref_income = models.PositiveBigIntegerField(
@@ -126,7 +126,7 @@ class Cheque(models.Model):
         verbose_name="Владелец чека",
         on_delete=models.CASCADE,
         null=True,
-        default="Не определен"
+        blank=True
     )
 
     cheque_date = models.DateTimeField(
@@ -180,7 +180,7 @@ class Withdraw(models.Model):
         verbose_name="Владелец вывода",
         on_delete=models.CASCADE,
         null=True,
-        default="Не определен"
+        blank=True
     )
 
     withdraw_address = models.CharField(

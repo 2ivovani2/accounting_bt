@@ -27,7 +27,7 @@ class UserAdmin(admin.ModelAdmin):
     fieldsets = (
 
         ("Основные параметры", {
-            "fields": ["username", "telegram_chat_id", "verified_usr", "has_active_withdraw", "is_superuser", "balance", "comission", "info"]
+            "fields": ["username", "telegram_chat_id", "verified_usr", "has_active_withdraw", "is_superuser", "balance", "comission", "info", "reks"]
         }),
     )
 

@@ -210,6 +210,7 @@ class Insurance(ProcessorsBot):
         if status == "accept":
             try:
                 usr.insurance_deposit = round(usr.amount_to_accept / 1.10, 2)
+                usr.is_ready_to_get_money_first = True
                 usr.is_ready_to_get_money = True
                 usr.has_active_paying_insurance_apply = False
 

@@ -148,7 +148,7 @@ class ProcessorsBot:
                             text="💸 Активировать профиль",
                             callback_data="insurance_deposit"
                         ),
-                    ] if not usr.is_ready_to_get_money else [],
+                    ] if not usr.is_ready_to_get_money_first else [],
                 ])
                 await context.bot.send_message(
                     usr.telegram_chat_id,
@@ -176,6 +176,33 @@ class ProcessorsBot:
                 )
 
         return ConversationHandler.END
+
+    @check_user_status
+    async def _ask_about_partner_withdraw(
+        update: Update, context: CallbackContext
+    ) -> int:
+        """Запросить курс у администратора.
+
+        Args:
+            update (Update): Объект обновления.
+            context (CallbackContext): Контекст обратного вызова.
+
+        Returns:
+            int: Состояние диалога, ожидающий ввод курса.
+        """
+        usr, _ = await user_get_by_update(update)
+        await context.bot.send_message(
+            usr.telegram_chat_id,
+            f"🍀 Выводы в данный момент происходят в ручном режиме, если вам необходим вывод, то обратитесь к администратору.",
+            parse_mode="HTML",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton(
+                    text="В начало 🔰",
+                    callback_data="menu",
+                )],
+            ])
+        )
+
 
     @check_user_status
     async def _ask_for_course_from_admin(
@@ -289,8 +316,15 @@ class ProcessorsBot:
         Returns:
             Application: Приложение с добавленными обработчиками.
         """
+
         application.add_handler(CommandHandler("start", self._start))
         application.add_handler(CallbackQueryHandler(self._start, pattern="menu"))
+
+        application.add_handler(CallbackQueryHandler(self._ask_about_partner_withdraw, "get_withdraw"))
+
+        from django.conf import settings
+        settings.PARTNERS_APPLICATION = application
+        settings.PARTNERS_BOT_INSTANCE = application.bot
 
         return application
 

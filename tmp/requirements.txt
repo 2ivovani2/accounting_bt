@@ -13,3 +13,5 @@ base58
 gspread
 gspread-formatting
 uvicorn
+aiohttp
+APScheduler

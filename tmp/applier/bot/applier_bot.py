@@ -1,12 +1,11 @@
 from .utils.imports import *
 from .utils.helpers import *
-from asgiref.sync import async_to_sync
 
 
 class ApplierBot:
     
     def __init__(self) -> None:
-        """"
+        """
             Инициализация апа
         """
             
@@ -231,19 +230,34 @@ class ApplierBot:
             await query.answer()
             await context.bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
 
-        await context.bot.send_message(
-            usr.telegram_chat_id,
-            f"🛠️ Раздел в разработке...",
-            parse_mode="HTML",
-            reply_markup=InlineKeyboardMarkup([
-                [
-                    InlineKeyboardButton(
-                        text="🔙 Назад", 
-                        callback_data="profile"
-                    )
-                ]
-            ])
-        )
+        if usr.reks:
+            await context.bot.send_message(
+                usr.telegram_chat_id,
+                f"🔴 Ваши актуальные реквизиты:\n\n<pre>{usr.reks.card_number} - {usr.reks.sbp_phone_number} - {usr.reks.card_owner_name} - {usr.reks.bank_name}</pre>",
+                parse_mode="HTML",
+                reply_markup=InlineKeyboardMarkup([
+                    [
+                        InlineKeyboardButton(
+                            text="🔙 Назад", 
+                            callback_data="profile"
+                        )
+                    ]
+                ])
+            )
+        else:
+            await context.bot.send_message(
+                usr.telegram_chat_id,
+                f"🥶 У вас пока нет актуальных реквизитов, если произошла ошибка, то обратитесь к администратору.",
+                parse_mode="HTML",
+                reply_markup=InlineKeyboardMarkup([
+                    [
+                        InlineKeyboardButton(
+                            text="🔙 Назад", 
+                            callback_data="profile"
+                        )
+                    ]
+                ])
+            )
 
     @check_user_status
     async def _refs_info(update: Update, context: CallbackContext) -> None:
@@ -368,6 +382,10 @@ class ApplierBot:
     def set_last_handlers(self, application):
         application.add_handler(CommandHandler("start", self._start))
         application.add_handler(CallbackQueryHandler(self._start, "menu"))
+
+        from django.conf import settings
+        settings.CLIENT_APPLICATION = application
+        settings.CLIENT_BOT_INSTANCE = application.bot
 
         return application
 

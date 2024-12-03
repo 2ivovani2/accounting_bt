@@ -2,6 +2,8 @@ from applier.models import *
 
 from asgiref.sync import sync_to_async
 
+from partners_bot.bot.utils.delayed_func import check_cheque_status
+
 import time
 from typing import TypedDict, List, Literal, cast
 import requests, base58
@@ -12,7 +14,12 @@ import gspread
 import pandas as pd
 import numpy as np
 
-from django.core.management.base import BaseCommand
+import asyncio
+import secrets
+import os
+
+from io import BytesIO
+import aiohttp
 
 from telegram import (
     InlineKeyboardButton,
@@ -21,6 +28,7 @@ from telegram import (
     WebAppInfo,
     InputMediaPhoto,
     InputMediaDocument,
+    InputFile,
 )
 
 from telegram.ext import (

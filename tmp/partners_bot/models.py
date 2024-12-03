@@ -41,6 +41,11 @@ class Processor(models.Model):
         default=5
     )
 
+    is_ready_to_get_money_first = models.BooleanField(
+        verbose_name="Первичная идентификация",
+        default=False
+    )
+
     is_ready_to_get_money = models.BooleanField(
         verbose_name="Может ли юзер принимать деньги на свои реквизиты",
         default=False
@@ -85,10 +90,16 @@ class Reks(models.Model):
         verbose_name="Владелец реквизитов",
         on_delete=models.CASCADE,
         null=True,
+        blank=True
     )
 
     is_archived = models.BooleanField(
         verbose_name="Флаг для проверки не добавляет ли процессор такие же реквизиты.",
+        default=False
+    )
+
+    is_emergency = models.BooleanField(
+        verbose_name="Являются ли реквизиты резервными",
         default=False
     )
 
@@ -121,7 +132,7 @@ class Reks(models.Model):
 
 
     def __str__(self) -> str:
-        return self.reks_owner.username
+        return f"{self.reks_owner.username} {self.card_number}"
     
     class Meta:
         verbose_name = "Реквизит"
@@ -137,6 +148,7 @@ class InsurancePayment(models.Model):
         verbose_name="Владелец оплаты",
         on_delete=models.CASCADE,
         null=True,
+        blank=True
     )
 
     payment_sum_rub = models.FloatField(

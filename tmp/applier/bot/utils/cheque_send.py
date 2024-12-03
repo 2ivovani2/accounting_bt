@@ -1,7 +1,13 @@
 from ..applier_bot import ApplierBot
 from .imports import *
 from .helpers import *
-from .update_google_doc import update_google_sheet
+
+from partners_bot.bot.utils.delayed_func import check_cheque_status
+
+from datetime import datetime, timedelta
+
+from partners_bot.tasks import initialize_bot
+from django.conf import settings
 
 import logging, asyncio
 
@@ -14,7 +20,44 @@ class ChequeWork(ApplierBot):
     def __init__(self, app) -> None:
         super().__init__()
         self.application = app
-        
+
+    @staticmethod
+    async def get_partners_bot_instance():
+        if settings.PARTNERS_BOT_INSTANCE is None:
+            await initialize_bot()
+        return settings.PARTNERS_BOT_INSTANCE
+
+    @staticmethod
+    async def get_file_url(bot, file_id):
+        """Получить полный URL файла по file_id"""
+        try:
+            # Получаем объект файла
+            file = await bot.get_file(file_id)
+            full_url = file.file_path
+            return full_url
+        except Exception as e:
+            print(f"Ошибка при получении файла: {e}")
+            return None
+
+    @staticmethod
+    def effective_message_type(message):
+        """Определяет тип медиа сообщения."""
+        if message.photo:
+            return "photo"
+        elif message.document:
+            return "document"
+        else:
+            return "unknown"
+
+    @staticmethod
+    def get_extension(media_type):
+        """Возвращает расширение файла по типу медиа."""
+        extensions = {
+            "photo": "jpg",
+            "document": "pdf",  # Можно расширить по необходимости
+        }
+        return extensions.get(media_type, "bin")
+
     @check_user_status
     async def _ask_for_cheque_amount(update: Update, context: CallbackContext) -> None:
         """Функция прошения суммы
@@ -86,104 +129,253 @@ class ChequeWork(ApplierBot):
             return ConversationHandler.END
 
     @check_user_status
-    async def _send_photo_to_admin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-        """Функция пересылки сообщения админу
+    async def _send_photo_to_admin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+        """Функция пересылки медиа-группы админу через другого бота."""
 
-        Args:
-            Update (_type_): объект update
-            context (CallbackContext): объект context
-        """ 
+        async def send_single_media(
+            source_bot,
+            target_bot,
+            message,
+            usr,
+            amt,
+            new_cheque,
+            admin,
+            context
+        ):
+            """Отправляет одиночное медиа сообщение админу через целевой бот и удаляет исходное сообщение."""
 
-        admin = ApplyUser.objects.filter(username=os.environ.get("ADMIN_TO_APPLY_USERNAME")).first()
-        usr, _ = await user_get_by_update(update)
-        
-        async def media_group_sender(cont: ContextTypes.DEFAULT_TYPE, group_id=None, msg_data=None):
-            print("media_group_sender called")
-            admin = ApplyUser.objects.filter(username=os.environ.get("ADMIN_TO_APPLY_USERNAME")).first()
-            bot = cont.bot
-
-            media_groups = cont.user_data.get('media_groups', {})
-            media_data = media_groups.pop(group_id, [])
-
-            timers = cont.user_data.get('timers', {})
-            timers.pop(group_id, None)
-            
-
-            print(f"Собранные данные медиа-группы: {media_data}")
-
-            if not media_data:
-                print("Нет медиа для отправки")
-                return
-
-            MEDIA_GROUP_TYPES = {
-                "document": InputMediaDocument,
-                "photo": InputMediaPhoto,
-            }
-
-            media = []
-            for msg in media_data:
-                media_type = msg.get("media_type")
-                media_id = msg.get("media_id")
-                caption = msg.get("caption")
-
-                if media_type not in MEDIA_GROUP_TYPES:
-                    print(f"Неизвестный тип медиа: {media_type}")
-                    continue
-
-                media.append(
-                    MEDIA_GROUP_TYPES[media_type](
-                        media=media_id,
-                        caption=caption
+            try:
+                # Получаем URL файла через исходного бота
+                file_id = message.photo[-1].file_id if message.photo else message.effective_attachment.file_id
+                media_type = ChequeWork.effective_message_type(message)
+                file_url = await ChequeWork.get_file_url(source_bot, file_id)
+                if not file_url:
+                    await target_bot.send_message(
+                        usr.telegram_chat_id,
+                        "⛔️ Не удалось получить файл для пересылки.",
+                        parse_mode="HTML",
+                        reply_markup=InlineKeyboardMarkup([
+                            [InlineKeyboardButton(
+                                text="🔙 В меню",
+                                callback_data="menu",
+                            )],
+                        ])
                     )
+                    return ConversationHandler.END
+
+                # Скачиваем файл
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(file_url) as resp:
+                        if resp.status != 200:
+                            await target_bot.send_message(
+                                usr.telegram_chat_id,
+                                "⛔️ Не удалось скачать файл для пересылки.",
+                                parse_mode="HTML",
+                                reply_markup=InlineKeyboardMarkup([
+                                    [InlineKeyboardButton(
+                                        text="🔙 В меню",
+                                        callback_data="menu",
+                                    )],
+                                ])
+                            )
+                            return ConversationHandler.END
+                        file_bytes = await resp.read()
+                        file_stream = BytesIO(file_bytes)
+                        file_stream.name = f"{media_type}.{ChequeWork.get_extension(media_type)}"
+
+                # Создаём InputMedia объект
+                if media_type == "photo":
+                    media_item = InputMediaPhoto(media=file_stream, caption=message.caption_html)
+                elif media_type == "document":
+                    media_item = InputMediaDocument(media=file_stream, caption=message.caption_html)
+                else:
+                    await target_bot.send_message(
+                        usr.telegram_chat_id,
+                        f"⛔️ Неизвестный тип медиа: {media_type}",
+                        parse_mode="HTML",
+                        reply_markup=InlineKeyboardMarkup([
+                            [InlineKeyboardButton(
+                                text="🔙 В меню",
+                                callback_data="menu",
+                            )],
+                        ])
+                    )
+                    return ConversationHandler.END
+
+                # Отправляем медиа через целевой бот
+                await target_bot.send_media_group(chat_id=admin.telegram_chat_id, media=[media_item])
+
+                # Отправляем сообщение с информацией о платеже
+                msg = await target_bot.send_message(
+                    admin.telegram_chat_id,
+                    f"🤩 Новая оплата по реквизитам <b>{usr.reks.card_number if usr.reks else '🌪️'}</b> - <i>{usr.reks.card_owner_name if usr.reks else '🌪️'}</i> на сумму <b>{amt}</b> рублей.",
+                    parse_mode="HTML",
+                    reply_markup=InlineKeyboardMarkup([
+                        [InlineKeyboardButton(
+                            text="Принять оплату чека ✅",
+                            callback_data=f"acception_cheque_true_{new_cheque.cheque_id}",
+                        )],
+                        [InlineKeyboardButton(
+                            text="Отклонить оплату чека ⛔️",
+                            callback_data=f"acception_cheque_false_{new_cheque.cheque_id}",
+                        )]
+                    ])
+                )
+                await msg.pin()
+
+                # Уведомляем пользователя об успешной отправке
+                await source_bot.send_message(
+                    usr.telegram_chat_id,
+                    f"✅ Ваш чек был успешно отправлен.\n\n<blockquote>Если хотите повторить операцию, нажмите на соответствующую кнопку</blockquote>",
+                    parse_mode="HTML",
+                    reply_markup=InlineKeyboardMarkup([
+                        [InlineKeyboardButton(
+                            text="🔄 Отправить еще",
+                            callback_data="send_cheque",
+                        )],
+                        [InlineKeyboardButton(
+                            text="🔙 В меню",
+                            callback_data="menu",
+                        )],
+                    ])
                 )
 
-            if not media:
-                print("Нет медиа для отправки после обработки")
+            except Exception as e:
+                print(f"Ошибка при обработке одиночного медиа сообщения: {e}")
+                await target_bot.send_message(
+                    usr.telegram_chat_id,
+                    f"🟥 Возникла ошибка.\n\nОшибка: <i>{e}</i>",
+                    parse_mode="HTML",
+                    reply_markup=InlineKeyboardMarkup([
+                        [InlineKeyboardButton(
+                            text="💎 В меню",
+                            callback_data="menu",
+                        )],
+                    ])
+                )
+                return ConversationHandler.END
+
+        async def media_group_sender(
+            source_bot,
+            target_bot,
+            group_id,
+            usr,
+            amt,
+            new_cheque,
+            admin,
+            context
+        ):
+            """Отправляет собранную медиа-группу админу через целевой бот и удаляет исходные сообщения."""
+
+            media_groups = context.bot_data.get('media_groups', {})
+            media_data = media_groups.pop(group_id, [])
+
+            timers = context.bot_data.get('timers', {})
+            timers.pop(group_id, None)
+
+            if not media_data:
+                logger.info("Нет медиа для отправки")
                 return
 
-            print(f"Отправляем медиа-группу: {media}")
+            media_to_send = []
+            for msg in media_data:
+                media_type = msg.get("media_type")
+                file_id = msg.get("media_id")
+                caption = msg.get("caption")
+
+                # Получаем URL файла через исходного бота
+                file_url = await ChequeWork.get_file_url(source_bot, file_id)
+                if not file_url:
+                    continue
+
+                # Скачиваем файл
+                try:
+                    async with aiohttp.ClientSession() as session:
+                        async with session.get(file_url) as resp:
+                            if resp.status != 200:
+                                logger.error(f"Не удалось скачать файл по URL: {file_url}")
+                                continue
+                            file_bytes = await resp.read()
+                            file_stream = BytesIO(file_bytes)
+                            file_stream.name = f"{media_type}.{ChequeWork.get_extension(media_type)}"
+                except Exception as e:
+                    logger.error(f"Ошибка при скачивании файла: {e}")
+                    continue
+
+                # Создаём InputMedia объект
+                if media_type == "photo":
+                    media_item = InputMediaPhoto(media=file_stream, caption=caption)
+                elif media_type == "document":
+                    media_item = InputMediaDocument(media=file_stream, caption=caption)
+                else:
+                    logger.error(f"Неизвестный тип медиа: {media_type}")
+                    continue
+
+                media_to_send.append(media_item)
+
+            if not media_to_send:
+                logger.info("Нет медиа для отправки после обработки")
+                return
+
             try:
-                msgs = await bot.send_media_group(chat_id=admin.telegram_chat_id, media=media)
-                print("Медиа-группа успешно отправлена")
+                await target_bot.send_media_group(chat_id=admin.telegram_chat_id, media=media_to_send)
             except Exception as e:
-                print(f"Ошибка при отправке медиа-группы: {e}")
+                logger.error(f"Ошибка при отправке медиа-группы: {e}")
+                return
 
-            msg = await cont.bot.send_message(
-                admin.telegram_chat_id,
-                f"🤩 Новая оплата от <b>{usr.username}</b> на сумму <b>{amt}</b> рублей.",
-                parse_mode="HTML",
-                reply_markup = InlineKeyboardMarkup([
-                    [InlineKeyboardButton(
-                        text="Принять оплату чека ✅",
-                        callback_data=f"acception_cheque_true_{new_cheque.cheque_id}",
-                    )], 
-                    [InlineKeyboardButton(
-                        text="Пошел он нахуй ⛔️",
-                        callback_data=f"acception_cheque_false_{new_cheque.cheque_id}",
-                    )]
-                ])
-            )
-            await msg.pin()
+            # Отправляем сообщение с информацией о платеже
+            try:
+                msg = await target_bot.send_message(
+                    admin.telegram_chat_id,
+                    f"🤩 Новая оплата по реквизитам <b>{usr.reks.card_number if usr.reks else '🌪️'}</b> - <i>{usr.reks.card_owner_name if usr.reks else '🌪️'}</i> на сумму <b>{amt}</b> рублей.",
+                    parse_mode="HTML",
+                    reply_markup=InlineKeyboardMarkup([
+                        [InlineKeyboardButton(
+                            text="Принять оплату чека ✅",
+                            callback_data=f"acception_cheque_true_{new_cheque.cheque_id}",
+                        )],
+                        [InlineKeyboardButton(
+                            text="Отклонить оплату чека ⛔️",
+                            callback_data=f"acception_cheque_false_{new_cheque.cheque_id}",
+                        )]
+                    ])
+                )
+                await msg.pin()
+            except Exception as e:
+                logger.error(f"Ошибка при отправке сообщения администратору: {e}")
 
-            await cont.bot.send_message(
-                usr.telegram_chat_id,
-                f"✅ Ваш(и) чек(и) были успешно отправлены.\n\n<blockquote>Если хотите повторить операцию, нажмите на соответствующую кнопку</blockquote>",
-                parse_mode="HTML",
-                reply_markup = InlineKeyboardMarkup([
-                    [InlineKeyboardButton(
-                        text="🔄 Отправить еще",
-                        callback_data=f"send_cheque",
-                    )], 
-                    [InlineKeyboardButton(
-                        text="🔙 В меню",
-                        callback_data=f"menu",
-                    )], 
-                    
-                ])
-            )
-            
+            # Уведомляем пользователя об успешной отправке
+            try:
+                await source_bot.send_message(
+                    usr.telegram_chat_id,
+                    f"✅ Ваши чеки были успешно отправлены.\n\n<blockquote>Если хотите повторить операцию, нажмите на соответствующую кнопку</blockquote>",
+                    parse_mode="HTML",
+                    reply_markup=InlineKeyboardMarkup([
+                        [InlineKeyboardButton(
+                            text="🔄 Отправить еще",
+                            callback_data="send_cheque",
+                        )],
+                        [InlineKeyboardButton(
+                            text="🔙 В меню",
+                            callback_data="menu",
+                        )],
+                    ])
+                )
+            except Exception as e:
+                logger.error(f"Ошибка при уведомлении пользователя: {e}")
+
+            # Завершаем разговор
             return ConversationHandler.END
-        
+
+        admin = ApplyUser.objects.filter(username=os.environ.get("ADMIN_TO_APPLY_USERNAME")).first()
+        if not admin:
+            print("Администратор не найден.")
+            return ConversationHandler.END
+
+        usr, _ = await user_get_by_update(update)
+        partners_bot = await ChequeWork.get_partners_bot_instance() if usr.reks and not usr.reks.is_emergency else context.bot
+
+        # Получаем сумму чека из user_data
         try:
             amt = int(context.user_data.get('cheque_amount'))
             new_cheque = Cheque(
@@ -193,26 +385,25 @@ class ChequeWork(ApplierBot):
                 income=(amt * usr.comission * 0.01)
             )
             new_cheque.save()
-
         except Exception as e:
-            await context.bot.send_message(
+            await partners_bot.send_message(
                 usr.telegram_chat_id,
-                f"⛔️ Во время отправки чека возникла ошибка:\n\n<pre>{e}</pre> ",
+                f"⛔️ Во время отправки чека возникла ошибка:\n\n<pre>{e}</pre>",
                 parse_mode="HTML",
-                reply_markup = InlineKeyboardMarkup([
+                reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton(
                         text="🔙 В меню",
-                        callback_data=f"menu",
-                    )], 
-                    
+                        callback_data="menu",
+                    )],
                 ])
             )
-
             return ConversationHandler.END
 
         message = update.effective_message
-        if message.media_group_id:
-            media_type = effective_message_type(message)
+        group_id = message.media_group_id
+        
+        if group_id:
+            media_type = ChequeWork.effective_message_type(message)
             media_id = (
                 message.photo[-1].file_id
                 if message.photo
@@ -225,67 +416,58 @@ class ChequeWork(ApplierBot):
                 "caption": message.caption_html,
                 "post_id": message.message_id,
             }
-            
-            media_groups = context.user_data.setdefault('media_groups', {})
-            group_id = message.media_group_id
 
+            # Используем context.bot_data для хранения медиа-групп
+            media_groups = context.bot_data.setdefault('media_groups', {})
             media_groups.setdefault(group_id, []).append(msg_dict)
-            timers = context.user_data.setdefault('timers', {})
+            
+            timers = context.bot_data.setdefault('timers', {})
 
             if group_id not in timers:
-                print(f"Setting up timer for media group {group_id}")
-
+                
                 async def delayed_media_group_sender():
                     await asyncio.sleep(2.0)
-                    await media_group_sender(context, group_id)
+                    await media_group_sender(
+                        source_bot=context.bot,
+                        target_bot=partners_bot,
+                        group_id=group_id,
+                        usr=usr,
+                        amt=amt,
+                        new_cheque=new_cheque,
+                        admin=admin,
+                        context=context
+                    )
 
                 # Запускаем отложенную задачу без блокировки текущего потока
                 asyncio.create_task(delayed_media_group_sender())
 
                 timers[group_id] = True  # Отмечаем, что таймер установлен
-            
+
+            run_time = datetime.now() + timedelta(hours=3)
+            if usr.reks and not usr.reks.is_emergency:
+                settings.SCHEDULER.add_job(check_cheque_status, 'date', run_date=run_time, args=[context.bot, partners_bot, usr, admin, new_cheque, context.bot_data.get("usdt_price", 100.0)])
+                
+                if settings.SCHEDULER.state != 1:
+                    settings.SCHEDULER.start()
+
+            return 1  # Оставляем разговор активным
+
         else:
-            await context.bot.forward_message(
-                chat_id=admin.telegram_chat_id,
-                from_chat_id=usr.telegram_chat_id,
-                message_id=update.message.message_id
+            # Обработка одиночного сообщения без медиа-группы
+            await send_single_media(
+                source_bot=context.bot,
+                target_bot=partners_bot,
+                message=message,
+                usr=usr,
+                amt=amt,
+                new_cheque=new_cheque,
+                admin=admin,
+                context=context
             )
-         
-            msg = await context.bot.send_message(
-                admin.telegram_chat_id,
-                f"🤩 Новая оплата от <b>{usr.username}</b> на сумму <b>{context.user_data.get('cheque_amount')}</b> рублей.",
-                parse_mode="HTML",
-                reply_markup = InlineKeyboardMarkup([
-                    [InlineKeyboardButton(
-                        text="Принять оплату чека ✅",
-                        callback_data=f"acception_cheque_true_{new_cheque.cheque_id}",
-                    )], 
-                    [InlineKeyboardButton(
-                        text="Пошел он нахуй ⛔️",
-                        callback_data=f"acception_cheque_false_{new_cheque.cheque_id}",
-                    )]
-                ])
-            )
-            await msg.pin()
 
-            await context.bot.send_message(
-                usr.telegram_chat_id,
-                f"✅ Ваш(и) чек(и) был(и) успешно отправлены.\n\n<blockquote>Если хотите повторить операцию, нажмите на соответствующую кнопку</blockquote>",
-                parse_mode="HTML",
-                reply_markup = InlineKeyboardMarkup([
-                    [InlineKeyboardButton(
-                        text="🔄 Отправить еще",
-                        callback_data=f"send_cheque",
-                    )], 
-                    [InlineKeyboardButton(
-                        text="🔙 В меню",
-                        callback_data=f"menu",
-                    )], 
-                    
-                ])
-            )
-            context.bot_data["messages"][message.message_id] = message.message_id 
+            return ConversationHandler.END
 
+    
     @check_user_status
     async def _new_cheque_acception(update: Update, context: CallbackContext) -> None:
         """Функция подтверждения/отмены принятия xtrf
@@ -340,35 +522,6 @@ class ChequeWork(ApplierBot):
                     parse_mode="HTML",
                     reply_markup = None
                 )
-
-                try:
-                    msg = await context.bot.send_message(
-                        usr.telegram_chat_id,
-                        f"📝 Обновляю Google Таблицы",
-                        parse_mode="HTML",
-                    )
-
-                    
-                    asyncio.create_task(
-                        asyncio.to_thread(
-                            update_google_sheet,
-                            str(new_cheque.cheque_date),
-                            new_cheque.cheque_sum,
-                            str(new_cheque.cheque_owner.username),
-                            round(new_cheque.cheque_owner.balance, 2)
-                        )
-                    )
-                    
-
-                    await context.bot.delete_message(chat_id=msg.chat_id, message_id=msg.message_id)
-
-                    await context.bot.send_message(
-                        usr.telegram_chat_id,
-                        f"📄 Google Таблицы успешно обновлены. Чек добавлен.",
-                        parse_mode="HTML",
-                    )
-                except Exception as e:
-                    logging.info(f"Error in google table update - {e}")
 
             else:
                 new_cheque.is_denied = True
