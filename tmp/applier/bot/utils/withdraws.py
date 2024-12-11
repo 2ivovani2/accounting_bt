@@ -460,176 +460,189 @@ class WithdrawsWork(ApplierBot):
         """ 
         
         usr, _ = await user_get_by_update(update)
-        try:
-            query = update.callback_query
+        query = update.callback_query
+        if query:
             await query.answer()
             await context.bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
-        except:
-            pass
 
         status, user_id, withdraw_id = query.data.split("_")[-3], query.data.split("_")[-2], query.data.split("_")[-1] 
+        order = Withdraw.objects.filter(withdraw_id=withdraw_id)
 
-        if status == "paid":
-            try:
-                order = Withdraw.objects.filter(withdraw_id=withdraw_id)
-                order.update(
-                    is_applied=True
-                )
-
-                order = order.first()
-                user_whom_applied = ApplyUser.objects.filter(telegram_chat_id=user_id).first()
-
-                user_whom_applied.balance = round(user_whom_applied.balance, 2) - ((order.withdraw_sum / (1 - int(os.environ.get("COMISSION_AMT_FOR_UNLIM_SENDS", 2)) * 0.01)))
-                user_whom_applied.save()
-                
-                if order.withdraw_address:
-                    await context.bot.send_message(
-                        user_whom_applied.telegram_chat_id,
-                        f"✅ Заявка на вывод <b>{order.withdraw_id}</b> исполнена!\n\n<blockquote>Сумма в размере {order.usdt_sum}USDT успешно поступили на ваш счет.</blockquote>",
-                        parse_mode="HTML",
-                        reply_markup = InlineKeyboardMarkup([
-                            [InlineKeyboardButton(
-                                text="💎 В меню",
-                                callback_data=f"menu",
-                            )], 
-                        ])
+        if order.first().is_applied:
+            if status == "paid":
+                try:
+                    order.update(
+                        is_applied=True
                     )
 
+                    order = order.first()
+                    user_whom_applied = ApplyUser.objects.filter(telegram_chat_id=user_id).first()
+
+                    user_whom_applied.balance = round(user_whom_applied.balance, 2) - ((order.withdraw_sum / (1 - int(os.environ.get("COMISSION_AMT_FOR_UNLIM_SENDS", 2)) * 0.01)))
+                    user_whom_applied.save()
+                    
+                    if order.withdraw_address:
+                        await context.bot.send_message(
+                            user_whom_applied.telegram_chat_id,
+                            f"✅ Заявка на вывод <b>{order.withdraw_id}</b> исполнена!\n\n<blockquote>Сумма в размере {order.usdt_sum}USDT успешно поступили на ваш счет.</blockquote>",
+                            parse_mode="HTML",
+                            reply_markup = InlineKeyboardMarkup([
+                                [InlineKeyboardButton(
+                                    text="💎 В меню",
+                                    callback_data=f"menu",
+                                )], 
+                            ])
+                        )
+
+                        await context.bot.send_message(
+                            usr.telegram_chat_id,
+                            f"👅 <b>{usr.username}</b>, вы успешно оплатили <b>{order.withdraw_id}</b> на сумму <b>{order.usdt_sum} USDT</b> от <b>{user_whom_applied.username}</b>.",
+                            parse_mode="HTML",
+                            reply_markup = InlineKeyboardMarkup([
+                                [InlineKeyboardButton(
+                                    text="💎 В меню",
+                                    callback_data=f"menu",
+                                )], 
+                            ])
+                        )
+                    else:
+                        await context.bot.send_message(
+                            user_whom_applied.telegram_chat_id,
+                            f"✅ Заявка на вывод <b>{order.withdraw_id}</b> исполнена!\n\n<blockquote>Сумма в размере {order.withdraw_sum}₽ успешно поступили на ваш счет.</blockquote>",
+                            parse_mode="HTML",
+                            reply_markup = InlineKeyboardMarkup([
+                                [InlineKeyboardButton(
+                                    text="💎 В меню",
+                                    callback_data=f"menu",
+                                )],
+                            ])
+                        )
+
+                        await context.bot.send_message(
+                            usr.telegram_chat_id,
+                            f"👅 <b>{usr.username}</b>, вы успешно оплатили <b>{order.withdraw_id}</b> на сумму <b>{order.withdraw_sum}₽ фиатом</b> от <b>{user_whom_applied.username}</b>.",
+                            parse_mode="HTML",
+                            reply_markup = InlineKeyboardMarkup([
+                                [InlineKeyboardButton(
+                                    text="💎 В меню",
+                                    callback_data=f"menu",
+                                )], 
+                            ])
+                        )
+
+                except Exception as e:
                     await context.bot.send_message(
                         usr.telegram_chat_id,
-                        f"👅 <b>{usr.username}</b>, вы успешно оплатили <b>{order.withdraw_id}</b> на сумму <b>{order.usdt_sum} USDT</b> от <b>{user_whom_applied.username}</b>.",
+                        f"🆘 Какая-то ошибка возникла.\n\n<i>{e}</i>",
                         parse_mode="HTML",
                         reply_markup = InlineKeyboardMarkup([
                             [InlineKeyboardButton(
                                 text="💎 В меню",
                                 callback_data=f"menu",
                             )], 
-                        ])
-                    )
-                else:
-                    await context.bot.send_message(
-                        user_whom_applied.telegram_chat_id,
-                        f"✅ Заявка на вывод <b>{order.withdraw_id}</b> исполнена!\n\n<blockquote>Сумма в размере {order.withdraw_sum}₽ успешно поступили на ваш счет.</blockquote>",
-                        parse_mode="HTML",
-                        reply_markup = InlineKeyboardMarkup([
                             [InlineKeyboardButton(
-                                text="💎 В меню",
-                                callback_data=f"menu",
+                                text="🆘 Помощь",
+                                url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_USERNAME')}"
                             )],
                         ])
                     )
+            else:
+                try:
+                    order = order.first()
+                    user_whom_applied = ApplyUser.objects.filter(telegram_chat_id=user_id).first()
+                    
+                    if order.withdraw_address:
+                        await context.bot.send_message(
+                            user_whom_applied.telegram_chat_id,
+                            f"📛 Заявка на вывод <b>{order.withdraw_id}</b> на сумму <b>{order.usdt_sum}USDT</b> отклонена!\n\n<blockquote>Если у вас возникли вопросы, обратитесь к администартору.</blockquote>",
+                            parse_mode="HTML",
+                            reply_markup = InlineKeyboardMarkup([
+                                [InlineKeyboardButton(
+                                    text="💎 В меню",
+                                    callback_data=f"menu",
+                                )], 
+                                [InlineKeyboardButton(
+                                    text="🆘 Помощь",
+                                    url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_USERNAME')}"
+                                )],
+                                
+                            ])
+                        )
 
+                        await context.bot.send_message(
+                            usr.telegram_chat_id,
+                            f"📛 <b>{usr.username}</b>, вы успешно отклонили ордер <b>{order.withdraw_id}</b> на сумму <b>{order.usdt_sum} USDT</b> от <b>{user_whom_applied.username}</b>.",
+                            parse_mode="HTML",
+                            reply_markup = InlineKeyboardMarkup([
+                                [InlineKeyboardButton(
+                                    text="💎В меню",
+                                    callback_data=f"menu",
+                                )], 
+                            ])
+                        )
+                    else:
+                        await context.bot.send_message(
+                            user_whom_applied.telegram_chat_id,
+                            f"📛 Заявка на вывод <b>{order.withdraw_id}</b> на сумму <b>{order.withdraw_sum}₽</b> отклонена!\n\n<blockquote>Если у вас возникли вопросы, обратитесь к администартору.</blockquote>",
+                            parse_mode="HTML",
+                            reply_markup = InlineKeyboardMarkup([
+                                [InlineKeyboardButton(
+                                    text="💎 В меню",
+                                    callback_data=f"menu",
+                                )], 
+                                [InlineKeyboardButton(
+                                    text="🆘 Помощь",
+                                    url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_USERNAME')}"
+                                )],
+                                
+                            ])
+                        )
+
+                        await context.bot.send_message(
+                            usr.telegram_chat_id,
+                            f"❌ <b>{usr.username}</b>, вы успешно отклонили <b>{order.withdraw_id}</b> на сумму <b>{order.withdraw_sum}₽ фиатом</b> от <b>{user_whom_applied.username}</b>.",
+                            parse_mode="HTML",
+                            reply_markup = InlineKeyboardMarkup([
+                                [InlineKeyboardButton(
+                                    text="В меню 🔙",
+                                    callback_data=f"menu",
+                                )], 
+                            ])
+                        )
+
+                except Exception as e:
                     await context.bot.send_message(
                         usr.telegram_chat_id,
-                        f"👅 <b>{usr.username}</b>, вы успешно оплатили <b>{order.withdraw_id}</b> на сумму <b>{order.withdraw_sum}₽ фиатом</b> от <b>{user_whom_applied.username}</b>.",
+                        f"🆘 Какая-то ошибка возникла.\n\n<i>{e}</i>",
                         parse_mode="HTML",
                         reply_markup = InlineKeyboardMarkup([
                             [InlineKeyboardButton(
                                 text="💎 В меню",
                                 callback_data=f"menu",
                             )], 
+                            [InlineKeyboardButton(
+                                text="🆘 Помощь",
+                                url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_USERNAME')}"
+                            )],
                         ])
                     )
-
-            except Exception as e:
-                await context.bot.send_message(
-                    usr.telegram_chat_id,
-                    f"🆘 Какая-то ошибка возникла.\n\n<i>{e}</i>",
-                    parse_mode="HTML",
-                    reply_markup = InlineKeyboardMarkup([
-                        [InlineKeyboardButton(
-                            text="💎 В меню",
-                            callback_data=f"menu",
-                        )], 
-                        [InlineKeyboardButton(
-                            text="🆘 Помощь",
-                            url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_USERNAME')}"
-                        )],
-                    ])
-                )
         else:
-            try:
-                order = Withdraw.objects.filter(withdraw_id=withdraw_id).first()
-                user_whom_applied = ApplyUser.objects.filter(telegram_chat_id=user_id).first()
-                
-                if order.withdraw_address:
-                    await context.bot.send_message(
-                        user_whom_applied.telegram_chat_id,
-                        f"📛 Заявка на вывод <b>{order.withdraw_id}</b> на сумму <b>{order.usdt_sum}USDT</b> отклонена!\n\n<blockquote>Если у вас возникли вопросы, обратитесь к администартору.</blockquote>",
-                        parse_mode="HTML",
-                        reply_markup = InlineKeyboardMarkup([
-                            [InlineKeyboardButton(
-                                text="💎 В меню",
-                                callback_data=f"menu",
-                            )], 
-                            [InlineKeyboardButton(
-                                text="🆘 Помощь",
-                                url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_USERNAME')}"
-                            )],
-                            
-                        ])
-                    )
-
-                    await context.bot.send_message(
-                        usr.telegram_chat_id,
-                        f"📛 <b>{usr.username}</b>, вы успешно отклонили ордер <b>{order.withdraw_id}</b> на сумму <b>{order.usdt_sum} USDT</b> от <b>{user_whom_applied.username}</b>.",
-                        parse_mode="HTML",
-                        reply_markup = InlineKeyboardMarkup([
-                            [InlineKeyboardButton(
-                                text="💎В меню",
-                                callback_data=f"menu",
-                            )], 
-                        ])
-                    )
-                else:
-                    await context.bot.send_message(
-                        user_whom_applied.telegram_chat_id,
-                        f"📛 Заявка на вывод <b>{order.withdraw_id}</b> на сумму <b>{order.withdraw_sum}₽</b> отклонена!\n\n<blockquote>Если у вас возникли вопросы, обратитесь к администартору.</blockquote>",
-                        parse_mode="HTML",
-                        reply_markup = InlineKeyboardMarkup([
-                            [InlineKeyboardButton(
-                                text="💎 В меню",
-                                callback_data=f"menu",
-                            )], 
-                            [InlineKeyboardButton(
-                                text="🆘 Помощь",
-                                url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_USERNAME')}"
-                            )],
-                            
-                        ])
-                    )
-
-                    await context.bot.send_message(
-                        usr.telegram_chat_id,
-                        f"❌ <b>{usr.username}</b>, вы успешно отклонили <b>{order.withdraw_id}</b> на сумму <b>{order.withdraw_sum}₽ фиатом</b> от <b>{user_whom_applied.username}</b>.",
-                        parse_mode="HTML",
-                        reply_markup = InlineKeyboardMarkup([
-                            [InlineKeyboardButton(
-                                text="В меню 🔙",
-                                callback_data=f"menu",
-                            )], 
-                        ])
-                    )
-
-            except Exception as e:
-                await context.bot.send_message(
-                    usr.telegram_chat_id,
-                    f"🆘 Какая-то ошибка возникла.\n\n<i>{e}</i>",
-                    parse_mode="HTML",
-                    reply_markup = InlineKeyboardMarkup([
-                        [InlineKeyboardButton(
-                            text="💎 В меню",
-                            callback_data=f"menu",
-                        )], 
-                        [InlineKeyboardButton(
-                            text="🆘 Помощь",
-                            url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_USERNAME')}"
-                        )],
-                    ])
-                )
+            await context.bot.send_message(
+                usr.telegram_chat_id,
+                f"🤔 Данный ордер уже принят.",
+                parse_mode="HTML",
+                reply_markup = InlineKeyboardMarkup([
+                    [InlineKeyboardButton(
+                        text="💎 В меню",
+                        callback_data=f"menu",
+                    )], 
+                ])
+            )
 
         user_whom_applied.has_active_withdraw = False
         user_whom_applied.save()
+
+
 
     def reg_handlers(self):
         self.application.add_handler(ConversationHandler(
