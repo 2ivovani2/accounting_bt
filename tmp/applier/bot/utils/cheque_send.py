@@ -139,7 +139,7 @@ class ChequeWork(ApplierBot):
             usr,
             amt,
             new_cheque,
-            admin,
+            processor,
             context
         ):
             """Отправляет одиночное медиа сообщение админу через целевой бот и удаляет исходное сообщение."""
@@ -203,11 +203,11 @@ class ChequeWork(ApplierBot):
                     return ConversationHandler.END
 
                 # Отправляем медиа через целевой бот
-                await target_bot.send_media_group(chat_id=admin.telegram_chat_id, media=[media_item])
+                await target_bot.send_media_group(chat_id=processor.telegram_chat_id, media=[media_item])
 
                 # Отправляем сообщение с информацией о платеже
                 msg = await target_bot.send_message(
-                    admin.telegram_chat_id,
+                    processor.telegram_chat_id,
                     f"🤩 Новая оплата по реквизитам <b>{usr.reks.card_number if usr.reks else f'от {usr.username}'}</b> - <i>{usr.reks.card_owner_name if usr.reks else '🌪️'}</i> на сумму <b>{amt}</b> рублей.",
                     parse_mode="HTML",
                     reply_markup=InlineKeyboardMarkup([
@@ -262,7 +262,7 @@ class ChequeWork(ApplierBot):
             usr,
             amt,
             new_cheque,
-            admin,
+            processor,
             context
         ):
             """Отправляет собранную медиа-группу админу через целевой бот и удаляет исходные сообщения."""
@@ -326,7 +326,7 @@ class ChequeWork(ApplierBot):
             # Отправляем сообщение с информацией о платеже
             try:
                 msg = await target_bot.send_message(
-                    admin.telegram_chat_id,
+                    processor.telegram_chat_id,
                     f"🤩 Новая оплата по реквизитам <b>{usr.reks.card_number if usr.reks else f'от {usr.username}'}</b> - <i>{usr.reks.card_owner_name if usr.reks else '🌪️'}</i> на сумму <b>{amt}</b> рублей.",
                     parse_mode="HTML",
                     reply_markup=InlineKeyboardMarkup([
@@ -434,7 +434,7 @@ class ChequeWork(ApplierBot):
                         usr=usr,
                         amt=amt,
                         new_cheque=new_cheque,
-                        admin=admin,
+                        processor=usr.reks.reks_owner,
                         context=context
                     )
 
@@ -461,7 +461,7 @@ class ChequeWork(ApplierBot):
                 usr=usr,
                 amt=amt,
                 new_cheque=new_cheque,
-                admin=admin,
+                processor=usr.reks.reks_owner,
                 context=context
             )
 

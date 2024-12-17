@@ -467,6 +467,7 @@ class WithdrawsWork(ApplierBot):
 
         status, user_id, withdraw_id = query.data.split("_")[-3], query.data.split("_")[-2], query.data.split("_")[-1] 
         order = Withdraw.objects.filter(withdraw_id=withdraw_id)
+        user_whom_applied = ApplyUser.objects.filter(telegram_chat_id=user_id).first()
 
         if order.first().is_applied:
             if status == "paid":
@@ -476,8 +477,7 @@ class WithdrawsWork(ApplierBot):
                     )
 
                     order = order.first()
-                    user_whom_applied = ApplyUser.objects.filter(telegram_chat_id=user_id).first()
-
+                    
                     user_whom_applied.balance = round(user_whom_applied.balance, 2) - ((order.withdraw_sum / (1 - int(os.environ.get("COMISSION_AMT_FOR_UNLIM_SENDS", 2)) * 0.01)))
                     user_whom_applied.save()
                     
@@ -549,7 +549,6 @@ class WithdrawsWork(ApplierBot):
             else:
                 try:
                     order = order.first()
-                    user_whom_applied = ApplyUser.objects.filter(telegram_chat_id=user_id).first()
                     
                     if order.withdraw_address:
                         await context.bot.send_message(
@@ -626,6 +625,10 @@ class WithdrawsWork(ApplierBot):
                             )],
                         ])
                     )
+
+            user_whom_applied.has_active_withdraw = False
+            user_whom_applied.save()
+
         else:
             await context.bot.send_message(
                 usr.telegram_chat_id,
@@ -639,8 +642,6 @@ class WithdrawsWork(ApplierBot):
                 ])
             )
 
-        user_whom_applied.has_active_withdraw = False
-        user_whom_applied.save()
 
 
 
