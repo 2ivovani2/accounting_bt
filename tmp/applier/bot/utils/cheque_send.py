@@ -434,7 +434,7 @@ class ChequeWork(ApplierBot):
                         usr=usr,
                         amt=amt,
                         new_cheque=new_cheque,
-                        processor=usr.reks.reks_owner,
+                        processor=usr.reks.reks_owner if usr.reks else admin,
                         context=context
                     )
 
@@ -461,7 +461,7 @@ class ChequeWork(ApplierBot):
                 usr=usr,
                 amt=amt,
                 new_cheque=new_cheque,
-                processor=usr.reks.reks_owner,
+                processor=usr.reks.reks_owner if usr.reks else admin,
                 context=context
             )
 
