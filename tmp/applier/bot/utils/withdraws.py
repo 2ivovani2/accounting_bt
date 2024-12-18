@@ -469,7 +469,7 @@ class WithdrawsWork(ApplierBot):
         order = Withdraw.objects.filter(withdraw_id=withdraw_id)
         user_whom_applied = ApplyUser.objects.filter(telegram_chat_id=user_id).first()
 
-        if order.first().is_applied:
+        if not order.first().is_applied:
             if status == "paid":
                 try:
                     order.update(
