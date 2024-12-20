@@ -7,7 +7,7 @@ class RefAdmin(admin.ModelAdmin):
         Описание пользователей в админской панели
     """
     list_display = ("who_invited", "whom_invited")
-    search_fields = ("who_invited", "whom_invited")
+    search_fields = ("who_invited__username", "whom_invited__username")
 
     fieldsets = (
 
@@ -27,7 +27,10 @@ class UserAdmin(admin.ModelAdmin):
     fieldsets = (
 
         ("Основные параметры", {
-            "fields": ["username", "telegram_chat_id", "verified_usr", "has_active_withdraw", "is_superuser", "balance", "comission", "info", "reks"]
+            "fields": ["username", "telegram_chat_id", "verified_usr", "has_active_withdraw", "is_superuser", "balance", "comission", "info"]
+        }),
+        ("Реки", {
+            "fields": ["reks"]
         }),
     )
 
@@ -53,7 +56,7 @@ class ChequeAdmin(admin.ModelAdmin):
         Описание чеков в админской панели
     """
     list_display = ("cheque_id", "cheque_sum", "cheque_owner", "cheque_date", "is_applied", "is_denied","income")
-    search_fields = ("cheque_id", "cheque_sum", "cheque_owner")
+    search_fields = ("cheque_id", "cheque_sum", "cheque_owner__username")
 
     fieldsets = (
         ("Основные параметры", {
