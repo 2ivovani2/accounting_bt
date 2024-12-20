@@ -29,9 +29,9 @@ class UserAdmin(admin.ModelAdmin):
         ("Основные параметры", {
             "fields": ["username", "telegram_chat_id", "verified_usr", "has_active_withdraw", "is_superuser", "balance", "comission", "info"]
         }),
-        ("Реки", {
-            "fields": ["reks"]
-        }),
+        # ("Реки", {
+        #     "fields": ["reks"]
+        # }),
     )
 
 @admin.register(Withdraw)
