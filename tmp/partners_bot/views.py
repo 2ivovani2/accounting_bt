@@ -311,18 +311,17 @@ class CheckChequeStatusView(APIView):
 
             if cheque.is_applied:
                 usr = cheque.reks.reks_owner
-                print(f"--------------------------({dir(usr)})")
                 usr.insurance_deposit -= cheque.amount
                 usr.save()
 
                 # Отправка webhook с сервера
                 webhook_url = cheque.success_webhook
                 webhook_data = {'cheque_hash': cheque_hash}
-                # try:
-                #     webhook_response = requests.post(webhook_url, data=webhook_data)
-                #     webhook_response.raise_for_status()
-                # except requests.RequestException as e:
-                #     return Response({'success': False, 'error': f'Ошибка webhook: {e}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                try:
+                    webhook_response = requests.post(webhook_url, data=webhook_data)
+                    webhook_response.raise_for_status()
+                except requests.RequestException as e:
+                    return Response({'success': False, 'error': f'Ошибка webhook: {e}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
                 return Response({'success': True, 'is_applied': True}, status=status.HTTP_200_OK)
             else:
