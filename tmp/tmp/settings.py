@@ -43,10 +43,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    "main",
     "applier",
     "partners_bot",
-
+    
     "rest_framework",
     "rest_framework.authtoken",
 ]
@@ -137,7 +136,7 @@ STATICFILES_DIRS = [
 STATIC_ROOT = BASE_DIR / "staticfiles" 
 
 
-AUTH_USER_MODEL = 'main.CustomUser'
+AUTH_USER_MODEL = 'partners_bot.Processor'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (

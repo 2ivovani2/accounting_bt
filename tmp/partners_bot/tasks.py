@@ -33,6 +33,7 @@ async def initialize_bot():
 # Asynchronous function to handle updates
 async def handle_update(update_data):
     await initialize_bot()
+
     try:
         # Decode the update data from JSON
         update_json = json.loads(update_data)

@@ -1,6 +1,8 @@
 from django.db import models
+from django.contrib.auth.models import AbstractUser
+from decimal import Decimal, ROUND_HALF_UP
 
-class Processor(models.Model):
+class Processor(AbstractUser):
     """
         Модель, описывающая пользователй DM_partners
     """
@@ -10,6 +12,12 @@ class Processor(models.Model):
         null=True,
     )
 
+    password = models.CharField(
+        max_length=128,
+        null=True,
+        blank=True
+    ) 
+
     verified_usr = models.BooleanField(
         verbose_name="Верификация пользователя",
         default=False
@@ -18,13 +26,6 @@ class Processor(models.Model):
     is_superuser = models.BooleanField(
         verbose_name="Явлется ли юзер админом",
         default=False
-    )
-
-    username = models.CharField(
-        verbose_name="Имя пользователя",
-        max_length=255,
-        null=False,
-        default="Anonim"
     )
 
     balance = models.DecimalField(
@@ -138,6 +139,73 @@ class Reks(models.Model):
         verbose_name = "Реквизит"
         verbose_name_plural = "Реквизиты"
 
+class AutoAcceptCheque(models.Model):
+    """
+    Модель, описывающая чеки, которые принимаются автоплатежкой
+    """
+    hash = models.CharField(
+        verbose_name="Хэш для чека",
+        max_length=255,
+        null=True,
+        blank=True,
+        unique=True,
+    )
+    amount = models.DecimalField(
+        verbose_name="Сумма чека",
+        max_digits=10,
+        decimal_places=2,
+        null=True
+    )
+    description = models.TextField(
+        verbose_name="Описание платежа",
+        max_length=300,
+        null=True,
+        blank=True
+    )
+    reks = models.ForeignKey(
+        Reks,
+        verbose_name="Реквизиты для юзера",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL
+    )
+    created_at = models.DateTimeField(
+        verbose_name="Дата создания",
+        auto_now_add=True
+    )
+
+    is_applied = models.BooleanField(
+        verbose_name="Принят ли чек",
+        default=False
+    )
+
+    success_webhook = models.CharField(
+        verbose_name="Ссылка отправки принятия чека", 
+        max_length=255,
+        null=True,
+        blank=True,
+    )
+
+    fail_webhook = models.CharField(
+        verbose_name="Ссылка отправки непринятия чека", 
+        max_length=255,
+        null=True,
+        blank=True,
+    )
+
+    def save(self, *args, **kwargs):
+        if self.amount is not None:
+            self.amount = self.amount.quantize(
+                Decimal('0.01'), rounding=ROUND_HALF_UP
+            )
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"Cheque {self.hash} - {self.amount}"
+
+    class Meta:
+        verbose_name = "Автопринятый чек"
+        verbose_name_plural = "Автопринятые чеки"
 
 class InsurancePayment(models.Model):
     """

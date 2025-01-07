@@ -47,18 +47,6 @@ services:
     # networks:
     #   test_network:
     #     ipv4_address: 172.16.238.11
-    
-  acc_bot:
-    build: ./tmp
-    command: python manage.py acc_bot
-    ports:
-      - 8001:8001
-    env_file:
-      - ./.env.dev
-
-    # networks:
-    #   test_network:
-    #     ipv4_address: 172.16.238.12
 
 
 # networks:

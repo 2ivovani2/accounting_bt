@@ -1,7 +1,7 @@
 Django==5.1.2
 gunicorn==20.0.4
 psycopg2
-djangorestframework==3.14.0
+djangorestframework==3.15.2
 python-telegram-bot
 numpy
 matplotlib
@@ -15,3 +15,4 @@ gspread-formatting
 uvicorn
 aiohttp
 APScheduler
+drf-yasg

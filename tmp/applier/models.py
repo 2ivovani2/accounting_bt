@@ -1,7 +1,7 @@
 from django.db import models
 from django.utils import timezone
 from partners_bot.models import Reks
-
+from decimal import Decimal, ROUND_HALF_UP
 
 class ApplyUser(models.Model):
     """

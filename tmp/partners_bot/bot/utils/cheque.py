@@ -151,7 +151,8 @@ class ChequeWork(ProcessorsBot):
                 user_to_update = new_cheque.cheque_owner
 
                 if status == "true":
-                    usr.insurance_deposit -= new_cheque.cheque_sum    
+                    usr.insurance_deposit -= new_cheque.cheque_sum 
+                    usr.balance = round(float(usr.balance), 2) + new_cheque.cheque_sum * usr.comission * 0.01
                     usr.save()
 
                     if usr.insurance_deposit <= 0:
@@ -196,9 +197,7 @@ class ChequeWork(ProcessorsBot):
                     user_to_update.balance = round(float(user_to_update.balance), 2) + round(float(amount) - (float(amount) * user_to_update.comission * 0.01), 2)
                     user_to_update.save()
 
-                    usr.balance = round(float(usr.balance), 2) + new_cheque.cheque_sum * usr.comission * 0.01
-                    usr.save()
-
+                    
                     if Ref.objects.filter(whom_invited=user_to_update).exists():
                         ref_relation = Ref.objects.filter(whom_invited=user_to_update).first()
                         ref_relation.ref_income += int(amount) * 0.01 * int(os.environ.get("REF_PERCENT", 1))
