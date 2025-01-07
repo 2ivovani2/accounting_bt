@@ -42,7 +42,11 @@
         <i class="fas fa-check-circle success-icon"></i>
         <h3>Оплата успешна!</h3>
         <p>Спасибо за оплату. Ваш чек был успешно обработан.</p>
-        <a href="/" class="btn btn-primary success-button">Вернуться к оплате</a>
+        {% if redirect_url %}
+            <a href="{{ redirect_url }}" class="btn btn-primary success-button">Вернуться</a>
+        {% else %}
+            <a href="/" class="btn btn-primary success-button">Вернуться</a>
+        {% endif %}
     </div>
 
     <!-- Bootstrap 5 JS и зависимые библиотеки -->

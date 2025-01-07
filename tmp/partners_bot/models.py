@@ -186,7 +186,7 @@ class AutoAcceptCheque(models.Model):
         blank=True,
     )
 
-    fail_webhook = models.CharField(
+    redirect_url = models.CharField(
         verbose_name="Ссылка отправки непринятия чека", 
         max_length=255,
         null=True,

@@ -461,10 +461,8 @@ class WithdrawsWork(ApplierBot):
         
         usr, _ = await user_get_by_update(update)
         query = update.callback_query
-        if query:
-            await query.answer()
-            await context.bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
-
+        await query.answer()
+            
         status, user_id, withdraw_id = query.data.split("_")[-3], query.data.split("_")[-2], query.data.split("_")[-1] 
         order = Withdraw.objects.filter(withdraw_id=withdraw_id)
         user_whom_applied = ApplyUser.objects.filter(telegram_chat_id=user_id).first()
@@ -494,17 +492,24 @@ class WithdrawsWork(ApplierBot):
                             ])
                         )
 
-                        await context.bot.send_message(
-                            usr.telegram_chat_id,
-                            f"👅 <b>{usr.username}</b>, вы успешно оплатили <b>{order.withdraw_id}</b> на сумму <b>{order.usdt_sum} USDT</b> от <b>{user_whom_applied.username}</b>.",
+                        await context.bot.edit_message_text(
+                            chat_id=query.message.chat_id,
+                            message_id=query.message.message_id,
+                            text=(
+                                f"👅 <b>{usr.username}</b>, вы успешно оплатили <b>{order.withdraw_id}</b> "
+                                f"на сумму <b>{order.usdt_sum} USDT</b> от <b>{user_whom_applied.username}</b>."
+                            ),
                             parse_mode="HTML",
-                            reply_markup = InlineKeyboardMarkup([
-                                [InlineKeyboardButton(
-                                    text="💎 В меню",
-                                    callback_data=f"menu",
-                                )], 
+                            reply_markup=InlineKeyboardMarkup([
+                                [
+                                    InlineKeyboardButton(
+                                        text="💎 В меню",
+                                        callback_data="menu"
+                                    )
+                                ]
                             ])
                         )
+
                     else:
                         await context.bot.send_message(
                             user_whom_applied.telegram_chat_id,
@@ -518,15 +523,21 @@ class WithdrawsWork(ApplierBot):
                             ])
                         )
 
-                        await context.bot.send_message(
-                            usr.telegram_chat_id,
-                            f"👅 <b>{usr.username}</b>, вы успешно оплатили <b>{order.withdraw_id}</b> на сумму <b>{order.withdraw_sum}₽ фиатом</b> от <b>{user_whom_applied.username}</b>.",
+                        await context.bot.edit_message_text(
+                            chat_id=query.message.chat_id,
+                            message_id=query.message.message_id,
+                            text=(
+                                f"👅 <b>{usr.username}</b>, вы успешно оплатили <b>{order.withdraw_id}</b> "
+                                f"на сумму <b>{order.withdraw_sum}₽ фиатом</b> от <b>{user_whom_applied.username}</b>."
+                            ),
                             parse_mode="HTML",
-                            reply_markup = InlineKeyboardMarkup([
-                                [InlineKeyboardButton(
-                                    text="💎 В меню",
-                                    callback_data=f"menu",
-                                )], 
+                            reply_markup=InlineKeyboardMarkup([
+                                [
+                                    InlineKeyboardButton(
+                                        text="💎 В меню",
+                                        callback_data="menu"
+                                    )
+                                ]
                             ])
                         )
 
@@ -568,15 +579,21 @@ class WithdrawsWork(ApplierBot):
                             ])
                         )
 
-                        await context.bot.send_message(
-                            usr.telegram_chat_id,
-                            f"📛 <b>{usr.username}</b>, вы успешно отклонили ордер <b>{order.withdraw_id}</b> на сумму <b>{order.usdt_sum} USDT</b> от <b>{user_whom_applied.username}</b>.",
+                        await context.bot.edit_message_text(
+                            chat_id=query.message.chat_id,
+                            message_id=query.message.message_id,
+                            text=(
+                                f"📛 <b>{usr.username}</b>, вы успешно отклонили ордер <b>{order.withdraw_id}</b> "
+                                f"на сумму <b>{order.usdt_sum} USDT</b> от <b>{user_whom_applied.username}</b>."
+                            ),
                             parse_mode="HTML",
-                            reply_markup = InlineKeyboardMarkup([
-                                [InlineKeyboardButton(
-                                    text="💎В меню",
-                                    callback_data=f"menu",
-                                )], 
+                            reply_markup=InlineKeyboardMarkup([
+                                [
+                                    InlineKeyboardButton(
+                                        text="💎В меню",
+                                        callback_data="menu"
+                                    )
+                                ]
                             ])
                         )
                     else:
@@ -597,15 +614,21 @@ class WithdrawsWork(ApplierBot):
                             ])
                         )
 
-                        await context.bot.send_message(
-                            usr.telegram_chat_id,
-                            f"❌ <b>{usr.username}</b>, вы успешно отклонили <b>{order.withdraw_id}</b> на сумму <b>{order.withdraw_sum}₽ фиатом</b> от <b>{user_whom_applied.username}</b>.",
+                        await context.bot.edit_message_text(
+                            chat_id=query.message.chat_id,
+                            message_id=query.message.message_id,
+                            text=(
+                                f"❌ <b>{usr.username}</b>, вы успешно отклонили <b>{order.withdraw_id}</b> "
+                                f"на сумму <b>{order.withdraw_sum}₽ фиатом</b> от <b>{user_whom_applied.username}</b>."
+                            ),
                             parse_mode="HTML",
-                            reply_markup = InlineKeyboardMarkup([
-                                [InlineKeyboardButton(
-                                    text="В меню 🔙",
-                                    callback_data=f"menu",
-                                )], 
+                            reply_markup=InlineKeyboardMarkup([
+                                [
+                                    InlineKeyboardButton(
+                                        text="В меню 🔙",
+                                        callback_data="menu"
+                                    )
+                                ]
                             ])
                         )
 
@@ -641,9 +664,6 @@ class WithdrawsWork(ApplierBot):
                     )], 
                 ])
             )
-
-
-
 
     def reg_handlers(self):
         self.application.add_handler(ConversationHandler(

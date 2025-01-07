@@ -479,12 +479,10 @@ class ChequeWork(ApplierBot):
         
         usr, _ = await user_get_by_update(update)
         
-        query = update.callback_query
-        if query:
-            await query.answer()
-            await context.bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
-
         try:
+            query = update.callback_query
+            await query.answer()
+
             new_cheque = Cheque.objects.filter(cheque_id=query.data.split("_")[-1]).first()
             amount, status = new_cheque.cheque_sum, query.data.split("_")[-2]
 
@@ -510,10 +508,14 @@ class ChequeWork(ApplierBot):
                         parse_mode="HTML",
                     )
 
-                await context.bot.send_message(
-                    usr.telegram_chat_id,
-                    f"🪛 Вы приняли чек <b>{new_cheque.cheque_id}</b> от <b>{new_cheque.cheque_owner.username}</b> на сумму <b>{new_cheque.cheque_sum}₽</b> от <b>{str(new_cheque.cheque_date).split('.')[:1][0]}</b>.",
-                    parse_mode="HTML",
+                await context.bot.edit_message_text(
+                    chat_id=query.message.chat_id,
+                    message_id=query.message.message_id,
+                    text=(
+                        f"🪛 Вы приняли чек <b>{new_cheque.cheque_id}</b> от <b>{new_cheque.cheque_owner.username}</b> "
+                        f"на сумму <b>{new_cheque.cheque_sum}₽</b> от <b>{str(new_cheque.cheque_date).split('.')[:1][0]}</b>."
+                    ),
+                    parse_mode="HTML"
                 )
 
                 await context.bot.send_message(
@@ -525,10 +527,14 @@ class ChequeWork(ApplierBot):
 
             else:
                 new_cheque.is_denied = True
-                await context.bot.send_message(
-                    usr.telegram_chat_id,
-                    f"⚔️ Вы отклонили чек <b>{new_cheque.cheque_id}</b> от <b>{new_cheque.cheque_owner.username}</b> на сумму <b>{new_cheque.cheque_sum}₽</b> от <b>{str(new_cheque.cheque_date).split('.')[:1][0]}</b>.",
-                    parse_mode="HTML",
+                await context.bot.edit_message_text(
+                    chat_id=query.message.chat_id,
+                    message_id=query.message.message_id,
+                    text=(
+                        f"⚔️ Вы отклонили чек <b>{new_cheque.cheque_id}</b> от <b>{new_cheque.cheque_owner.username}</b> "
+                        f"на сумму <b>{new_cheque.cheque_sum}₽</b> от <b>{str(new_cheque.cheque_date).split('.')[:1][0]}</b>."
+                    ),
+                    parse_mode="HTML"
                 )
 
                 await context.bot.send_message(

@@ -41,7 +41,7 @@ class AutoAcceptChequeAdmin(admin.ModelAdmin):
 
     fieldsets = (
         ("Основные параметры", {
-            "fields":["hash", "amount", "description" , "is_applied", "reks"]
+            "fields":["hash", "amount", "description" , "is_applied", "reks", "redirect_url", "success_webhook"]
         }),
     )
 

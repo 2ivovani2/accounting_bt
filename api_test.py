@@ -14,7 +14,7 @@ PAYMENT_DATA = {
     "amount": "150.00",          # Сумма платежа
     "description": "Оплата подписки",
     "hash":  str(uuid.uuid4()), 
-    "fail_webhook": "https://dripmoney.io",
+    "redirect_url": "https://google.com",
     "success_webhook": "https://dripmoney.io"
 }
 

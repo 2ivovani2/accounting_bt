@@ -10,11 +10,11 @@ class AutoAcceptChequeSerializer(serializers.ModelSerializer):
         allow_blank=False,
         help_text="Ссылка для отправки подтверждения успешного принятия чека."
     )
-    fail_webhook = serializers.URLField(
-        required=True,
-        allow_null=False,
-        allow_blank=False,
-        help_text="Ссылка для отправки уведомления о неудаче принятия чека."
+    redirect_url = serializers.URLField(
+        required=False,
+        allow_null=True,
+        allow_blank=True,
+        help_text="Ссылка для перенаправления."
     )
 
     class Meta:
@@ -26,7 +26,7 @@ class AutoAcceptChequeSerializer(serializers.ModelSerializer):
             'description',
             'created_at',
             'success_webhook',
-            'fail_webhook'
+            'redirect_url'
         ]
         read_only_fields = ['id', 'created_at']
 
@@ -35,27 +35,24 @@ class AutoAcceptChequeSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Сумма должна быть положительным числом.")
         return value
 
-    # Удаляем метод validate_description, чтобы сделать поле необязательным
-
     def validate(self, attrs):
-        """
-        Дополнительная валидация для webhook-ссылок, если необходимо.
-        """
         url_validator = URLValidator()
+
+        # Обязательная проверка success_webhook
         try:
             url_validator(attrs['success_webhook'])
         except ValidationError:
             raise serializers.ValidationError({"success_webhook": "Недействительный URL для success_webhook."})
-        
-        try:
-            url_validator(attrs['fail_webhook'])
-        except ValidationError:
-            raise serializers.ValidationError({"fail_webhook": "Недействительный URL для fail_webhook."})
 
+        # Условная проверка redirect_url
+        if attrs.get('redirect_url'):
+            try:
+                url_validator(attrs['redirect_url'])
+            except ValidationError:
+                raise serializers.ValidationError({"redirect_url": "Недействительный URL для redirect_url."})
         return attrs
 
     def create(self, validated_data):
-        # Здесь вы можете добавить дополнительную логику, если необходимо
         cheque = AutoAcceptCheque.objects.create(**validated_data)
         return cheque
     

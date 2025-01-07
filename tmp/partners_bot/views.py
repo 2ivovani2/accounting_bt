@@ -184,6 +184,7 @@ class SmsReceiverAPIView(APIView):
         if not cheque.is_applied:
             cheque.is_applied = True
             cheque.save()
+
             logger.info(f"Платеж {cheque.hash} отмечен как примененный.")
 
         return Response({
@@ -309,6 +310,11 @@ class CheckChequeStatusView(APIView):
             cheque = get_object_or_404(AutoAcceptCheque, hash=cheque_hash)
 
             if cheque.is_applied:
+                usr = cheque.reks.reks_owner
+                print(f"--------------------------({dir(usr)})")
+                usr.insurance_deposit -= cheque.amount
+                usr.save()
+
                 # Отправка webhook с сервера
                 webhook_url = cheque.success_webhook
                 webhook_data = {'cheque_hash': cheque_hash}
@@ -332,4 +338,5 @@ class PaymentSuccessView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, *args, **kwargs):
-        return render(request, 'payment_success.html')
+        redirect_url = request.GET.get('redirect_url', None)
+        return render(request, 'payment_success.html', {'redirect_url': redirect_url})

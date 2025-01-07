@@ -290,22 +290,27 @@
                 timerInterval = setInterval(updateTimer, 1000);
 
                 // Функция для проверки статуса чека через POST запрос
+                let redirectUrl = "{{ cheque.redirect_url|default_if_none:'' }}";  // Если пусто — вернётся ""
+
                 function checkChequeStatus() {
                     $.ajax({
                         url: "{% url 'check_cheque_status' %}",
                         method: "POST",
                         data: {
                             'hash': chequeHash
-                            // CSRF-токен добавляется автоматически через заголовки
                         },
                         success: function(response) {
-                            if (response.success) {
-                                if (response.is_applied) {
-                                    clearInterval(timerInterval);
-                                    
-                                    window.location.href = "{% url 'payment_success' %}";
+                            if (response.success && response.is_applied) {
+                                clearInterval(timerInterval);
+
+                                // Формируем URL с переданным redirectUrl, если он не пустой
+                                let successUrl = "{% url 'payment_success' %}";
+                                if (redirectUrl) {
+                                    successUrl += "?redirect_url=" + encodeURIComponent(redirectUrl);
                                 }
-                            } else {
+                                
+                                window.location.href = successUrl;
+                            } else if (!response.success) {
                                 console.error(response.error);
                             }
                         },
