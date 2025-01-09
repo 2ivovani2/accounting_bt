@@ -121,7 +121,7 @@ class SmsReceiverAPIView(APIView):
     API для приема SMS от Android-приложения, извлечения суммы платежа и поиска существующего платежа.
     Если платеж не найден, не создается новый.
     """
-    permission_classes = [AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
         serializer = SmsReceiverSerializer(data=request.data)
@@ -317,11 +317,11 @@ class CheckChequeStatusView(APIView):
                 # Отправка webhook с сервера
                 webhook_url = cheque.success_webhook
                 webhook_data = {'cheque_hash': cheque_hash}
-                try:
-                    webhook_response = requests.post(webhook_url, data=webhook_data)
-                    webhook_response.raise_for_status()
-                except requests.RequestException as e:
-                    return Response({'success': False, 'error': f'Ошибка webhook: {e}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                # try:
+                #     webhook_response = requests.post(webhook_url, data=webhook_data)
+                #     webhook_response.raise_for_status()
+                # except requests.RequestException as e:
+                #     return Response({'success': False, 'error': f'Ошибка webhook: {e}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
                 return Response({'success': True, 'is_applied': True}, status=status.HTTP_200_OK)
             else:

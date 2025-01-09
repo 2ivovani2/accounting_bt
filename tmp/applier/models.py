@@ -55,7 +55,7 @@ class ApplyUser(models.Model):
     reks = models.ForeignKey(
         Reks,
         verbose_name="Активные реквизиты",
-        on_delete=models.CASCADE,
+        on_delete=models.DO_NOTHING,
         null=True,
         blank=True
     )

@@ -1,4 +1,5 @@
 from applier.models import *
+from partners_bot.models import *
 
 from asgiref.sync import sync_to_async
 

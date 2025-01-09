@@ -252,12 +252,85 @@ class ApplierBot:
                 reply_markup=InlineKeyboardMarkup([
                     [
                         InlineKeyboardButton(
+                            text="🤩 Получить реквизиты", 
+                            callback_data="get_reks"
+                        ),
+                    ] if not usr.reks else [],
+                    [
+                        InlineKeyboardButton(
                             text="🔙 Назад", 
                             callback_data="profile"
                         )
                     ]
                 ])
             )
+
+    @check_user_status
+    async def _get_reks(update: Update, context: CallbackContext) -> None:
+        """Функция просмотра профиля юзера
+
+        Args:
+            Update (_type_): объект update
+            context (CallbackContext): объект context
+        """ 
+        
+        usr, _ = await user_get_by_update(update)
+
+        query = update.callback_query
+        if query:
+            await query.answer()
+            await context.bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
+
+        free_processor = Processor.objects.filter(insurance_deposit__gte=10000)
+        if free_processor.exists():
+            free_reks = Reks.objects.filter(reks_owner=free_processor.first(), is_archived=False)
+            if free_reks.exists():
+                usr.reks = free_reks.first()
+                usr.save()
+             
+                await context.bot.send_message(
+                    usr.telegram_chat_id,
+                    f"💸 Мы подобрали подходящие для вас реквизиты, вы можете найти их в разделе <b>'Реквизиты'</b>",
+                    parse_mode="HTML",
+                    reply_markup=InlineKeyboardMarkup([
+                        [
+                            InlineKeyboardButton(
+                                text="🔙 Назад", 
+                                callback_data="profile"
+                            )
+                        ]
+                    ])
+                )
+            
+            else:
+                await context.bot.send_message(
+                    usr.telegram_chat_id,
+                    f"😭 К сожалению, нам не удалось найти подходящие для вас реквизиты. Попробуйте позже.\n\n<blockquote>Если вам <b>срочно</b> необходимы реквизиты, то обратитесь к технической поддержке для оперативного решения вашего вопроса.</blockquote>",
+                    parse_mode="HTML",
+                    reply_markup=InlineKeyboardMarkup([
+                        [
+                            InlineKeyboardButton(
+                                text="🔙 Назад", 
+                                callback_data="profile"
+                            )
+                        ]
+                    ])
+                )
+        else:
+            await context.bot.send_message(
+                usr.telegram_chat_id,
+                f"😭 К сожалению, нам не удалось найти подходящие для вас реквизиты. Попробуйте позже.\n\n<blockquote>Если вам <b>срочно</b> необходимы реквизиты, то обратитесь к технической поддержке для оперативного решения вашего вопроса.</blockquote>",
+                parse_mode="HTML",
+                reply_markup=InlineKeyboardMarkup([
+                    [
+                        InlineKeyboardButton(
+                            text="🔙 Назад", 
+                            callback_data="profile"
+                        )
+                    ]
+                ])
+            )
+
 
     @check_user_status
     async def _refs_info(update: Update, context: CallbackContext) -> None:
@@ -376,7 +449,8 @@ class ApplierBot:
         self.application.add_handler(CallbackQueryHandler(self._profile, "profile"))
         self.application.add_handler(CallbackQueryHandler(self._refs_info, "refs"))
         self.application.add_handler(CallbackQueryHandler(self._reks_info, "reks"))
-
+        self.application.add_handler(CallbackQueryHandler(self._get_reks, "get_reks"))
+        
         return self.application
 
     def set_last_handlers(self, application):

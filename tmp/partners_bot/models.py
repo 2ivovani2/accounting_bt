@@ -89,7 +89,7 @@ class Reks(models.Model):
     reks_owner = models.ForeignKey(
         Processor,
         verbose_name="Владелец реквизитов",
-        on_delete=models.CASCADE,
+        on_delete=models.DO_NOTHING,
         null=True,
         blank=True
     )
