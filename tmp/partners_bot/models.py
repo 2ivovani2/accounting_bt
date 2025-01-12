@@ -89,7 +89,7 @@ class Reks(models.Model):
     reks_owner = models.ForeignKey(
         Processor,
         verbose_name="Владелец реквизитов",
-        on_delete=models.DO_NOTHING,
+        on_delete=models.SET_NULL,
         null=True,
         blank=True
     )
@@ -214,7 +214,7 @@ class InsurancePayment(models.Model):
     owner = models.ForeignKey(
         Processor,
         verbose_name="Владелец оплаты",
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         null=True,
         blank=True
     )

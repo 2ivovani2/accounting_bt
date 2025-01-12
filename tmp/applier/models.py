@@ -55,7 +55,7 @@ class ApplyUser(models.Model):
     reks = models.ForeignKey(
         Reks,
         verbose_name="Активные реквизиты",
-        on_delete=models.DO_NOTHING,
+        on_delete=models.SET_NULL,
         null=True,
         blank=True
     )
@@ -75,7 +75,7 @@ class Ref(models.Model):
     who_invited = models.ForeignKey(
         ApplyUser,
         verbose_name="Кто пригласил юзера",
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         null=True,
         related_name="who_invited_new_user",
         blank=True
@@ -84,7 +84,7 @@ class Ref(models.Model):
     whom_invited = models.ForeignKey(
         ApplyUser,
         verbose_name="Кого пригласили в проект",
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         null=True,
         related_name="whom_invited_to_project",
         blank=True
@@ -124,7 +124,7 @@ class Cheque(models.Model):
     cheque_owner = models.ForeignKey(
         ApplyUser,
         verbose_name="Владелец чека",
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         null=True,
         blank=True
     )
@@ -178,7 +178,7 @@ class Withdraw(models.Model):
     withdraw_owner = models.ForeignKey(
         ApplyUser,
         verbose_name="Владелец вывода",
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         null=True,
         blank=True
     )
