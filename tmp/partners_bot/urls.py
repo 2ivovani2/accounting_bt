@@ -10,4 +10,7 @@ urlpatterns = [
     path('payment/check_status/', CheckChequeStatusView.as_view(), name='check_cheque_status'),
     path('payment/success/', PaymentSuccessView.as_view(), name='payment_success'),
     path('api/sms_receiver/', SmsReceiverAPIView.as_view(), name='sms_receiver'),
+    path('deny-cheque/', DenyChequeView.as_view(), name='deny_cheque'),
+    path('check-token/', CheckTokenView.as_view(), name='check_token'),
+    path('doc/', DocumentationView.as_view(), name='documentation'),
 ]

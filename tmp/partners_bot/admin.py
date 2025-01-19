@@ -6,13 +6,13 @@ class ProcessorAdmin(admin.ModelAdmin):
     """
         Описание пользователей в админской панели
     """
-    list_display = ("id", "is_ready_to_get_money", "username", "verified_usr", "is_superuser", "balance", "comission", "insurance_deposit", )
+    list_display = ("id", "username", "is_ready_to_get_money", "verified_usr", "is_superuser", "balance", "comission", "insurance_deposit", )
     search_fields = ("id", "username", "telegram_chat_id", "balance")
 
     fieldsets = (
 
         ("Основные параметры", {
-            "fields": ["username", "telegram_chat_id", "verified_usr", "is_ready_to_get_money", "is_ready_to_get_money_first", "is_superuser", "balance", "comission", "insurance_deposit", "info", "has_active_paying_insurance_apply", "amount_to_accept"]
+            "fields": ["telegram_chat_id", "username", "verified_usr", "is_ready_to_get_money", "is_ready_to_get_money_first", "is_superuser", "balance", "comission", "insurance_deposit", "info", "has_active_paying_insurance_apply", "amount_to_accept"]
         }),
     )
 
@@ -36,12 +36,12 @@ class AutoAcceptChequeAdmin(admin.ModelAdmin):
     """
         Описание пользователей в админской панели
     """
-    list_display = ("id", "hash", "amount", "description" , "reks", "created_at", "is_applied")
+    list_display = ("id", "hash", "amount", "description" , "reks", "created_at", "is_applied", "is_denied")
     search_fields = ("id", "hash")
 
     fieldsets = (
         ("Основные параметры", {
-            "fields":["hash", "amount", "description" , "is_applied", "reks", "redirect_url", "success_webhook"]
+            "fields":["hash", "amount", "description" , "is_applied", "reks", "redirect_url", "success_webhook", "is_denied"]
         }),
     )
 

@@ -136,7 +136,7 @@ STATICFILES_DIRS = [
 STATIC_ROOT = BASE_DIR / "staticfiles" 
 
 
-AUTH_USER_MODEL = 'partners_bot.Processor'
+AUTH_USER_MODEL = 'applier.ApplyUser'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (

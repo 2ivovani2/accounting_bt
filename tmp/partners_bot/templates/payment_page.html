@@ -18,9 +18,12 @@
             background: linear-gradient(135deg, #f0f2f5 25%, #cfd9df 100%);
             font-family: 'Roboto', sans-serif;
             min-height: 100vh !important;
+            display: flex;
+            flex-direction: column;
         }
         .payment-container {
             margin-top: 60px;
+            margin-bottom: auto; /* Чтобы футер прижимался к низу */
         }
         .payment-card {
             padding: 30px;
@@ -94,6 +97,11 @@
             .illustration {
                 max-width: 100%;
             }
+        }
+        footer {
+            margin-top: 50px;
+            padding: 20px 0;
+            background-color: #f8f9fa;
         }
     </style>
 </head>
@@ -183,36 +191,40 @@
                                     <label class="form-label"><strong>Дата создания:</strong></label>
                                     <p class="form-control-plaintext">{{ cheque.created_at|date:"d.m.Y H:i" }}</p>
                                 </div>
-                                {% endif %}
-                            </div>
-                            <!-- Правая колонка: Иллюстрация (отображается только если show_illustration=True) -->
-                            {% if show_illustration %}
-                            <div class="col-md-6 d-none d-md-flex align-items-center justify-content-center">
-                                    <img src="{% static 'images/undraw_online-payments_p97e.svg' %}" alt="Illustration" class="illustration">
-                            </div>
                             {% endif %}
-                            <hr>
-                            {% if not error and not is_applied and not missing_reks and not timer_expired %}
-                            <div class="col-md-12  d-md-flex align-items-center justify-content-center flex-column">
-                                <!-- Кнопка оплаты -->
-                                <div class="d-grid mt-2" style="width: 80% !important;">
-                                    <button id="payButton" class="btn btn-primary payment-button">Я оплатил</button>
-                                </div>
-
-                                <!-- Таймер -->
-                                <div id="timer" class="timer mt-3 mb-0">
-                                    Время до завершения: <span id="time">10:00</span>
-                                </div>
-
-                                <!-- Сообщение после нажатия кнопки -->
-                                <div id="checkingMessage" class="alert alert-info alert-custom d-none mt-4" role="alert">
-                                    <i class="fas fa-spinner fa-spin icon"></i>
-                                    Мы проверяем ваш чек...
-                                </div>
+                        </div>
+                        <!-- Правая колонка: Иллюстрация (отображается только если show_illustration=True) -->
+                        {% if show_illustration %}
+                        <div class="col-md-6 d-none d-md-flex align-items-center justify-content-center">
+                            <img src="{% static 'images/undraw_online-payments_p97e.svg' %}" alt="Illustration" class="illustration">
+                        </div>
+                        {% endif %}
+                        <hr>
+                        {% if not error and not is_applied and not missing_reks and not timer_expired %}
+                        <div class="col-md-12 d-md-flex align-items-center justify-content-center flex-column">
+                            <!-- Кнопка оплаты -->
+                            <div class="d-grid mt-2" style="width: 80% !important;">
+                                <button id="payButton" class="btn btn-primary payment-button">Я оплатил</button>
                             </div>
-                            {% endif %}
-                        
+                            
+                            <!-- ВАЖНО: вставлено предупреждение -->
+                            <div class="text-muted text-center mt-3" style="font-size:0.9em;">
+                                Оплачивайте <strong>строго</strong> написанную сумму, иначе мы не сможем промодерировать ваш платеж.
+                            </div>
+                            <!-- /Вставка предупреждения -->
 
+                            <!-- Таймер -->
+                            <div id="timer" class="timer mt-3 mb-0">
+                                Время до завершения: <span id="time">10:00</span>
+                            </div>
+
+                            <!-- Сообщение после нажатия кнопки -->
+                            <div id="checkingMessage" class="alert alert-info alert-custom d-none mt-4" role="alert">
+                                <i class="fas fa-spinner fa-spin icon"></i>
+                                Мы проверяем ваш чек...
+                            </div>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -225,7 +237,7 @@
                 <div class="modal-content">
                   <div class="modal-header">
                     <h5 class="modal-title" id="timerExpiredModalLabel">Время истекло</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть" onclick="window.location.href='/'""></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть" onclick="window.location.href='/'"></button>
                   </div>
                   <div class="modal-body">
                     Время для оплаты истекло. Пожалуйста, попробуйте снова.
@@ -237,101 +249,106 @@
               </div>
             </div>
         {% endif %}
+    </div> <!-- /container -->
 
-        <!-- Bootstrap 5 JS и зависимые библиотеки -->
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-        <!-- jQuery (для удобства работы с AJAX) -->
-        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-        <!-- Дополнительные скрипты -->
-        {% if show_illustration %}
-        <script>
-            // Получение CSRF-токена из мета-тега
-            const csrftoken = $('meta[name="csrf-token"]').attr('content');
+    <!-- FOOTER -->
+    <footer class="text-center">
+        <div class="py-3">
+            © 2023 DRIP MONEY. Все права защищены.
+            <br>
+            <a href="https://t.me/babki_siyda" class="link-primary">Поддержка</a>
+        </div>
+    </footer>
+    <!-- /FOOTER -->
 
-            // Настройка AJAX-запросов для автоматического добавления CSRF-токена в заголовки
-            $.ajaxSetup({
-                beforeSend: function(xhr, settings) {
-                    if (!(/^http:.*/.test(settings.url) || /^https:.*/.test(settings.url))) {
-                        // Только для локальных запросов
-                        xhr.setRequestHeader("X-CSRFToken", csrftoken);
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Скрипт работы таймера и проверки статуса -->
+    {% if show_illustration %}
+    <script>
+        const csrftoken = $('meta[name="csrf-token"]').attr('content');
+        $.ajaxSetup({
+            beforeSend: function(xhr, settings) {
+                if (!(/^http:.*/.test(settings.url) || /^https:.*/.test(settings.url))) {
+                    xhr.setRequestHeader("X-CSRFToken", csrftoken);
+                }
+            }
+        });
+
+        $(document).ready(function() {
+            const chequeHash = "{{ cheque.hash }}";
+            let timerInterval;
+
+            function denyCheque() {
+                $.ajax({
+                    url: "{% url 'deny_cheque' %}",
+                    method: "POST",
+                    data: {
+                        'hash': chequeHash
+                    },
+                    success: function(response) {
+                        console.log('Cheque denied:', response);
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error denying cheque:', error);
                     }
-                }
-            });
-
-            $(document).ready(function() {
-                const chequeHash = "{{ cheque.hash }}";
-                let timerInterval;
-
-                // Функция для обновления таймера
-                function updateTimer() {
-                    const now = new Date().getTime();
-                    const distance = endTime - now;
-
-                    if (distance < 0) {
-                        clearInterval(timerInterval);
-                        $('#time').text("00:00");
-                        console.log('Время истекло.');
-                        // Показываем модальное окно
-                        $('#timerExpiredModal').modal('show');
-                        return;
-                    }
-
-                    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-                    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-                    $('#time').text(`${minutes}:${seconds < 10 ? '0' : ''}${seconds}`);
-                }
-
-                // Получаем конечное время из контекста
-                const endTime = {{ end_time }} * 1000; // Переводим в миллисекунды
-
-                // Запускаем таймер
-                updateTimer(); // Первоначальный вызов
-                timerInterval = setInterval(updateTimer, 1000);
-
-                // Функция для проверки статуса чека через POST запрос
-                let redirectUrl = "{{ cheque.redirect_url|default_if_none:'' }}";  // Если пусто — вернётся ""
-
-                function checkChequeStatus() {
-                    $.ajax({
-                        url: "{% url 'check_cheque_status' %}",
-                        method: "POST",
-                        data: {
-                            'hash': chequeHash
-                        },
-                        success: function(response) {
-                            if (response.success && response.is_applied) {
-                                clearInterval(timerInterval);
-
-                                // Формируем URL с переданным redirectUrl, если он не пустой
-                                let successUrl = "{% url 'payment_success' %}";
-                                if (redirectUrl) {
-                                    successUrl += "?redirect_url=" + encodeURIComponent(redirectUrl);
-                                }
-                                
-                                window.location.href = successUrl;
-                            } else if (!response.success) {
-                                console.error(response.error);
-                            }
-                        },
-                        error: function(xhr, status, error) {
-                            console.error('Ошибка при проверке статуса чека:', error);
-                        }
-                    });
-                }
-
-                // Запускаем проверку статуса каждые 30 секунд
-                setInterval(checkChequeStatus, 30000); // 30000 мс = 30 секунд
-
-                // Обработка нажатия на кнопку "Я оплатил"
-                $('#payButton').click(function() {
-                    // Скрываем кнопку и показываем сообщение
-                    $('#payButton').hide();
-                    $('#checkingMessage').removeClass('d-none');
-
                 });
+            }
+
+            function updateTimer() {
+                const now = new Date().getTime();
+                const distance = endTime - now;
+
+                if (distance < 0) {
+                    clearInterval(timerInterval);
+                    $('#time').text("00:00");
+                    denyCheque();
+                    $('#timerExpiredModal').modal('show');
+                    return;
+                }
+
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                $('#time').text(`${minutes}:${seconds < 10 ? '0' : ''}${seconds}`);
+            }
+
+            const endTime = {{ end_time }} * 1000;
+            updateTimer();
+            timerInterval = setInterval(updateTimer, 1000);
+
+            function checkChequeStatus() {
+                $.ajax({
+                    url: "{% url 'check_cheque_status' %}",
+                    method: "POST",
+                    data: {
+                        'hash': chequeHash
+                    },
+                    success: function(response) {
+                        if (response.success && response.is_applied) {
+                            clearInterval(timerInterval);
+                            let successUrl = "{% url 'payment_success' %}";
+                            {% if cheque.redirect_url %}
+                                successUrl += "?redirect_url=" + encodeURIComponent("{{ cheque.redirect_url }}");
+                            {% endif %}
+                            window.location.href = successUrl;
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Ошибка при проверке статуса чека:', error);
+                    }
+                });
+            }
+            setInterval(checkChequeStatus, 30000);
+
+            $('#payButton').click(function() {
+                $('#payButton').hide();
+                $('#checkingMessage').removeClass('d-none');
             });
-        </script>
-        {% endif %}
-    </body>
-    </html>
+        });
+    </script>
+    {% endif %}
+</body>
+</html>

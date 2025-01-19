@@ -554,14 +554,15 @@ class ChequeWork(ApplierBot):
             )
 
     def reg_handlers(self):
-        self.application.add_handler(CallbackQueryHandler(self._new_cheque_acception, "^acception_cheque_"))
+        pass
+        # self.application.add_handler(CallbackQueryHandler(self._new_cheque_acception, "^acception_cheque_"))
 
-        self.application.add_handler(ConversationHandler(
-            entry_points=[CallbackQueryHandler(self._ask_for_cheque_amount, "send_cheque")],
-            states={
-                0: [MessageHandler(filters.TEXT & ~filters.COMMAND, self._ask_for_photo)],
-                1: [MessageHandler(filters.PHOTO, self._send_photo_to_admin)],
-            },
-            fallbacks=[CallbackQueryHandler(self._start, "menu"), CommandHandler("start", self._start), CallbackQueryHandler(self._ask_for_cheque_amount, "send_cheque")],
-            conversation_timeout=300
-        ))
+        # self.application.add_handler(ConversationHandler(
+        #     entry_points=[CallbackQueryHandler(self._ask_for_cheque_amount, "send_cheque")],
+        #     states={
+        #         0: [MessageHandler(filters.TEXT & ~filters.COMMAND, self._ask_for_photo)],
+        #         1: [MessageHandler(filters.PHOTO, self._send_photo_to_admin)],
+        #     },
+        #     fallbacks=[CallbackQueryHandler(self._start, "menu"), CommandHandler("start", self._start), CallbackQueryHandler(self._ask_for_cheque_amount, "send_cheque")],
+        #     conversation_timeout=300
+        # ))

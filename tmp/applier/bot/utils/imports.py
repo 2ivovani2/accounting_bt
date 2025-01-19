@@ -1,6 +1,6 @@
 from applier.models import *
 from partners_bot.models import *
-
+from rest_framework.authtoken.models import Token
 from asgiref.sync import sync_to_async
 
 from partners_bot.bot.utils.delayed_func import check_cheque_status

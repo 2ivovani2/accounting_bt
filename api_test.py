@@ -1,4 +1,5 @@
 import requests, uuid
+from random import randint
 
 # Конфигурация
 API_BASE_URL = "http://0.0.0.0:8000"  # Базовый URL вашего API
@@ -11,7 +12,7 @@ PASSWORD = "sashket2003"      # Замените на ваш password
 
 # Данные для создания платежа
 PAYMENT_DATA = {
-    "amount": "150.00",          # Сумма платежа
+    "amount": f"{randint(100, 10000)}.00",          # Сумма платежа
     "description": "Оплата подписки",
     "hash":  str(uuid.uuid4()), 
     "redirect_url": "https://google.com",

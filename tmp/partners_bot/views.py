@@ -1,32 +1,30 @@
 import json, requests, re
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from .tasks import handle_update
+import logging, os
 
-from partners_bot.models import *
-
-import logging
+from django.conf import settings
+from applier.tasks import initialize_bot
 
 from decimal import Decimal, ROUND_DOWN, ROUND_HALF_UP
+from datetime import timedelta
 
-from rest_framework.views import APIView
-from django.shortcuts import get_object_or_404, render
+from django.http import JsonResponse
+from django.shortcuts import render, get_object_or_404
+from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 
-from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework import generics, permissions, status
+from rest_framework.views import APIView
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
-from .models import AutoAcceptCheque
-from .serializers import AutoAcceptChequeSerializer
+
 from django.db import DatabaseError, IntegrityError
-
 from django.db.models import Q
-from .serializers import SmsReceiverSerializer
 
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
-from django.utils import timezone
-from datetime import timedelta
+from partners_bot.models import Processor, Reks  # если у вас так называются модели
+from .models import AutoAcceptCheque
+from .serializers import AutoAcceptChequeSerializer, SmsReceiverSerializer
+from .tasks import handle_update
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
@@ -37,15 +35,19 @@ logger = logging.getLogger(__name__)
 @csrf_exempt
 @ensure_csrf_cookie
 @api_view(["GET"])
-@permission_classes((AllowAny,))
+@permission_classes((permissions.AllowAny,))
 def main_render(request):
-    """"
-        Display root html file
     """
-    return render(request, 'root.html') 
+    Отображение root.html
+    """
+    return render(request, 'root.html')
+
 
 @csrf_exempt
 async def partners_telegram_webhook(request):
+    """
+    Async-вебхук для Telegram
+    """
     if request.method == 'POST':
         try:
             update_data = request.body.decode('utf-8')
@@ -62,7 +64,7 @@ async def partners_telegram_webhook(request):
 
 class CreatePaymentAPIView(generics.CreateAPIView):
     """
-    API для создания платежа. Требует аутентификации.
+    API для создания платежа
     """
     serializer_class = AutoAcceptChequeSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -72,7 +74,6 @@ class CreatePaymentAPIView(generics.CreateAPIView):
 
     def create(self, request, *args, **kwargs):
         try:
-            # Проверка данных через сериализатор
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
@@ -83,43 +84,36 @@ class CreatePaymentAPIView(generics.CreateAPIView):
                 "payment_url": payment_url,
                 "hash": cheque.hash
             }, status=status.HTTP_201_CREATED, headers=headers)
-        
+
         except ValidationError as ve:
-            # Обработка валидационных ошибок
             logger.error(f"Validation error: {ve.detail}")
             return Response({
                 "error": "Валидационные ошибки",
                 "details": ve.detail
             }, status=status.HTTP_400_BAD_REQUEST)
-        
         except IntegrityError as ie:
-            # Обработка ошибок целостности базы данных (например, дублирование хэша)
             logger.error(f"Integrity error: {str(ie)}")
             return Response({
                 "error": "Ошибка целостности данных",
                 "details": "Невозможно создать платеж из-за нарушения уникальности или других ограничений."
             }, status=status.HTTP_400_BAD_REQUEST)
-        
         except DatabaseError as de:
-            # Обработка других ошибок базы данных
             logger.error(f"Database error: {str(de)}")
             return Response({
                 "error": "Ошибка базы данных",
                 "details": "Произошла ошибка при сохранении данных."
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
         except Exception as e:
-            # Обработка всех остальных исключений
             logger.exception("Unexpected error occurred")
             return Response({
                 "error": "Внутренняя ошибка сервера",
                 "details": "Произошла непредвиденная ошибка. Пожалуйста, попробуйте позже."
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
 class SmsReceiverAPIView(APIView):
     """
     API для приема SMS от Android-приложения, извлечения суммы платежа и поиска существующего платежа.
-    Если платеж не найден, не создается новый.
     """
     permission_classes = [permissions.IsAuthenticated]
 
@@ -132,14 +126,12 @@ class SmsReceiverAPIView(APIView):
                 'message': 'Неверные данные.',
                 'details': serializer.errors
             }, status=status.HTTP_400_BAD_REQUEST)
-        
+
         sender = serializer.validated_data['sender']
         text = serializer.validated_data['text']
-
         logger.info(f"Получены данные SMS от {sender}: {text}")
 
-        # Извлечение суммы из текста SMS с использованием регулярного выражения
-        # Предполагается, что сумма указана перед "RUB", "руб.", "руб" и т.д.
+        # Извлечение суммы из текста
         amount_match = re.search(r'(\d+[.,]?\d*)\s*(?:RUB|руб\.?|RUBL)', text, re.IGNORECASE)
         if not amount_match:
             logger.warning("Сумма не найдена в тексте SMS.")
@@ -147,7 +139,7 @@ class SmsReceiverAPIView(APIView):
                 'status': 'error',
                 'message': 'Сумма не найдена в тексте.'
             }, status=status.HTTP_400_BAD_REQUEST)
-        
+
         amount_str = amount_match.group(1).replace(',', '.')
         try:
             amount = Decimal(amount_str).quantize(Decimal('0.01'), rounding=ROUND_DOWN)
@@ -157,34 +149,32 @@ class SmsReceiverAPIView(APIView):
                 'status': 'error',
                 'message': 'Неверный формат суммы.'
             }, status=status.HTTP_400_BAD_REQUEST)
-        
+
         logger.info(f"Извлеченная сумма: {amount} RUB")
 
         try:
-            # Попытка найти существующий платеж с точной суммой, отправителем и is_applied=False
+            # Пытаемся найти соответствующий чек по сумме
+
             cheque = AutoAcceptCheque.objects.get(
-                Q(amount=amount) & Q(is_applied=False)
+                Q(amount=amount) & Q(is_applied=False) & Q(is_denied=False)
             )
             logger.info(f"Найден платеж: {cheque.hash} - {cheque.amount} RUB")
         except AutoAcceptCheque.DoesNotExist:
-            # Платеж не найден, не создаем новый
             logger.warning(f"Платеж с суммой {amount} RUB не найден.")
             return Response({
                 'status': 'error',
                 'message': 'Платеж не найден.'
             }, status=status.HTTP_404_NOT_FOUND)
         except AutoAcceptCheque.MultipleObjectsReturned:
-            # Обработка ситуации, когда найдено несколько платежей с одинаковой суммой и отправителем
             cheque = AutoAcceptCheque.objects.filter(
                 Q(amount=amount) & Q(is_applied=False)
             ).order_by('-created_at').first()
-            logger.warning(f"Найдено несколько платежей с суммой {amount} RUB. Выбран последний: {cheque.hash}")
+            logger.warning(f"Найдено несколько платежей. Выбран последний: {cheque.hash}")
 
-        # Обновление состояния платежа, если необходимо
+        # Обновление состояния платежа
         if not cheque.is_applied:
             cheque.is_applied = True
             cheque.save()
-
             logger.info(f"Платеж {cheque.hash} отмечен как примененный.")
 
         return Response({
@@ -192,136 +182,157 @@ class SmsReceiverAPIView(APIView):
             'cheque_hash': cheque.hash
         }, status=status.HTTP_200_OK)
 
+
 class PaymentPageView(APIView):
     """
-    Представление для отображения страницы оплаты по хэшу.
-    Добавляет уникальные копейки к сумме чека и применяет комиссию 8%.
+    Отображение страницы оплаты по хэшу. 
+    Если чек ещё не оплачен/не отклонён — и при этом его сумма целая, 
+    то добавляем уникальные копейки + комиссию один раз. 
+    Повторные открытия страницы не увеличивают сумму.
     """
-    permission_classes = [AllowAny]  # Разрешаем доступ всем, можно настроить по необходимости
+    permission_classes = [permissions.AllowAny]
 
     def get(self, request, *args, **kwargs):
         cheque_hash = request.GET.get('hash')
         if not cheque_hash:
-            context = {
+            return render(request, 'payment_page.html', {
                 'error': 'Отсутствует параметр хэша чека.'
-            }
-            return render(request, 'payment_page.html', context)
-        
+            })
+
         try:
             cheque = AutoAcceptCheque.objects.get(hash=cheque_hash)
         except AutoAcceptCheque.DoesNotExist:
-            context = {
+            return render(request, 'payment_page.html', {
                 'error': 'Чек с указанным хэшем не найден.'
-            }
-            return render(request, 'payment_page.html', context)
-        
+            })
+
+        # Если чек уже применён (оплачен)
         if cheque.is_applied:
             context = {
                 'cheque': cheque,
                 'is_applied': True,
-                'show_illustration': False  # Иллюстрация не отображается
+                'show_illustration': False
             }
             return render(request, 'payment_page.html', context)
-        
-        # Логика назначения уникальных копеек и добавления комиссии
-        try:
-            original_amount_whole = cheque.amount.quantize(Decimal('1.'), rounding=ROUND_DOWN)  # Целая часть суммы
-            # Перебираем копейки от 0.01 до 0.99
-            unique_amount_found = False
-            for kopeck in range(1, 100):
-                added_kopeck = Decimal(kopeck) / Decimal('100')  # Преобразуем в десятичную дробь, например, 0.01
-                tentative_amount = original_amount_whole + added_kopeck
-                
-                # Проверяем, существует ли уже платеж с такой суммой и is_applied=False
-                if not AutoAcceptCheque.objects.filter(amount=tentative_amount, is_applied=False).exists():
-                    # Добавляем комиссию 8%
-                    final_amount = (tentative_amount * Decimal('1.08')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-                    
-                    # Обновляем чек
-                    cheque.amount = final_amount
-                    cheque.save()
-                    
-                    logger.info(f"Платеж {cheque.hash} обновлен: сумма {final_amount} RUB (оригинальная сумма {tentative_amount} RUB)")
-                    unique_amount_found = True
-                    break  # Выходим из цикла, так как уникальная сумма найдена
-            
-            if not unique_amount_found:
-                logger.error(f"Не удалось назначить уникальные копейки для платежа {cheque.hash}")
-                context = {
-                    'error': 'Не удалось назначить уникальные копейки для суммы чека. Пожалуйста, попробуйте позже.'
-                }
-                return render(request, 'payment_page.html', context)
-        
-        except Exception as e:
-            logger.exception(f"Ошибка при назначении копеек или добавлении комиссии: {e}")
-            context = {
-                'error': 'Произошла ошибка при обработке платежа.'
-            }
-            return render(request, 'payment_page.html', context)
-        
-        # Поиск свободного процессора
-        free_processor = Processor.objects.filter(insurance_deposit__gte=cheque.amount)
-        if free_processor.exists():
-            free_reks = Reks.objects.filter(reks_owner=free_processor.first(), is_archived=False)
-            if free_reks.exists():
-                cheque.reks = free_reks.first()
-                cheque.save()
-        
+
+        # Если чек уже отклонён
+        if cheque.is_denied:
+            return render(request, 'payment_page.html', {
+                'error': 'Чек уже отклонён.'
+            })
+
+        # ============ Проверка, нужно ли добавлять копейки/комиссию ============
+
+        # 1) Смотрим целую часть суммы (например, 100.00)
+        original_amount_whole = cheque.amount.quantize(Decimal('1.'), rounding=ROUND_DOWN)
+
+        # 2) Если сейчас чек имеет ровно "целую" сумму, значит копейки ещё не добавлялись
+        if cheque.amount == original_amount_whole:
+            try:
+                # Перебираем копейки от 0.01 до 0.99
+                unique_amount_found = False
+                for kopeck in range(1, 100):
+                    added_kopeck = Decimal(kopeck) / Decimal('100')  # 0.01 ... 0.99
+                    tentative_amount = original_amount_whole + added_kopeck
+
+                    # Проверяем, не занят ли уже кто-то такой же суммой
+                    # (и чек при этом не оплачен, не отклонён)
+                    if not AutoAcceptCheque.objects.filter(
+                        amount=tentative_amount, is_applied=False, is_denied=False
+                    ).exists():
+                        # Комиссию берём из env либо по умолчанию 1.08 (8%)
+                        commission_rate = Decimal(os.environ.get("AUTO_COMISSION", "1.08"))
+                        final_amount = (tentative_amount * commission_rate).quantize(
+                            Decimal('0.01'),
+                            rounding=ROUND_HALF_UP
+                        )
+
+                        # Записываем новую сумму в чек
+                        cheque.amount = final_amount
+                        cheque.save()
+                        unique_amount_found = True
+                        break
+
+                if not unique_amount_found:
+                    # Если мы не нашли свободных копеек, выдаём ошибку
+                    return render(request, 'payment_page.html', {
+                        'error': 'Не удалось назначить уникальные копейки. Попробуйте позже.'
+                    })
+
+            except Exception as e:
+                # Ловим любые ошибки (например, проблемы с БД)
+                return render(request, 'payment_page.html', {
+                    'error': f'Произошла ошибка при обработке платежа: {e}'
+                })
+
+        # ============ Далее проверяем, есть ли реквизиты и не истёк ли таймер ============
+
+        # Ищем реквизиты (пример: ищем процессора, у которого достаточно страхового депозита)
         if not cheque.reks:
-            context = {
+            free_processor = Processor.objects.filter(insurance_deposit__gte=cheque.amount).first()
+            if free_processor:
+                free_reks = Reks.objects.filter(reks_owner=free_processor, is_archived=False).first()
+                if free_reks:
+                    cheque.reks = free_reks
+                    cheque.save()
+
+        if not cheque.reks:
+            return render(request, 'payment_page.html', {
                 'cheque': cheque,
                 'missing_reks': True,
-                'show_illustration': False  # Иллюстрация не отображается
-            }
-            return render(request, 'payment_page.html', context)
-        
-        # Вычисляем конечное время таймера (created_at + 10 минут)
+                'show_illustration': False
+            })
+
+        # Проверяем 10-минутный таймер: если время вышло — отклоняем
         end_time = cheque.created_at + timedelta(minutes=10)
         current_time = timezone.now()
-
-        # Проверяем, не истекло ли время
         if current_time >= end_time:
-            # Если время истекло, передаем флаг timer_expired
-            context = {
+            cheque.is_denied = True
+            cheque.save()
+            return render(request, 'payment_page.html', {
                 'cheque': cheque,
                 'timer_expired': True,
-                'show_illustration': False  # Иллюстрация не отображается
-            }
-            return render(request, 'payment_page.html', context)
-        
-        # Передаем конечное время в шаблон в формате UNIX timestamp
+                'show_illustration': False
+            })
+
+        # Если пока всё нормально: передаём время окончания и рисуем страницу
         context = {
             'cheque': cheque,
             'is_applied': False,
             'end_time': int(end_time.timestamp()),
-            'show_illustration': True  # Иллюстрация отображается
+            'show_illustration': True
         }
         return render(request, 'payment_page.html', context)
 
 class CheckChequeStatusView(APIView):
-    permission_classes = []
+    """
+    POST-запрос для проверки статуса чека
+    """
+    permission_classes = [permissions.AllowAny]
 
     def post(self, request, *args, **kwargs):
-        try:
-            cheque_hash = request.POST.get('hash')
-            if not cheque_hash:
-                return Response({'success': False, 'error': 'Отсутствует хэш чека.'}, status=status.HTTP_400_BAD_REQUEST)
+        cheque_hash = request.data.get('hash') or request.POST.get('hash')
+        if not cheque_hash:
+            return Response({'success': False, 'error': 'Отсутствует хэш чека.'}, status=status.HTTP_400_BAD_REQUEST)
 
+        try:
             cheque = get_object_or_404(AutoAcceptCheque, hash=cheque_hash)
 
             if cheque.is_applied:
                 usr = cheque.reks.reks_owner
+                
                 usr.insurance_deposit -= cheque.amount
                 usr.save()
 
-                # Отправка webhook с сервера
+                async def get_client_bot_instance():
+                    if settings.CLIENT_BOT_INSTANCE is None:
+                        await initialize_bot()
+                    return settings.CLIENT_BOT_INSTANCE
+
+                # Можно вызывать тут webhook, если надо
                 webhook_url = cheque.success_webhook
-                webhook_data = {'cheque_hash': cheque_hash}
-                # try:
-                #     webhook_response = requests.post(webhook_url, data=webhook_data)
-                #     webhook_response.raise_for_status()
-                # except requests.RequestException as e:
-                #     return Response({'success': False, 'error': f'Ошибка webhook: {e}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                if webhook_url:
+                    requests.post(webhook_url, data={'cheque_hash': cheque_hash})
 
                 return Response({'success': True, 'is_applied': True}, status=status.HTTP_200_OK)
             else:
@@ -330,12 +341,63 @@ class CheckChequeStatusView(APIView):
         except Exception as e:
             return Response({'success': False, 'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
 class PaymentSuccessView(APIView):
     """
-    Представление для страницы успешной оплаты.
+    Страница успешной оплаты
     """
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, *args, **kwargs):
         redirect_url = request.GET.get('redirect_url', None)
         return render(request, 'payment_success.html', {'redirect_url': redirect_url})
+
+class DocumentationView(APIView):
+    """
+    Страница успешной оплаты
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, *args, **kwargs):
+        return render(request, 'doc.html')
+
+
+# NEW VIEWS
+class DenyChequeView(APIView):
+    """
+    По POST hash=... выставляет is_denied=True для чека
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        cheque_hash = request.data.get('hash') or request.POST.get('hash')
+        if not cheque_hash:
+            return Response({'success': False, 'error': 'No hash provided'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            cheque = AutoAcceptCheque.objects.get(hash=cheque_hash)
+            cheque.is_denied = True
+            cheque.save()
+            return Response({'success': True, 'message': 'Cheque denied'}, status=status.HTTP_200_OK)
+        except AutoAcceptCheque.DoesNotExist:
+            return Response({'success': False, 'error': 'Cheque not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'success': False, 'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class CheckTokenView(APIView):
+    """
+    Проверяет наличие token (приходит в POST data: token=...)
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        # Ищем token либо в request.data (DRF) либо в request.POST (Django)
+        token = request.data.get('token') or request.POST.get('token')
+        if not token:
+            return Response({'success': False, 'error': 'No token provided'}, 
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        # Пример: проверяем по полю 'hash' в AutoAcceptCheque
+        token_exists = AutoAcceptCheque.objects.filter(hash=token).exists()
+        return Response({'success': True, 'token_exists': token_exists}, 
+                        status=status.HTTP_200_OK)

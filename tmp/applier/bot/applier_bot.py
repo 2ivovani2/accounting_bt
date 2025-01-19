@@ -63,10 +63,10 @@ class ApplierBot:
                     parse_mode="HTML",
                     reply_markup = InlineKeyboardMarkup([
                         [
-                            InlineKeyboardButton(
-                                text="💰 Отправить чек",
-                                callback_data="send_cheque",
-                            ),
+                            # InlineKeyboardButton(
+                            #     text="💰 Отправить чек",
+                            #     callback_data="send_cheque",
+                            # ),
                             InlineKeyboardButton(
                                 text="💎 Профиль",
                                 callback_data="profile",
@@ -179,38 +179,80 @@ class ApplierBot:
             f"<b>Ⓘ <u>ID профиля</u></b> - {usr.telegram_chat_id}\n\n· Текущий баланс: <b>{usr.balance}₽</b>\n· Заработано: <b>{round(total_money, 1)}₽</b>\n· Текущая комиссия: <b>{usr.comission}%</b>\n· Курс USDT/RUB: <b>{course}₽</b>\n\n<b>Возникли тех неполадки ⤵️</b> @{os.environ.get('ADMIN_TO_APPLY_USERNAME')}",
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup([
-                [
+                # [
                     
-                    InlineKeyboardButton(
-                        text="⌛️ Вывод", 
-                        callback_data="withdraw_menu"
-                    ),
-                    InlineKeyboardButton(
-                        text="💸 Отправить чек", 
-                        callback_data="send_cheque"
-                    ),
-                ],
-                [
-                    InlineKeyboardButton(
-                        text="📆 История",
-                        callback_data="today_hist",
-                    ),
-                    InlineKeyboardButton(
-                        text="💵 Реквизиты", 
-                        callback_data="reks"
-                    ),
+                #     InlineKeyboardButton(
+                #         text="⌛️ Вывод", 
+                #         callback_data="withdraw_menu"
+                #     ),
+                #     InlineKeyboardButton(
+                #         text="💸 Отправить чек", 
+                #         callback_data="send_cheque"
+                #     ),
+                # ],
+                # [
+                #     InlineKeyboardButton(
+                #         text="📆 История",
+                #         callback_data="today_hist",
+                #     ),
+                #     InlineKeyboardButton(
+                #         text="💵 Реквизиты", 
+                #         callback_data="reks"
+                #     ),
                 
-                ],
+                # ],
+                # [
+                #     InlineKeyboardButton(
+                #         text="🔗 Рефералы", 
+                #         callback_data="refs"
+                #     ),
+                #     InlineKeyboardButton(
+                #         text="🔙 Назад", 
+                #         callback_data="menu"
+                #     )
+                # ],
                 [
                     InlineKeyboardButton(
-                        text="🔗 Рефералы", 
-                        callback_data="refs"
+                        text="🫣 Доступ к API", 
+                        callback_data="api_info"
                     ),
                     InlineKeyboardButton(
                         text="🔙 Назад", 
                         callback_data="menu"
                     )
                 ],
+            ])
+        )
+
+    @check_user_status
+    async def _api_info(update: Update, context: CallbackContext) -> None:
+        """Функция просмотра профиля юзера
+
+        Args:
+            Update (_type_): объект update
+            context (CallbackContext): объект context
+        """ 
+        
+        usr, _ = await user_get_by_update(update)
+
+        query = update.callback_query
+        if query:
+            await query.answer()
+            await context.bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
+
+        token = Token.objects.get_or_create(user=usr)
+
+        await context.bot.send_message(
+            usr.telegram_chat_id,
+            f"🥰 Ваш API ключ:\n\n<pre>{token[0].key}</pre>",
+            parse_mode="HTML",
+            reply_markup=InlineKeyboardMarkup([
+                [
+                    InlineKeyboardButton(
+                        text="🔙 Назад", 
+                        callback_data="profile"
+                    )
+                ]
             ])
         )
 
@@ -447,10 +489,11 @@ class ApplierBot:
         ))
 
         self.application.add_handler(CallbackQueryHandler(self._profile, "profile"))
-        self.application.add_handler(CallbackQueryHandler(self._refs_info, "refs"))
-        self.application.add_handler(CallbackQueryHandler(self._reks_info, "reks"))
-        self.application.add_handler(CallbackQueryHandler(self._get_reks, "get_reks"))
-        
+        # self.application.add_handler(CallbackQueryHandler(self._refs_info, "refs"))
+        # self.application.add_handler(CallbackQueryHandler(self._reks_info, "reks"))
+        # self.application.add_handler(CallbackQueryHandler(self._get_reks, "get_reks"))
+        self.application.add_handler(CallbackQueryHandler(self._api_info, "api_info"))
+
         return self.application
 
     def set_last_handlers(self, application):

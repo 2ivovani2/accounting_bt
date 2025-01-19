@@ -155,7 +155,9 @@ class Auth(ApplierBot):
         user_id, status = query.data.split("_")[-1], query.data.split("_")[-2]
         user_to_apply = ApplyUser.objects.filter(telegram_chat_id=user_id)      
         if status == "true":
-
+            
+            token = Token.objects.get_or_create(user=user_to_apply)
+            
             try:
                 user_to_apply.update(
                     verified_usr=True

@@ -1,8 +1,7 @@
 from django.db import models
-from django.contrib.auth.models import AbstractUser
 from decimal import Decimal, ROUND_HALF_UP
 
-class Processor(AbstractUser):
+class Processor(models.Model):
     """
         Модель, описывающая пользователй DM_partners
     """
@@ -11,13 +10,13 @@ class Processor(AbstractUser):
         verbose_name="ID пользователя",
         null=True,
     )
-
-    password = models.CharField(
-        max_length=128,
-        null=True,
-        blank=True
-    ) 
-
+    username = models.CharField(
+            verbose_name="Имя пользователя",
+            max_length=255,
+            null=False,
+            default="Anonim"
+    )
+    
     verified_usr = models.BooleanField(
         verbose_name="Верификация пользователя",
         default=False
@@ -176,6 +175,11 @@ class AutoAcceptCheque(models.Model):
 
     is_applied = models.BooleanField(
         verbose_name="Принят ли чек",
+        default=False
+    )
+
+    is_denied = models.BooleanField(
+        verbose_name="Отклонен ли чек",
         default=False
     )
 

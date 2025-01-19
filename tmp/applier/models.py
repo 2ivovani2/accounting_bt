@@ -1,9 +1,9 @@
 from django.db import models
 from django.utils import timezone
 from partners_bot.models import Reks
-from decimal import Decimal, ROUND_HALF_UP
+from django.contrib.auth.models import AbstractUser
 
-class ApplyUser(models.Model):
+class ApplyUser(AbstractUser):
     """
         Модель, описывающая пользователй TF
     """
@@ -31,8 +31,8 @@ class ApplyUser(models.Model):
     username = models.CharField(
         verbose_name="Имя пользователя",
         max_length=255,
-        null=False,
-        default="Anonim"
+        null=True,
+        unique=True
     )
 
     info = models.TextField(
