@@ -2,6 +2,7 @@ from django.db import models
 from django.utils import timezone
 from partners_bot.models import Reks
 from django.contrib.auth.models import AbstractUser
+import uuid
 
 class ApplyUser(AbstractUser):
     """
@@ -31,8 +32,9 @@ class ApplyUser(AbstractUser):
     username = models.CharField(
         verbose_name="Имя пользователя",
         max_length=255,
-        null=True,
-        unique=True
+        null=False,
+        default=str(uuid.uuid4()),
+        name="username_of_telegram"
     )
 
     info = models.TextField(
