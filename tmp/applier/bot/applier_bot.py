@@ -46,7 +46,7 @@ class ApplierBot:
         if not usr.verified_usr:
             await context.bot.send_message(
                 usr.telegram_chat_id,
-                f"🤩 <b>{usr.username}</b>, добрый день, если хотите отправить заявку на прием платежей, нажмите кнопку ниже.",
+                f"🤩 <b>{usr.telegram_username}</b>, добрый день, если хотите отправить заявку на прием платежей, нажмите кнопку ниже.",
                 parse_mode="HTML",
                 reply_markup = InlineKeyboardMarkup([
                     [InlineKeyboardButton(
@@ -59,7 +59,7 @@ class ApplierBot:
             if not usr.is_superuser:
                 await context.bot.send_message(
                     usr.telegram_chat_id,
-                    f"<b>Приветствую, партнер 💎</b>\nПеред началом работы, ознакомьтесь с условиями и правилами <b>DRIP MONEY</b>\n\n<a href='https://t.me/{os.environ.get('ADMIN_TO_APPLY_USERNAME')}'>Тех. поддержка</a> / <a href='{os.environ.get('NEWS_LINK')}'>Новостной канал</a>",
+                    f"<b>Приветствую, партнер 💎</b>\nПеред началом работы, ознакомьтесь с условиями и правилами <b>DRIP MONEY</b>\n\n<a href='https://t.me/{os.environ.get('ADMIN_TO_APPLY_telegram_username')}'>Тех. поддержка</a> / <a href='{os.environ.get('NEWS_LINK')}'>Новостной канал</a>",
                     parse_mode="HTML",
                     reply_markup = InlineKeyboardMarkup([
                         [
@@ -83,7 +83,7 @@ class ApplierBot:
             else:
                 await context.bot.send_message(
                     usr.telegram_chat_id,
-                    f"🤩 <b>{usr.username}</b>, приветик!",
+                    f"🤩 <b>{usr.telegram_username}</b>, приветик!",
                     parse_mode="HTML",
                     reply_markup = InlineKeyboardMarkup([
                         [InlineKeyboardButton(
@@ -152,7 +152,7 @@ class ApplierBot:
                             )],
                             [InlineKeyboardButton(
                                     text="🆘 Администратор",
-                                    url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_USERNAME')}"
+                                    url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_telegram_username')}"
                             )],
                         ])
                     )
@@ -169,14 +169,14 @@ class ApplierBot:
                         )],
                         [InlineKeyboardButton(
                                 text="🆘 Администратор",
-                                url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_USERNAME')}"
+                                url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_telegram_username')}"
                         )],
                     ])
                 )
 
         await context.bot.send_message(
             usr.telegram_chat_id,
-            f"<b>Ⓘ <u>ID профиля</u></b> - {usr.telegram_chat_id}\n\n· Текущий баланс: <b>{usr.balance}₽</b>\n· Заработано: <b>{round(total_money, 1)}₽</b>\n· Текущая комиссия: <b>{usr.comission}%</b>\n· Курс USDT/RUB: <b>{course}₽</b>\n\n<b>Возникли тех неполадки ⤵️</b> @{os.environ.get('ADMIN_TO_APPLY_USERNAME')}",
+            f"<b>Ⓘ <u>ID профиля</u></b> - {usr.telegram_chat_id}\n\n· Текущий баланс: <b>{usr.balance}₽</b>\n· Заработано: <b>{round(total_money, 1)}₽</b>\n· Текущая комиссия: <b>{usr.comission}%</b>\n· Курс USDT/RUB: <b>{course}₽</b>\n\n<b>Возникли тех неполадки ⤵️</b> @{os.environ.get('ADMIN_TO_APPLY_telegram_username')}",
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup([
                 # [
@@ -395,7 +395,7 @@ class ApplierBot:
 
         await context.bot.send_message(
             usr.telegram_chat_id,
-            f"💳 Пригласив нового клиента, вы сможете получать <b>{os.environ.get('REF_PERCENT', 1)}%</b> от его оборота.\n\n<blockquote>🔗 Ваша персональная ссылка: https://t.me/{context.bot.username}?start={usr.telegram_chat_id}</blockquote>\n\nВсего приглашено рефералов: <b>{len(usr_refs_relations)} шт.</b>\nВсего заработано с рефералов: <b>{total_ref_income}₽</b>",
+            f"💳 Пригласив нового клиента, вы сможете получать <b>{os.environ.get('REF_PERCENT', 1)}%</b> от его оборота.\n\n<blockquote>🔗 Ваша персональная ссылка: https://t.me/{context.bot.telegram_username}?start={usr.telegram_chat_id}</blockquote>\n\nВсего приглашено рефералов: <b>{len(usr_refs_relations)} шт.</b>\nВсего заработано с рефералов: <b>{total_ref_income}₽</b>",
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup([
                 [

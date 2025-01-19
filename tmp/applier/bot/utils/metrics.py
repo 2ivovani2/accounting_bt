@@ -15,7 +15,7 @@ class Metrics(ApplierBot):
         self.application = app
     
     @check_user_status
-    async def _ask_for_username_in_stat(update: Update, context: CallbackContext) -> None:
+    async def _ask_for_telegram_username_in_stat(update: Update, context: CallbackContext) -> None:
         """Получения юзернейма
 
         Args:
@@ -27,7 +27,7 @@ class Metrics(ApplierBot):
 
         await context.bot.send_message(
                 usr.telegram_chat_id,
-                f"🤩 Отправьте имя пользователя в формате <b>@username</b> или просто <b>username</b>.",
+                f"🤩 Отправьте имя пользователя в формате <b>@telegram_username</b> или просто <b>telegram_username</b>.",
                 parse_mode="HTML",
                 reply_markup = InlineKeyboardMarkup([
                     [InlineKeyboardButton(
@@ -49,9 +49,9 @@ class Metrics(ApplierBot):
         """ 
         
         usr, _ = await user_get_by_update(update)
-        username_to_get_stat = update.message.text.strip().replace("@", "")
+        telegram_username_to_get_stat = update.message.text.strip().replace("@", "")
 
-        if not ApplyUser.objects.filter(username=username_to_get_stat).exists():
+        if not ApplyUser.objects.filter(telegram_username=telegram_username_to_get_stat).exists():
             await context.bot.send_message(
                     usr.telegram_chat_id,
                     f"❌ Пользователя с таким юзернемом не существует.",
@@ -66,7 +66,7 @@ class Metrics(ApplierBot):
 
             return ConversationHandler.END
         else:
-            context.user_data["username_stat"] = update.message.text.strip().replace("@", "")
+            context.user_data["telegram_username_stat"] = update.message.text.strip().replace("@", "")
 
             if usr.is_superuser:
                 await context.bot.send_message(
@@ -122,7 +122,7 @@ class Metrics(ApplierBot):
         await query.answer()
         await context.bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
         
-        user_info_about = context.user_data.get("username_stat", None)
+        user_info_about = context.user_data.get("telegram_username_stat", None)
         if not user_info_about:
             await context.bot.send_message(
                 usr.telegram_chat_id,
@@ -142,17 +142,17 @@ class Metrics(ApplierBot):
         if type_of_oper == "day":
 
             cheques = Cheque.objects.filter(
-                cheque_owner=ApplyUser.objects.filter(username=user_info_about).first(),
+                cheque_owner=ApplyUser.objects.filter(telegram_username=user_info_about).first(),
                 cheque_date__date=timezone.now()
             ).all()
 
             withdraws = Withdraw.objects.filter(
-                withdraw_owner=ApplyUser.objects.filter(username=user_info_about).first(),
+                withdraw_owner=ApplyUser.objects.filter(telegram_username=user_info_about).first(),
                 withdraw_date__date=timezone.now()    
             ).all()
 
             total_cheques_sum, total_withdraw_sum, total_income = 0, 0, 0
-            end_msg = f"💰 Статистика о пользователе <b>{ApplyUser.objects.filter(username=user_info_about).first().username}</b> за сегодня:\n\n<b>Чеки:</b>\n"
+            end_msg = f"💰 Статистика о пользователе <b>{ApplyUser.objects.filter(telegram_username=user_info_about).first().telegram_username}</b> за сегодня:\n\n<b>Чеки:</b>\n"
             
             if len(cheques) == 0:
                 end_msg += "🙁 Сегодня чеков не было.\n"
@@ -204,15 +204,15 @@ class Metrics(ApplierBot):
         
         elif type_of_oper == "all":
             cheques = Cheque.objects.filter(
-                cheque_owner=ApplyUser.objects.filter(username=user_info_about).first(),
+                cheque_owner=ApplyUser.objects.filter(telegram_username=user_info_about).first(),
             ).all()
 
             withdraws = Withdraw.objects.filter(
-                withdraw_owner=ApplyUser.objects.filter(username=user_info_about).first(),
+                withdraw_owner=ApplyUser.objects.filter(telegram_username=user_info_about).first(),
             ).all()
 
             total_cheques_sum, total_withdraw_sum, total_income = 0, 0, 0
-            end_msg = f"💰 Статистика о пользователе <b>{ApplyUser.objects.filter(username=user_info_about).first().username}</b> за все время:\n\n<b>Чеки:</b>\n"
+            end_msg = f"💰 Статистика о пользователе <b>{ApplyUser.objects.filter(telegram_username=user_info_about).first().telegram_username}</b> за все время:\n\n<b>Чеки:</b>\n"
             
             cnt1, cnt2 = 0, 0
 
@@ -331,12 +331,12 @@ class Metrics(ApplierBot):
         await context.bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
 
         cheques = Cheque.objects.filter(
-            cheque_owner=ApplyUser.objects.filter(username=usr).first(),
+            cheque_owner=ApplyUser.objects.filter(telegram_username=usr).first(),
             cheque_date__date=timezone.now()
         ).all()
 
         withdraws = Withdraw.objects.filter(
-            withdraw_owner=ApplyUser.objects.filter(username=usr).first(),
+            withdraw_owner=ApplyUser.objects.filter(telegram_username=usr).first(),
             withdraw_date__date=timezone.now()    
         ).all()
 
@@ -392,7 +392,7 @@ class Metrics(ApplierBot):
 
     def reg_handlers(self):
         self.application.add_handler(ConversationHandler(
-            entry_points=[CallbackQueryHandler(self._ask_for_username_in_stat, "stat"), CommandHandler("stat", self._ask_for_username_in_stat)],
+            entry_points=[CallbackQueryHandler(self._ask_for_telegram_username_in_stat, "stat"), CommandHandler("stat", self._ask_for_telegram_username_in_stat)],
             states={
                 0: [MessageHandler(filters.TEXT & ~filters.COMMAND, self._ask_for_stat)],
                 1: [CallbackQueryHandler(self._get_stat, "^stat_")]

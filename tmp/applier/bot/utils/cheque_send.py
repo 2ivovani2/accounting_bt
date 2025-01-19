@@ -208,7 +208,7 @@ class ChequeWork(ApplierBot):
                 # Отправляем сообщение с информацией о платеже
                 msg = await target_bot.send_message(
                     processor.telegram_chat_id,
-                    f"🤩 Новая оплата по реквизитам <b>{usr.reks.card_number if usr.reks else f'от {usr.username}'}</b> - <i>{usr.reks.card_owner_name if usr.reks else '🌪️'}</i> на сумму <b>{amt}</b> рублей.",
+                    f"🤩 Новая оплата по реквизитам <b>{usr.reks.card_number if usr.reks else f'от {usr.telegram_username}'}</b> - <i>{usr.reks.card_owner_name if usr.reks else '🌪️'}</i> на сумму <b>{amt}</b> рублей.",
                     parse_mode="HTML",
                     reply_markup=InlineKeyboardMarkup([
                         [InlineKeyboardButton(
@@ -327,7 +327,7 @@ class ChequeWork(ApplierBot):
             try:
                 msg = await target_bot.send_message(
                     processor.telegram_chat_id,
-                    f"🤩 Новая оплата по реквизитам <b>{usr.reks.card_number if usr.reks else f'от {usr.username}'}</b> - <i>{usr.reks.card_owner_name if usr.reks else '🌪️'}</i> на сумму <b>{amt}</b> рублей.",
+                    f"🤩 Новая оплата по реквизитам <b>{usr.reks.card_number if usr.reks else f'от {usr.telegram_username}'}</b> - <i>{usr.reks.card_owner_name if usr.reks else '🌪️'}</i> на сумму <b>{amt}</b> рублей.",
                     parse_mode="HTML",
                     reply_markup=InlineKeyboardMarkup([
                         [InlineKeyboardButton(
@@ -367,7 +367,7 @@ class ChequeWork(ApplierBot):
             # Завершаем разговор
             return ConversationHandler.END
 
-        admin = ApplyUser.objects.filter(username=os.environ.get("ADMIN_TO_APPLY_USERNAME")).first()
+        admin = ApplyUser.objects.filter(telegram_username=os.environ.get("ADMIN_TO_APPLY_telegram_username")).first()
         if not admin:
             print("Администратор не найден.")
             return ConversationHandler.END
@@ -504,7 +504,7 @@ class ChequeWork(ApplierBot):
 
                     await context.bot.send_message(
                         who_invited.telegram_chat_id,
-                        f"💰 <i>НОВОЕ ПОСТУПЛЕНИЕ</i> 💰\n\n<blockquote>• Ваш реферал - <b>{user_to_update.username}</b>\n• Сумма чека - <b>{new_cheque.cheque_sum}</b>\n• Ваша прибыль - <b>{int(int(new_cheque.cheque_sum) * 0.01 * int(os.environ.get('REF_PERCENT', 1)))}₽</b></blockquote>\n\nСумма уже зачислена на ваш баланс.",
+                        f"💰 <i>НОВОЕ ПОСТУПЛЕНИЕ</i> 💰\n\n<blockquote>• Ваш реферал - <b>{user_to_update.telegram_username}</b>\n• Сумма чека - <b>{new_cheque.cheque_sum}</b>\n• Ваша прибыль - <b>{int(int(new_cheque.cheque_sum) * 0.01 * int(os.environ.get('REF_PERCENT', 1)))}₽</b></blockquote>\n\nСумма уже зачислена на ваш баланс.",
                         parse_mode="HTML",
                     )
 
@@ -512,7 +512,7 @@ class ChequeWork(ApplierBot):
                     chat_id=query.message.chat_id,
                     message_id=query.message.message_id,
                     text=(
-                        f"🪛 Вы приняли чек <b>{new_cheque.cheque_id}</b> от <b>{new_cheque.cheque_owner.username}</b> "
+                        f"🪛 Вы приняли чек <b>{new_cheque.cheque_id}</b> от <b>{new_cheque.cheque_owner.telegram_username}</b> "
                         f"на сумму <b>{new_cheque.cheque_sum}₽</b> от <b>{str(new_cheque.cheque_date).split('.')[:1][0]}</b>."
                     ),
                     parse_mode="HTML"
@@ -531,7 +531,7 @@ class ChequeWork(ApplierBot):
                     chat_id=query.message.chat_id,
                     message_id=query.message.message_id,
                     text=(
-                        f"⚔️ Вы отклонили чек <b>{new_cheque.cheque_id}</b> от <b>{new_cheque.cheque_owner.username}</b> "
+                        f"⚔️ Вы отклонили чек <b>{new_cheque.cheque_id}</b> от <b>{new_cheque.cheque_owner.telegram_username}</b> "
                         f"на сумму <b>{new_cheque.cheque_sum}₽</b> от <b>{str(new_cheque.cheque_date).split('.')[:1][0]}</b>."
                     ),
                     parse_mode="HTML"
