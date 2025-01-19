@@ -17,6 +17,8 @@ from rest_framework.views import APIView
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
+from rest_framework.authtoken.models import Token
+
 
 from django.db import DatabaseError, IntegrityError
 from django.db.models import Q
@@ -386,18 +388,23 @@ class DenyChequeView(APIView):
 
 class CheckTokenView(APIView):
     """
-    Проверяет наличие token (приходит в POST data: token=...)
+    Проверяет наличие токена (приходит в POST-данных: token=...)
     """
     permission_classes = [permissions.AllowAny]
 
     def post(self, request, *args, **kwargs):
-        # Ищем token либо в request.data (DRF) либо в request.POST (Django)
-        token = request.data.get('token') or request.POST.get('token')
-        if not token:
-            return Response({'success': False, 'error': 'No token provided'}, 
-                            status=status.HTTP_400_BAD_REQUEST)
+        # Ищем токен либо в request.data (DRF) либо в request.POST (Django)
+        token_value = request.data.get('token') or request.POST.get('token')
+        if not token_value:
+            return Response(
+                {'success': False, 'error': 'No token provided'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-        # Пример: проверяем по полю 'hash' в AutoAcceptCheque
-        token_exists = AutoAcceptCheque.objects.filter(hash=token).exists()
-        return Response({'success': True, 'token_exists': token_exists}, 
-                        status=status.HTTP_200_OK)
+        # Проверяем, есть ли в базе запись с таким ключом
+        token_exists = Token.objects.filter(key=token_value).exists()
+
+        return Response(
+            {'success': True, 'token_exists': token_exists}, 
+            status=status.HTTP_200_OK
+        )
