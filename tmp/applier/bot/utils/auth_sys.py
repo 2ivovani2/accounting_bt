@@ -98,12 +98,12 @@ class Auth(ApplierBot):
         await context.bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
 
         if not usr.verified_usr:
-            admin = ApplyUser.objects.filter(telegram_username=os.environ.get("ADMIN_TO_APPLY_telegram_username")).first()
+            admin = ApplyUser.objects.filter(username=os.environ.get("ADMIN_TO_APPLY_USERNAME")).first()
 
             try:
                 await context.bot.send_message(
                     admin.telegram_chat_id,
-                    f"🤩 <b>{usr.telegram_telegram_username}</b>, здарова админ ебаный!\nНовая заявка в бота.\n\nНикнейм: <b>{usr.telegram_telegram_username}</b>\n\n<b>Инфа:</b>{usr.info if usr.info != None else 'Нет информации.'}\n\nПоинтересуйся у старших, есть такой или нет.",
+                    f"🤩 <b>{usr.username}</b>, здарова админ ебаный!\nНовая заявка в бота.\n\nНикнейм: <b>{usr.username}</b>\n\n<b>Инфа:</b>{usr.info if usr.info != None else 'Нет информации.'}\n\nПоинтересуйся у старших, есть такой или нет.",
                     parse_mode="HTML",
                     reply_markup = InlineKeyboardMarkup([
                         [InlineKeyboardButton(
@@ -119,7 +119,7 @@ class Auth(ApplierBot):
 
                 await context.bot.send_message(
                     usr.telegram_chat_id,
-                    f"🛜 <b>{usr.telegram_telegram_username}</b>, ваша заявка на вход отправлена. Ожидайте уведомления.",
+                    f"🛜 <b>{usr.username}</b>, ваша заявка на вход отправлена. Ожидайте уведомления.",
                     parse_mode="HTML",
                 )
 
@@ -166,7 +166,7 @@ class Auth(ApplierBot):
                 await context.bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
                 await context.bot.send_message(
                     usr.telegram_chat_id,
-                    f"✅ Вы приняли пользователя <b>{user_to_apply.first().telegram_username}</b>.\n\n💰 Теперь укажите комиссию, которую мы даем пользователю.",
+                    f"✅ Вы приняли пользователя <b>{user_to_apply.first().username}</b>.\n\n💰 Теперь укажите комиссию, которую мы даем пользователю.",
                     parse_mode="HTML",
                 )
 
@@ -188,13 +188,13 @@ class Auth(ApplierBot):
                 await context.bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
                 await context.bot.send_message(
                     usr.telegram_chat_id,
-                    f"💘 Вы послали нахуй пользователя <b>{user_to_apply.first().telegram_username}</b>",
+                    f"💘 Вы послали нахуй пользователя <b>{user_to_apply.first().username}</b>",
                     parse_mode="HTML",
                 )
 
                 await context.bot.send_message(
                     user_to_apply.first().telegram_chat_id,
-                    f"💔 <b>{user_to_apply.first().telegram_username}</b>, к сожалению, мы не можем принять вашу заявку!",
+                    f"💔 <b>{user_to_apply.first().username}</b>, к сожалению, мы не можем принять вашу заявку!",
                     parse_mode="HTML",
                 )
                 
@@ -227,7 +227,7 @@ class Auth(ApplierBot):
 
             await context.bot.send_message(
                 usr.telegram_chat_id,
-                f"✅ Вы успешно установили пользователю <b>{user.telegram_username}</b> комиссию в размере - <b>{comission}%</b>.",
+                f"✅ Вы успешно установили пользователю <b>{user.username}</b> комиссию в размере - <b>{comission}%</b>.",
                 parse_mode="HTML",
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton(
@@ -239,7 +239,7 @@ class Auth(ApplierBot):
 
             await context.bot.send_message(
                 user.telegram_chat_id,
-                f"❤️‍🔥 <b>{user.telegram_username}</b>, ваша заявка успешно принята!\nВаша комиссия составит: <b>{user.comission}%</b>",
+                f"❤️‍🔥 <b>{user.username}</b>, ваша заявка успешно принята!\nВаша комиссия составит: <b>{user.comission}%</b>",
                 parse_mode="HTML",
                 reply_markup = InlineKeyboardMarkup([
                     [InlineKeyboardButton(

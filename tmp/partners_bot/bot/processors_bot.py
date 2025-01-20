@@ -120,6 +120,7 @@ class ProcessorsBot:
                     f"<b>Ⓘ <u>ID профиля</u></b> - {usr.telegram_chat_id}\n\n"
                     f"· Статус аккаунта: "
                     f"{'<b>Активен ✅</b>' if usr.is_ready_to_get_money else '<b>Не активен 📛</b>'}\n\n"
+                    f"· Сумма к выводу клиентов: <b>{usr.clients_withdraw}₽</b>\n"
                     f"· Текущий баланс: <b>{usr.balance}₽</b>\n"
                     f"· Текущая комиссия: <b>{usr.comission}%</b>\n"
                     f"· Курс USDT/RUB: <b>{course}₽</b>\n\n"
@@ -132,11 +133,19 @@ class ProcessorsBot:
                             text="💬 FAQ",
                             url=os.environ.get("FAQ_LINK")
                         ),
+                    ]
+                    [
                         InlineKeyboardButton(
-                            text="⭐️ Вывод",
+                            text="⭐️ Вывод баланса",
                             callback_data="get_withdraw"
                         ),
                     ],
+                    # [
+                    #     InlineKeyboardButton(
+                    #         text="🙂 Вывод клиентов",
+                    #         callback_data="clients_withdraw"
+                    #     ),
+                    # ],
                     [
                         InlineKeyboardButton(
                             text="💵 Реквизиты",

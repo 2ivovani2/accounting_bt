@@ -20,23 +20,19 @@ async def initialize_bot():
         from applier.bot.utils.metrics import Metrics
 
         Auth(settings.CLIENT_APPLICATION).reg_handlers()
-        ChequeWork(settings.CLIENT_APPLICATION).reg_handlers()
-        WithdrawsWork(settings.CLIENT_APPLICATION).reg_handlers()
-        Metrics(settings.CLIENT_APPLICATION).reg_handlers()
+        # ChequeWork(settings.CLIENT_APPLICATION).reg_handlers()
+        # WithdrawsWork(settings.CLIENT_APPLICATION).reg_handlers()
+        # Metrics(settings.CLIENT_APPLICATION).reg_handlers()
 
         settings.CLIENT_APPLICATION = settings.CLIENT_BOT_INSTANCE.set_last_handlers(settings.CLIENT_APPLICATION)
         
-        # Initialize the application
         await settings.CLIENT_APPLICATION.initialize()
         if "messages" not in settings.CLIENT_APPLICATION.bot_data:
             settings.CLIENT_APPLICATION.bot_data = {"messages": {}}
-        # Do not call application.start() because we're using webhooks
-
-# Asynchronous function to handle updates
+        
 async def handle_update(update_data):
     await initialize_bot()
     try:
-        # Decode the update data from JSON
         update_json = json.loads(update_data)
         update = Update.de_json(update_json, settings.CLIENT_APPLICATION.bot)
     except json.JSONDecodeError as e:
@@ -46,7 +42,6 @@ async def handle_update(update_data):
         logger.error(f"Failed to create Update object: {e}")
         return
 
-    # Asynchronously process the update
     try:
         await settings.CLIENT_APPLICATION.process_update(update)
     except Exception as e:

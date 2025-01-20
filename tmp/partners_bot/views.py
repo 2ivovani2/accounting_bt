@@ -323,13 +323,14 @@ class CheckChequeStatusView(APIView):
             if cheque.is_applied:
                 usr = cheque.reks.reks_owner
                 
+                usr.clients_withdraw += cheque.amount
                 usr.insurance_deposit -= cheque.amount
+                usr.balance += cheque.amount * Decimal(usr.comission * 0.01)
                 usr.save()
-
-                async def get_client_bot_instance():
-                    if settings.CLIENT_BOT_INSTANCE is None:
-                        await initialize_bot()
-                    return settings.CLIENT_BOT_INSTANCE
+                
+                if usr.insurance_deposit <= 0:
+                    usr.is_ready_to_get_money = False
+                    usr.save()
 
                 # Можно вызывать тут webhook, если надо
                 webhook_url = cheque.success_webhook

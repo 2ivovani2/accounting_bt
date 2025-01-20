@@ -46,7 +46,7 @@ class ApplierBot:
         if not usr.verified_usr:
             await context.bot.send_message(
                 usr.telegram_chat_id,
-                f"🤩 <b>{usr.telegram_username}</b>, добрый день, если хотите отправить заявку на прием платежей, нажмите кнопку ниже.",
+                f"🤩 <b>{usr.username}</b>, добрый день, если хотите отправить заявку на прием платежей, нажмите кнопку ниже.",
                 parse_mode="HTML",
                 reply_markup = InlineKeyboardMarkup([
                     [InlineKeyboardButton(
@@ -83,7 +83,7 @@ class ApplierBot:
             else:
                 await context.bot.send_message(
                     usr.telegram_chat_id,
-                    f"🤩 <b>{usr.telegram_username}</b>, приветик!",
+                    f"🤩 <b>{usr.username}</b>, приветик!",
                     parse_mode="HTML",
                     reply_markup = InlineKeyboardMarkup([
                         [InlineKeyboardButton(
@@ -249,6 +249,12 @@ class ApplierBot:
             reply_markup=InlineKeyboardMarkup([
                 [
                     InlineKeyboardButton(
+                        text="📑 Документация",
+                        url=f"{os.environ.get('DOMAIN_NAME')}/doc"
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
                         text="🔙 Назад", 
                         callback_data="profile"
                     )
@@ -395,7 +401,7 @@ class ApplierBot:
 
         await context.bot.send_message(
             usr.telegram_chat_id,
-            f"💳 Пригласив нового клиента, вы сможете получать <b>{os.environ.get('REF_PERCENT', 1)}%</b> от его оборота.\n\n<blockquote>🔗 Ваша персональная ссылка: https://t.me/{context.bot.telegram_username}?start={usr.telegram_chat_id}</blockquote>\n\nВсего приглашено рефералов: <b>{len(usr_refs_relations)} шт.</b>\nВсего заработано с рефералов: <b>{total_ref_income}₽</b>",
+            f"💳 Пригласив нового клиента, вы сможете получать <b>{os.environ.get('REF_PERCENT', 1)}%</b> от его оборота.\n\n<blockquote>🔗 Ваша персональная ссылка: https://t.me/{context.bot.username}?start={usr.telegram_chat_id}</blockquote>\n\nВсего приглашено рефералов: <b>{len(usr_refs_relations)} шт.</b>\nВсего заработано с рефералов: <b>{total_ref_income}₽</b>",
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup([
                 [

@@ -208,7 +208,7 @@ class ChequeWork(ApplierBot):
                 # Отправляем сообщение с информацией о платеже
                 msg = await target_bot.send_message(
                     processor.telegram_chat_id,
-                    f"🤩 Новая оплата по реквизитам <b>{usr.reks.card_number if usr.reks else f'от {usr.telegram_username}'}</b> - <i>{usr.reks.card_owner_name if usr.reks else '🌪️'}</i> на сумму <b>{amt}</b> рублей.",
+                    f"🤩 Новая оплата по реквизитам <b>{usr.reks.card_number if usr.reks else f'от {usr.username}'}</b> - <i>{usr.reks.card_owner_name if usr.reks else '🌪️'}</i> на сумму <b>{amt}</b> рублей.",
                     parse_mode="HTML",
                     reply_markup=InlineKeyboardMarkup([
                         [InlineKeyboardButton(
@@ -327,7 +327,7 @@ class ChequeWork(ApplierBot):
             try:
                 msg = await target_bot.send_message(
                     processor.telegram_chat_id,
-                    f"🤩 Новая оплата по реквизитам <b>{usr.reks.card_number if usr.reks else f'от {usr.telegram_username}'}</b> - <i>{usr.reks.card_owner_name if usr.reks else '🌪️'}</i> на сумму <b>{amt}</b> рублей.",
+                    f"🤩 Новая оплата по реквизитам <b>{usr.reks.card_number if usr.reks else f'от {usr.username}'}</b> - <i>{usr.reks.card_owner_name if usr.reks else '🌪️'}</i> на сумму <b>{amt}</b> рублей.",
                     parse_mode="HTML",
                     reply_markup=InlineKeyboardMarkup([
                         [InlineKeyboardButton(
@@ -367,7 +367,7 @@ class ChequeWork(ApplierBot):
             # Завершаем разговор
             return ConversationHandler.END
 
-        admin = ApplyUser.objects.filter(telegram_username=os.environ.get("ADMIN_TO_APPLY_telegram_username")).first()
+        admin = ApplyUser.objects.filter(username=os.environ.get("ADMIN_TO_APPLY_USERNAME")).first()
         if not admin:
             print("Администратор не найден.")
             return ConversationHandler.END
@@ -443,12 +443,12 @@ class ChequeWork(ApplierBot):
 
                 timers[group_id] = True  # Отмечаем, что таймер установлен
 
-            run_time = datetime.now() + timedelta(hours=3)
-            if usr.reks and not usr.reks.is_emergency:
-                settings.SCHEDULER.add_job(check_cheque_status, 'date', run_date=run_time, args=[context.bot, partners_bot, usr, admin, new_cheque, context.bot_data.get("usdt_price", 100.0)])
+            # run_time = datetime.now() + timedelta(hours=3)
+            # if usr.reks and not usr.reks.is_emergency:
+                # settings.SCHEDULER.add_job(check_cheque_status, 'date', run_date=run_time, args=[context.bot, partners_bot, usr, admin, new_cheque, context.bot_data.get("usdt_price", 100.0)])
                 
-                if settings.SCHEDULER.state != 1:
-                    settings.SCHEDULER.start()
+                # if settings.SCHEDULER.state != 1:
+                #     settings.SCHEDULER.start()
 
             return 1  # Оставляем разговор активным
 
@@ -504,7 +504,7 @@ class ChequeWork(ApplierBot):
 
                     await context.bot.send_message(
                         who_invited.telegram_chat_id,
-                        f"💰 <i>НОВОЕ ПОСТУПЛЕНИЕ</i> 💰\n\n<blockquote>• Ваш реферал - <b>{user_to_update.telegram_username}</b>\n• Сумма чека - <b>{new_cheque.cheque_sum}</b>\n• Ваша прибыль - <b>{int(int(new_cheque.cheque_sum) * 0.01 * int(os.environ.get('REF_PERCENT', 1)))}₽</b></blockquote>\n\nСумма уже зачислена на ваш баланс.",
+                        f"💰 <i>НОВОЕ ПОСТУПЛЕНИЕ</i> 💰\n\n<blockquote>• Ваш реферал - <b>{user_to_update.username}</b>\n• Сумма чека - <b>{new_cheque.cheque_sum}</b>\n• Ваша прибыль - <b>{int(int(new_cheque.cheque_sum) * 0.01 * int(os.environ.get('REF_PERCENT', 1)))}₽</b></blockquote>\n\nСумма уже зачислена на ваш баланс.",
                         parse_mode="HTML",
                     )
 
@@ -512,7 +512,7 @@ class ChequeWork(ApplierBot):
                     chat_id=query.message.chat_id,
                     message_id=query.message.message_id,
                     text=(
-                        f"🪛 Вы приняли чек <b>{new_cheque.cheque_id}</b> от <b>{new_cheque.cheque_owner.telegram_username}</b> "
+                        f"🪛 Вы приняли чек <b>{new_cheque.cheque_id}</b> от <b>{new_cheque.cheque_owner.username}</b> "
                         f"на сумму <b>{new_cheque.cheque_sum}₽</b> от <b>{str(new_cheque.cheque_date).split('.')[:1][0]}</b>."
                     ),
                     parse_mode="HTML"
@@ -531,7 +531,7 @@ class ChequeWork(ApplierBot):
                     chat_id=query.message.chat_id,
                     message_id=query.message.message_id,
                     text=(
-                        f"⚔️ Вы отклонили чек <b>{new_cheque.cheque_id}</b> от <b>{new_cheque.cheque_owner.telegram_username}</b> "
+                        f"⚔️ Вы отклонили чек <b>{new_cheque.cheque_id}</b> от <b>{new_cheque.cheque_owner.username}</b> "
                         f"на сумму <b>{new_cheque.cheque_sum}₽</b> от <b>{str(new_cheque.cheque_date).split('.')[:1][0]}</b>."
                     ),
                     parse_mode="HTML"
@@ -554,15 +554,14 @@ class ChequeWork(ApplierBot):
             )
 
     def reg_handlers(self):
-        pass
-        # self.application.add_handler(CallbackQueryHandler(self._new_cheque_acception, "^acception_cheque_"))
+        self.application.add_handler(CallbackQueryHandler(self._new_cheque_acception, "^acception_cheque_"))
 
-        # self.application.add_handler(ConversationHandler(
-        #     entry_points=[CallbackQueryHandler(self._ask_for_cheque_amount, "send_cheque")],
-        #     states={
-        #         0: [MessageHandler(filters.TEXT & ~filters.COMMAND, self._ask_for_photo)],
-        #         1: [MessageHandler(filters.PHOTO, self._send_photo_to_admin)],
-        #     },
-        #     fallbacks=[CallbackQueryHandler(self._start, "menu"), CommandHandler("start", self._start), CallbackQueryHandler(self._ask_for_cheque_amount, "send_cheque")],
-        #     conversation_timeout=300
-        # ))
+        self.application.add_handler(ConversationHandler(
+            entry_points=[CallbackQueryHandler(self._ask_for_cheque_amount, "send_cheque")],
+            states={
+                0: [MessageHandler(filters.TEXT & ~filters.COMMAND, self._ask_for_photo)],
+                1: [MessageHandler(filters.PHOTO, self._send_photo_to_admin)],
+            },
+            fallbacks=[CallbackQueryHandler(self._start, "menu"), CommandHandler("start", self._start), CallbackQueryHandler(self._ask_for_cheque_amount, "send_cheque")],
+            conversation_timeout=300
+        ))

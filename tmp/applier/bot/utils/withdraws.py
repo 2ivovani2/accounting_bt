@@ -79,7 +79,7 @@ class WithdrawsWork(ApplierBot):
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton(
                         text="🆘 Помощь",
-                        url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_telegram_username')}"
+                        url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_USERNAME')}"
                     )],
                     [InlineKeyboardButton(
                         text="🔙 Назад",
@@ -130,7 +130,7 @@ class WithdrawsWork(ApplierBot):
                                         )],
                                         [InlineKeyboardButton(
                                                 text="🆘 Администратор",
-                                                url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_telegram_username')}"
+                                                url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_USERNAME')}"
                                         )],
                                     ])
                                 )
@@ -150,7 +150,7 @@ class WithdrawsWork(ApplierBot):
                                     )],
                                     [InlineKeyboardButton(
                                             text="🆘 Администратор",
-                                            url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_telegram_username')}"
+                                            url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_USERNAME')}"
                                     )],
                                 ])
                             )
@@ -199,7 +199,7 @@ class WithdrawsWork(ApplierBot):
                             ),
                             InlineKeyboardButton(
                                 text="🆘 Помощь",
-                                url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_telegram_username')}"
+                                url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_USERNAME')}"
                             )
                         ],
                     ])
@@ -296,7 +296,7 @@ class WithdrawsWork(ApplierBot):
                     )],
                     [InlineKeyboardButton(
                             text="🆘 Помощь",
-                            url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_telegram_username')}"
+                            url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_USERNAME')}"
                     )],
                 ])
             )
@@ -313,7 +313,7 @@ class WithdrawsWork(ApplierBot):
         """ 
         
         usr, _ = await user_get_by_update(update)
-        admin = ApplyUser.objects.filter(telegram_username=os.environ.get("ADMIN_TO_APPLY_telegram_username")).first()
+        admin = ApplyUser.objects.filter(username=os.environ.get("ADMIN_TO_APPLY_USERNAME")).first()
         
         try:
             query = update.callback_query
@@ -348,7 +348,7 @@ class WithdrawsWork(ApplierBot):
                 
                 msg = await context.bot.send_message(
                     admin.telegram_chat_id,
-                    f"<b>{usr.telegram_username}</b> запросил вывод <b>{order.withdraw_id}</b>:\n\n✔️ Сумма: <b>{order.withdraw_sum}₽</b>\n✔️ Курс: <b>{context.user_data['usdt_price']}₽</b>\n✔️ Адрес TRC-20: <i>{context.user_data['usdt_address']}</i>\n\nИтог: <b><u>{order.usdt_sum} USDT</u></b>",
+                    f"<b>{usr.username}</b> запросил вывод <b>{order.withdraw_id}</b>:\n\n✔️ Сумма: <b>{order.withdraw_sum}₽</b>\n✔️ Курс: <b>{context.user_data['usdt_price']}₽</b>\n✔️ Адрес TRC-20: <i>{context.user_data['usdt_address']}</i>\n\nИтог: <b><u>{order.usdt_sum} USDT</u></b>",
                     parse_mode="HTML",
                     reply_markup=InlineKeyboardMarkup([
                         [InlineKeyboardButton(
@@ -376,7 +376,7 @@ class WithdrawsWork(ApplierBot):
                         )], 
                         [InlineKeyboardButton(
                             text="🆘 Помощь",
-                            url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_telegram_username')}"
+                            url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_USERNAME')}"
                         )],
                     ])
                 )
@@ -399,7 +399,7 @@ class WithdrawsWork(ApplierBot):
                 
                 msg = await context.bot.send_message(
                     admin.telegram_chat_id,
-                    f"<b>{usr.telegram_username}</b> запросил вывод <b>{order.withdraw_id}</b>:\n\n✔️ Сумма: <b>{order.withdraw_sum}₽</b>\n💳 Реквизиты: <pre>{order.withdraw_card_number}</pre>",
+                    f"<b>{usr.username}</b> запросил вывод <b>{order.withdraw_id}</b>:\n\n✔️ Сумма: <b>{order.withdraw_sum}₽</b>\n💳 Реквизиты: <pre>{order.withdraw_card_number}</pre>",
                     parse_mode="HTML",
                     reply_markup=InlineKeyboardMarkup([
                         [InlineKeyboardButton(
@@ -427,7 +427,7 @@ class WithdrawsWork(ApplierBot):
                         )], 
                         [InlineKeyboardButton(
                             text="🆘 Помощь",
-                            url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_telegram_username')}"
+                            url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_USERNAME')}"
                         )],
                     ])
                 )
@@ -443,7 +443,7 @@ class WithdrawsWork(ApplierBot):
                     )],
                     [InlineKeyboardButton(
                             text="🆘 Помощь",
-                            url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_telegram_username')}"
+                            url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_USERNAME')}"
                     )],
                 ])
             )
@@ -496,8 +496,8 @@ class WithdrawsWork(ApplierBot):
                             chat_id=query.message.chat_id,
                             message_id=query.message.message_id,
                             text=(
-                                f"👅 <b>{usr.telegram_username}</b>, вы успешно оплатили <b>{order.withdraw_id}</b> "
-                                f"на сумму <b>{order.usdt_sum} USDT</b> от <b>{user_whom_applied.telegram_username}</b>."
+                                f"👅 <b>{usr.username}</b>, вы успешно оплатили <b>{order.withdraw_id}</b> "
+                                f"на сумму <b>{order.usdt_sum} USDT</b> от <b>{user_whom_applied.username}</b>."
                             ),
                             parse_mode="HTML",
                             reply_markup=InlineKeyboardMarkup([
@@ -527,8 +527,8 @@ class WithdrawsWork(ApplierBot):
                             chat_id=query.message.chat_id,
                             message_id=query.message.message_id,
                             text=(
-                                f"👅 <b>{usr.telegram_username}</b>, вы успешно оплатили <b>{order.withdraw_id}</b> "
-                                f"на сумму <b>{order.withdraw_sum}₽ фиатом</b> от <b>{user_whom_applied.telegram_username}</b>."
+                                f"👅 <b>{usr.username}</b>, вы успешно оплатили <b>{order.withdraw_id}</b> "
+                                f"на сумму <b>{order.withdraw_sum}₽ фиатом</b> от <b>{user_whom_applied.username}</b>."
                             ),
                             parse_mode="HTML",
                             reply_markup=InlineKeyboardMarkup([
@@ -553,7 +553,7 @@ class WithdrawsWork(ApplierBot):
                             )], 
                             [InlineKeyboardButton(
                                 text="🆘 Помощь",
-                                url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_telegram_username')}"
+                                url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_USERNAME')}"
                             )],
                         ])
                     )
@@ -573,7 +573,7 @@ class WithdrawsWork(ApplierBot):
                                 )], 
                                 [InlineKeyboardButton(
                                     text="🆘 Помощь",
-                                    url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_telegram_username')}"
+                                    url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_USERNAME')}"
                                 )],
                                 
                             ])
@@ -583,8 +583,8 @@ class WithdrawsWork(ApplierBot):
                             chat_id=query.message.chat_id,
                             message_id=query.message.message_id,
                             text=(
-                                f"📛 <b>{usr.telegram_username}</b>, вы успешно отклонили ордер <b>{order.withdraw_id}</b> "
-                                f"на сумму <b>{order.usdt_sum} USDT</b> от <b>{user_whom_applied.telegram_username}</b>."
+                                f"📛 <b>{usr.username}</b>, вы успешно отклонили ордер <b>{order.withdraw_id}</b> "
+                                f"на сумму <b>{order.usdt_sum} USDT</b> от <b>{user_whom_applied.username}</b>."
                             ),
                             parse_mode="HTML",
                             reply_markup=InlineKeyboardMarkup([
@@ -608,7 +608,7 @@ class WithdrawsWork(ApplierBot):
                                 )], 
                                 [InlineKeyboardButton(
                                     text="🆘 Помощь",
-                                    url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_telegram_username')}"
+                                    url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_USERNAME')}"
                                 )],
                                 
                             ])
@@ -618,8 +618,8 @@ class WithdrawsWork(ApplierBot):
                             chat_id=query.message.chat_id,
                             message_id=query.message.message_id,
                             text=(
-                                f"❌ <b>{usr.telegram_username}</b>, вы успешно отклонили <b>{order.withdraw_id}</b> "
-                                f"на сумму <b>{order.withdraw_sum}₽ фиатом</b> от <b>{user_whom_applied.telegram_username}</b>."
+                                f"❌ <b>{usr.username}</b>, вы успешно отклонили <b>{order.withdraw_id}</b> "
+                                f"на сумму <b>{order.withdraw_sum}₽ фиатом</b> от <b>{user_whom_applied.username}</b>."
                             ),
                             parse_mode="HTML",
                             reply_markup=InlineKeyboardMarkup([
@@ -644,7 +644,7 @@ class WithdrawsWork(ApplierBot):
                             )], 
                             [InlineKeyboardButton(
                                 text="🆘 Помощь",
-                                url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_telegram_username')}"
+                                url=f"https://t.me/{os.environ.get('ADMIN_TO_APPLY_USERNAME')}"
                             )],
                         ])
                     )

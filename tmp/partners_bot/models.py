@@ -57,6 +57,12 @@ class Processor(models.Model):
         default=0
     )
 
+    clients_withdraw = models.BigIntegerField(
+        verbose_name="Сумма вывода клиентских денег",
+        null=False,
+        default=0
+    )
+
     amount_to_accept = models.BigIntegerField(
         verbose_name="Сколько процессор готов принимать денег",
         null=False,

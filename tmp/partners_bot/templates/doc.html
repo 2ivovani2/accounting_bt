@@ -124,7 +124,7 @@
       <tr>
         <td><code>/api/sms_receiver/</code></td>
         <td><code>SmsReceiverAPIView</code></td>
-        <td><strong>POST</strong>: Приём SMS (ищем чек по сумме)</td>
+        <td><strong>POST</strong>: Приём SMS (ищем чек по сумме) (требует авторизации)</td>
       </tr>
       <tr>
         <td><code>/deny-cheque/</code></td>
@@ -145,7 +145,7 @@
   <h3 id="create-payment">2.1. Создание платежа (<code>CreatePayment</code>)</h3>
   <ul>
     <li><strong>URL:</strong> <code>POST /api/create-payment/</code></li>
-    <li>Требует авторизации (Bearer Token или другую)</li>
+    <li>Требует авторизации (Token или другую)</li>
     <li>Принимает JSON-данные (<code>amount</code>, <code>description</code> и т.п.)</li>
     <li>Возвращает <code>hash</code> и <code>payment_url</code> для открытия страницы оплаты</li>
   </ul>
@@ -202,7 +202,7 @@
   <h3 id="create-payment-example">3.1. Создать платёж 🏦</h3>
   <p><strong>Запрос:</strong></p>
   <pre><code class="language-http">POST /api/create-payment/
-Authorization: Bearer &lt;YOUR_ACCESS_TOKEN&gt;
+Authorization: Token &lt;YOUR_ACCESS_TOKEN&gt;
 Content-Type: application/json
 
 {

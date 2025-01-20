@@ -29,11 +29,12 @@ class ApplyUser(AbstractUser):
         default=False
     )
 
-    telegram_username = models.CharField(
+    username = models.CharField(
         verbose_name="Имя пользователя",
         max_length=255,
         null=False,
         default=str(uuid.uuid4()),
+        unique=True
     )
 
     info = models.TextField(
