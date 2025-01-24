@@ -3,7 +3,11 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Главная — DRIP MONEY</title>
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   
   <!-- Bootstrap 5 -->
   <link
@@ -11,168 +15,505 @@
     rel="stylesheet"
   />
 
-  <!-- Highlight.js (готовая сборка) + стиль GitHub (если хотите) -->
+  <!-- Font Awesome для иконок -->
   <link
     rel="stylesheet"
-    href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.8.0/build/styles/github.min.css"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    integrity="sha512-papfeB4LIFHZ3B4lRWIrV/1IRsJzx+Zr3bGkF5rXbwEaUb0HZM5F5FyBvDGcRzRhHR6jdXj58TdgfDfqYV0M/Q=="
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"
   />
 
+  <!-- Highlight.js -->
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.8.0/build/styles/monokai-sublime.min.css"
+  />
+
+  <!-- AOS CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet">
+
   <style>
+    :root {
+      --primary-color: #4A90E2;
+      --secondary-color: #50E3C2;
+      --dark-color: #2C3E50;
+      --light-color: #ECF0F1;
+      --font-primary: 'Inter', sans-serif;
+      --font-secondary: 'Roboto', sans-serif;
+    }
+
     html {
       scroll-behavior: smooth;
     }
     body {
-      margin: 30px 0;
-      font-family: Arial, sans-serif;
-      color: #333;
-      line-height: 1.6;
+      margin: 0;
+      font-family: var(--font-primary);
+      color: var(--dark-color);
+      background-color: #ffffff;
     }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 15px;
+    }
+    /* Навигация */
+    nav {
+      padding: 20px 0;
+    }
+    .navbar-brand {
+      font-family: var(--font-secondary);
+      font-weight: 700;
+      font-size: 1.5rem;
+      color: var(--primary-color) !important;
+    }
+    .navbar-nav .nav-link {
+      font-weight: 500;
+      color: var(--dark-color) !important;
+      margin-left: 20px;
+    }
+    .navbar-nav .nav-link:hover {
+      color: var(--primary-color) !important;
+    }
+    /* HERO SECTION */
     .hero-section {
-      background-color: #f8f8f8;
-      padding: 80px 0;
-      border-radius: 8px;
+      background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+      color: #fff;
+      padding: 100px 0;
       text-align: center;
-      margin-bottom: 50px;
-      border-bottom: 2px solid #ddd;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      margin-bottom: 60px;
     }
     .hero-title {
-      font-size: 2.8rem;
-      font-weight: bold;
+      font-family: var(--font-secondary);
+      font-size: 3rem;
+      font-weight: 700;
       margin-bottom: 20px;
     }
     .hero-text {
-      font-size: 1.3rem;
-      color: #555;
-      margin-bottom: 30px;
+      font-size: 1.25rem;
+      margin-bottom: 40px;
     }
     .btn-hero {
-      padding: 12px 30px;
+      padding: 14px 40px;
       font-size: 1.1rem;
+      border-radius: 50px;
+      transition: background-color 0.3s, transform 0.3s;
     }
-    .section {
-      margin-bottom: 70px;
-      padding-bottom: 40px;
-      border-bottom: 1px solid #eee;
+    .btn-hero:hover {
+      background-color: #fff;
+      color: var(--primary-color);
+      transform: translateY(-2px);
     }
-    .section:last-child {
-      border-bottom: none;
-    }
+    /* FEATURES */
     .feature {
       text-align: center;
-      padding: 20px;
-      margin-bottom: 30px;
+      padding: 30px 20px;
+      transition: transform 0.3s, box-shadow 0.3s;
+      border-radius: 8px;
+      background-color: #ffffff;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 100%; /* Добавлено для равной высоты */
+    }
+    .feature:hover {
+      transform: translateY(-10px);
+      box-shadow: 0 12px 24px rgba(0,0,0,0.1);
     }
     .feature-icon {
-      font-size: 2.5rem;
+      font-size: 3rem;
+      color: var(--primary-color);
+      margin-bottom: 15px;
+    }
+    .feature-title {
+      font-size: 1.25rem;
+      font-weight: 600;
       margin-bottom: 10px;
-      color: #007bff;
     }
     .feature-text {
-      font-size: 1.1rem;
-      color: #666;
+      font-size: 1rem;
+      color: #7f8c8d;
+      flex-grow: 1; /* Добавлено для заполнения пространства */
     }
-    footer {
-      margin-top: 50px;
-      padding: 20px;
-      background-color: #f8f8f8;
-      text-align: center;
-      border-radius: 8px;
-    }
+    /* SECTION DIVIDER */
     .section-divider {
-      margin-top: 30px;
+      margin: 60px 0;
+      border-top: 2px solid #ecf0f1;
+    }
+    /* CALL TO ACTION */
+    .cta-section {
+      background-color: var(--light-color);
+      padding: 60px 20px;
+      border-radius: 12px;
+      text-align: center;
+    }
+    .cta-section h2 {
+      font-size: 2rem;
+      margin-bottom: 20px;
+    }
+    .cta-section p {
+      font-size: 1.1rem;
       margin-bottom: 30px;
-      border-top: 1px dashed #ddd;
+      color: #7f8c8d;
+    }
+    .cta-section .btn {
+      padding: 12px 30px;
+      font-size: 1rem;
+      border-radius: 50px;
+    }
+    /* HOW TO START */
+    .howto-section img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+      max-height: 300px; /* Ограничение высоты изображения */
+      object-fit: contain;
+    }
+    .howto-section h3 {
+      font-size: 1.75rem;
+      margin-bottom: 20px;
+    }
+    .howto-section ul {
+      list-style: none;
+      padding: 0;
+    }
+    .howto-section li {
+      font-size: 1rem;
+      margin-bottom: 10px;
+      padding-left: 25px;
+      position: relative;
+    }
+    .howto-section li::before {
+      content: "✔️";
+      position: absolute;
+      left: 0;
+      top: 0;
+    }
+    /* ABOUT US */
+    .about-section {
+      padding: 60px 20px;
+      background-color: #f9f9f9;
+      border-radius: 12px;
+    }
+    .about-section h2 {
+      font-size: 2rem;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .about-section p {
+      font-size: 1rem;
+      color: #7f8c8d;
+      line-height: 1.6;
+      max-width: 800px;
+      margin: 0 auto 20px auto;
+      text-align: center;
+    }
+    .about-section img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      margin-top: 20px;
+      max-height: 300px; /* Ограничение высоты изображения */
+      object-fit: contain;
+    }
+    /* FAQ */
+    .faq-section {
+      padding: 60px 20px;
+    }
+    .faq-section h2 {
+      font-size: 2rem;
+      margin-bottom: 40px;
+      text-align: center;
+    }
+    .faq-item {
+      margin-bottom: 20px;
+      cursor: pointer;
+    }
+    .faq-item h5 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      position: relative;
+      padding-right: 25px;
+      transition: color 0.3s;
+    }
+    .faq-item h5::after {
+      content: "\f107"; /* Font Awesome "chevron-down" */
+      font-family: "Font Awesome 5 Free";
+      font-weight: 900;
+      position: absolute;
+      right: 0;
+      top: 0;
+      transition: transform 0.3s;
+    }
+    .faq-item.active h5::after {
+      transform: rotate(180deg);
+    }
+    .faq-item .faq-answer {
+      display: none;
+      padding-left: 15px;
+      border-left: 2px solid var(--primary-color);
+      margin-top: 10px;
+    }
+    .faq-item.active .faq-answer {
+      display: block;
+    }
+    .faq-item.active h5 {
+      color: var(--primary-color);
+    }
+    /* FOOTER */
+    footer {
+      background-color: var(--light-color);
+      padding: 30px 0;
+      text-align: center;
+      border-top: 1px solid #ecf0f1;
+    }
+    footer p {
+      margin: 0;
+      font-size: 0.95rem;
+      color: #7f8c8d;
+    }
+    footer a {
+      color: var(--primary-color);
+      text-decoration: none;
+    }
+    footer a:hover {
+      text-decoration: underline;
+    }
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+      .hero-title {
+        font-size: 2.5rem;
+      }
+      .feature {
+        margin-bottom: 30px;
+      }
+      .cta-section h2 {
+        font-size: 1.75rem;
+      }
+      .howto-section h3 {
+        font-size: 1.5rem;
+      }
+      .about-section p {
+        padding: 0 15px;
+      }
+      .faq-section h2 {
+        font-size: 1.75rem;
+      }
     }
   </style>
 </head>
 
 <body>
-<div class="container">
-
-  <!-- HERO SECTION -->
-  <section class="hero-section">
-    <h1 class="hero-title">Добро пожаловать в DRIP MONEY 💸</h1>
-    <p class="hero-text">
-      Универсальное решение для платежей. Откройте быстрые и удобные расчёты уже сегодня!
-    </p>
-    <a href="#features" class="btn btn-primary btn-hero">Узнать больше</a>
-  </section>
-
-  <!-- FEATURES -->
-  <section id="features" class="section">
-    <div class="row">
-      <div class="col-md-4 feature">
-        <div class="feature-icon">⚡</div>
-        <h5>Мгновенные платежи</h5>
-        <p class="feature-text">Обрабатываем чеки и переводы в реальном времени.</p>
-      </div>
-      <div class="col-md-4 feature">
-        <div class="feature-icon">🔐</div>
-        <h5>Безопасность</h5>
-        <p class="feature-text">
-          Надёжное шифрование и авторизация для защиты ваших данных.
-        </p>
-      </div>
-      <div class="col-md-4 feature">
-        <div class="feature-icon">🤝</div>
-        <h5>Простота</h5>
-        <p class="feature-text">
-          Интуитивный интерфейс и подробная документация – даже новичок легко разберётся.
-        </p>
-      </div>
-    </div>
-  </section>
-
-  <div class="section-divider"></div>
-
-  <!-- Call to action -->
-  <section class="section text-center">
-    <h2>Хотите интегрировать DRIP MONEY в свой проект? 😊</h2>
-    <p class="mb-4">
-      Изучите нашу <a href="/doc" class="link-primary">документацию по API</a>, чтобы узнать, как создавать чеки, принимать платежи и многое другое.
-    </p>
-    <a href="/doc" class="btn btn-success">Перейти к документации</a>
-  </section>
-
-  <div class="section-divider"></div>
-
-  <!-- Как начать -->
-  <section class="section">
-    <div class="row align-items-center">
-      <div class="col-md-6">
-        <img src="{% static 'images/proga.svg' %}" alt="Illustration" class="img-fluid rounded">
-      </div>
-      <div class="col-md-6">
-        <h3>С чего начать? 🚀</h3>
-        <ul>
-          <li>Получите <strong>API-токен</strong> в боте <b>DRIP MONEY</b></li>
-          <li>Изучите <strong>endpoint</strong> для понимания логики операций</li>
-          <li>Вставьте токен и выполните тестовый платёж</li>
-          <li>Настройте webhook для подтверждения оплаты</li>
+  <!-- NAVIGATION -->
+  <nav class="navbar navbar-expand-lg">
+    <div class="container">
+      <a class="navbar-brand" href="#">DRIP MONEY</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+        aria-controls="navbarNav" aria-expanded="false" aria-label="Меню">
+        <span class="navbar-toggler-icon"><i class="fas fa-bars"></i></span>
+      </button>
+      <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+        <ul class="navbar-nav">
+          <li class="nav-item">
+            <a class="nav-link" href="#features">Особенности</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#howto">Как начать</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#about">О нас</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#faq">FAQ</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/doc">Документация</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#footer">Контакты</a>
+          </li>
         </ul>
-        <p>Даже если вы новичок, наш бот и документация помогут разобраться. Присоединяйтесь! 💪</p>
       </div>
     </div>
-  </section>
+  </nav>
 
-</div> <!-- /container -->
+  <div class="container">
+    <!-- HERO SECTION -->
+    <section class="hero-section">
+      <h1 class="hero-title">Добро пожаловать в DRIP MONEY 💸</h1>
+      <p class="hero-text">
+        Универсальное решение для платежей. Откройте быстрые и удобные расчёты уже сегодня!
+      </p>
+      <a href="#features" class="btn btn-light btn-hero">Узнать больше</a>
+    </section>
 
-<!-- FOOTER -->
-<footer class="container">
-  <p>
-    © 2023 DRIP MONEY. Все права защищены. <br>
-    Поддержка: <a href="https://t.me/babki_siyda" class="link-primary">наша служба помощи</a> ⚙️
-  </p>
-</footer>
+    <!-- FEATURES -->
+    <section id="features" class="row g-4">
+      <div class="col-md-4 d-flex">
+        <div class="feature h-100" data-aos="fade-up">
+          <div class="feature-icon"><i class="fas fa-bolt"></i></div>
+          <h5 class="feature-title">Мгновенные платежи</h5>
+          <p class="feature-text">Обрабатываем чеки и переводы в реальном времени.</p>
+        </div>
+      </div>
+      <div class="col-md-4 d-flex">
+        <div class="feature h-100" data-aos="fade-up" data-aos-delay="100">
+          <div class="feature-icon"><i class="fas fa-shield-alt"></i></div>
+          <h5 class="feature-title">Безопасность</h5>
+          <p class="feature-text">
+            Надёжное шифрование и авторизация для защиты ваших данных.
+          </p>
+        </div>
+      </div>
+      <div class="col-md-4 d-flex">
+        <div class="feature h-100" data-aos="fade-up" data-aos-delay="200">
+          <div class="feature-icon"><i class="fas fa-user-friends"></i></div>
+          <h5 class="feature-title">Простота</h5>
+          <p class="feature-text">
+            Интуитивный интерфейс и подробная документация – даже новичок легко разберётся.
+          </p>
+        </div>
+      </div>
+    </section>
 
-<!-- Bootstrap JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<!-- Highlight.js (если нужно) -->
-<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.8.0/build/highlight.min.js"></script>
-<script>
-  // Если примеры кода будут добавлены, раскомментируйте следующую строку:
-  // hljs.highlightAll();
-</script>
+    <div class="section-divider"></div>
 
+    <!-- Call to action -->
+    <section class="cta-section" data-aos="fade-in">
+      <h2>Хотите интегрировать DRIP MONEY в свой проект? 😊</h2>
+      <p>
+        Изучите нашу <a href="/doc" class="text-decoration-none">документацию по API</a>, чтобы узнать, как создавать чеки, принимать платежи и многое другое.
+      </p>
+      <a href="/doc" class="btn btn-primary">Перейти к документации</a>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <!-- Как начать -->
+    <section id="howto" class="howto-section">
+      <div class="row align-items-center">
+        <div class="col-md-6 mb-4 mb-md-0" data-aos="fade-right">
+          <img src="{% static 'images/proga.svg' %}" alt="Illustration" class="img-fluid">
+        </div>
+        <div class="col-md-6" data-aos="fade-left" data-aos-delay="100">
+          <h3>С чего начать? 🚀</h3>
+          <ul>
+            <li>Получите <strong>API-токен</strong> в боте <b>DRIP MONEY</b></li>
+            <li>Изучите <strong>endpoint</strong> для понимания логики операций</li>
+            <li>Вставьте токен и выполните тестовый платёж</li>
+            <li>Настройте webhook для подтверждения оплаты</li>
+          </ul>
+          <p>Даже если вы новичок, наш бот и документация помогут разобраться. Присоединяйтесь! 💪</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <!-- ABOUT US -->
+    <section id="about" class="about-section" data-aos="fade-up">
+      <div class="row align-items-center">
+        <div class="col-md-6" data-aos="fade-right">
+          <h2>О нас</h2>
+          <p>
+            DRIP MONEY — это современное решение для управления платежами, предназначенное для упрощения финансовых операций как для малого, так и для крупного бизнеса. Наша миссия — предоставить безопасные, быстрые и удобные инструменты для проведения транзакций, чтобы вы могли сосредоточиться на развитии своего дела.
+          </p>
+        </div>
+        <div class="col-md-6" data-aos="fade-left" data-aos-delay="100">
+          <img src="{% static 'images/about.svg' %}" alt="About Us" class="img-fluid">
+        </div>
+      </div>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <!-- FAQ -->
+    <section id="faq" class="faq-section" data-aos="fade-up">
+      <h2>Часто задаваемые вопросы</h2>
+      <div class="faq-item collapsed">
+        <h5>Как получить API-токен?</h5>
+        <div class="faq-answer">
+          <p>Чтобы получить API-токен, зарегистрируйтесь в нашем сервисе и перейдите в раздел "Настройки". Там вы сможете сгенерировать свой уникальный токен.</p>
+        </div>
+      </div>
+      <div class="faq-item collapsed">
+        <h5>Какие методы оплаты поддерживает DRIP MONEY?</h5>
+        <div class="faq-answer">
+          <p>DRIP MONEY поддерживает различные методы оплаты, включая банковские карты, электронные кошельки и прямые банковские переводы.</p>
+        </div>
+      </div>
+      <div class="faq-item collapsed">
+        <h5>Как настроить webhook для подтверждения оплаты?</h5>
+        <div class="faq-answer">
+          <p>Для настройки webhook перейдите в раздел "Интеграции" и введите URL вашего сервера, на который будут отправляться уведомления о статусе платежей.</p>
+        </div>
+      </div>
+      <div class="faq-item collapsed">
+        <h5>Предоставляете ли вы техническую поддержку?</h5>
+        <div class="faq-answer">
+          <p>Да, мы предоставляем круглосуточную техническую поддержку через наш Telegram-канал и электронную почту.</p>
+        </div>
+      </div>
+    </section>
+  </div> <!-- /container -->
+
+  <!-- FOOTER -->
+  <footer id="footer">
+    <div class="container">
+      <p>
+        © 2023 DRIP MONEY. Все права защищены. <br>
+        Поддержка: <a href="https://t.me/babki_siyda">наша служба помощи</a> ⚙️
+      </p>
+    </div>
+  </footer>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Highlight.js -->
+  <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.8.0/build/highlight.min.js"></script>
+  <script>
+    // Если примеры кода будут добавлены, раскомментируйте следующую строку:
+    // hljs.highlightAll();
+  </script>
+
+  <!-- AOS JS -->
+  <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
+  <script>
+    AOS.init({
+      duration: 800,
+      easing: 'ease-in-out',
+      once: true,
+    });
+  </script>
+
+  <!-- FAQ Toggle Script -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const faqItems = document.querySelectorAll('.faq-item');
+
+      faqItems.forEach(item => {
+        const header = item.querySelector('h5');
+        header.addEventListener('click', () => {
+          // Закрыть другие открытые FAQ
+          faqItems.forEach(i => {
+            if (i !== item && i.classList.contains('active')) {
+              i.classList.remove('active');
+              i.classList.add('collapsed');
+            }
+          });
+          // Toggle active class
+          item.classList.toggle('active');
+          // Toggle collapsed class
+          item.classList.toggle('collapsed');
+        });
+      });
+    });
+  </script>
 </body>
 </html>

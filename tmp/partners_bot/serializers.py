@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import AutoAcceptCheque
+from .models import AutoAcceptCheque, Processor
 from django.core.validators import URLValidator
 from django.core.exceptions import ValidationError
 
@@ -59,3 +59,9 @@ class AutoAcceptChequeSerializer(serializers.ModelSerializer):
 class SmsReceiverSerializer(serializers.Serializer):
     sender = serializers.CharField(max_length=20)
     text = serializers.CharField()
+    device_token = serializers.CharField(max_length=255)
+
+    def validate_device_token(self, value):
+        if not Processor.objects.filter(device_token=value).exists():
+            raise serializers.ValidationError("Неверный device_token.")
+        return value

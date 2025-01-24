@@ -20,9 +20,9 @@ async def initialize_bot():
         from applier.bot.utils.metrics import Metrics
 
         Auth(settings.CLIENT_APPLICATION).reg_handlers()
-        # ChequeWork(settings.CLIENT_APPLICATION).reg_handlers()
-        # WithdrawsWork(settings.CLIENT_APPLICATION).reg_handlers()
-        # Metrics(settings.CLIENT_APPLICATION).reg_handlers()
+        ChequeWork(settings.CLIENT_APPLICATION).reg_handlers()
+        WithdrawsWork(settings.CLIENT_APPLICATION).reg_handlers()
+        Metrics(settings.CLIENT_APPLICATION).reg_handlers()
 
         settings.CLIENT_APPLICATION = settings.CLIENT_BOT_INSTANCE.set_last_handlers(settings.CLIENT_APPLICATION)
         

@@ -1,8 +1,13 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <title>API Документация</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API Документация — DRIP MONEY</title>
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   
   <!-- Bootstrap 5 -->
   <link
@@ -10,21 +15,93 @@
     rel="stylesheet"
   />
 
-  <!-- Highlight.js (готовая сборка) + стиль GitHub -->
+  <!-- Font Awesome для иконок -->
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    integrity="sha512-papfeB4LIFHZ3B4lRWIrV/1IRsJzx+Zr3bGkF5rXbwEaUb0HZM5F5FyBvDGcRzRhHR6jdXj58TdgfDfqYV0M/Q=="
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"
+  />
+
+  <!-- Highlight.js -->
   <link
     rel="stylesheet"
     href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.8.0/build/styles/github.min.css"
   />
 
+  <!-- AOS CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet">
+
   <style>
-    /* Плавная прокрутка при переходе по якорям */
+    :root {
+      --primary-color: #4A90E2;
+      --secondary-color: #50E3C2;
+      --dark-color: #2C3E50;
+      --light-color: #ECF0F1;
+      --font-primary: 'Inter', sans-serif;
+      --font-secondary: 'Roboto', sans-serif;
+    }
+
     html {
       scroll-behavior: smooth;
     }
     body {
-      margin: 30px 0;
-      font-family: Arial, sans-serif;
-      color: #333;
+      margin: 0;
+      font-family: var(--font-primary);
+      color: var(--dark-color);
+      background-color: #ffffff;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 15px;
+    }
+    /* Навигация */
+    nav {
+      padding: 20px 0;
+    }
+    .navbar-brand {
+      font-family: var(--font-secondary);
+      font-weight: 700;
+      font-size: 1.5rem;
+      color: var(--primary-color) !important;
+    }
+    .navbar-nav .nav-link {
+      font-weight: 500;
+      color: var(--dark-color) !important;
+      margin-left: 20px;
+    }
+    .navbar-nav .nav-link:hover {
+      color: var(--primary-color) !important;
+    }
+    /* Документация Секция */
+    .doc-section {
+      padding: 60px 20px;
+    }
+    .doc-section h1 {
+      font-family: var(--font-secondary);
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 20px;
+      text-align: center;
+      color: var(--primary-color);
+    }
+    .doc-section h2 {
+      font-size: 2rem;
+      margin-bottom: 20px;
+      text-align: center;
+      color: var(--secondary-color);
+    }
+    .doc-section h3 {
+      font-size: 1.5rem;
+      margin-top: 40px;
+      margin-bottom: 20px;
+      color: var(--primary-color);
+    }
+    .doc-section p {
+      font-size: 1rem;
+      color: #7f8c8d;
       line-height: 1.6;
     }
     .toc-list {
@@ -43,165 +120,229 @@
     }
     pre {
       background: #f8f8f8;
-      padding: 10px;
+      padding: 15px;
       border-radius: 5px;
       overflow: auto;
+      font-size: 0.95rem;
+      margin-bottom: 1.5rem;
     }
     code {
       font-family: Consolas, "Courier New", monospace;
+    }
+    /* Стилизация таблиц */
+    .table-custom {
+      width: 100%;
+      margin-bottom: 1.5rem;
+      color: #333;
+    }
+    .table-custom th,
+    .table-custom td {
+      padding: 0.75rem;
+      vertical-align: top;
+      border-top: 1px solid #dee2e6;
+    }
+    .table-custom thead th {
+      vertical-align: bottom;
+      border-bottom: 2px solid #dee2e6;
+      background-color: #f1f1f1;
+    }
+    .table-custom tbody + tbody {
+      border-top: 2px solid #dee2e6;
+    }
+    /* Адаптивность */
+    @media (max-width: 768px) {
+      .navbar-nav .nav-link {
+        margin-left: 10px;
+      }
+      .doc-section h1 {
+        font-size: 2rem;
+      }
+      .doc-section h2 {
+        font-size: 1.75rem;
+      }
+      .doc-section h3 {
+        font-size: 1.25rem;
+      }
     }
   </style>
 </head>
 
 <body>
-<div class="container">
-
-  <h1 class="mb-4">Документация по оплате и связанным API 🚀</h1>
-  <p>
-    Данный проект содержит несколько эндпоинтов, связанных с созданием и 
-    обработкой «чеков» (платежей). Ниже представлено краткое описание 
-    без раскрытия исходного кода. 🤝
-  </p>
-
-  <!-- Содержание -->
-  <nav class="mt-4">
-    <h5>Содержание</h5>
-    <ul class="toc-list">
-      <li><a href="#routes">1. Маршруты (urls.py)</a></li>
-      <li><a href="#endpoints">2. Краткое описание эндпоинтов</a></li>
-      <ul class="toc-list" style="margin-left: 20px;">
-        <li><a href="#create-payment">2.1. Создание платежа (CreatePayment)</a></li>
-        <li><a href="#payment-page">2.2. Страница оплаты (PaymentPage)</a></li>
-        <li><a href="#check-cheque-status">2.3. Проверка статуса чека (CheckChequeStatus)</a></li>
-        <li><a href="#payment-success">2.4. Страница успешной оплаты (PaymentSuccess)</a></li>
-        <li><a href="#sms-receiver">2.5. Приём SMS (SmsReceiver)</a></li>
-        <li><a href="#deny-cheque">2.6. Отметить чек как отклонённый (DenyCheque)</a></li>
-        <li><a href="#check-token">2.7. Проверка токена (CheckToken)</a></li>
-        <li><a href="#other-routes">2.8. Прочие маршруты</a></li>
-      </ul>
-      <li><a href="#examples">3. Примеры запросов и ответов</a></li>
-      <ul class="toc-list" style="margin-left: 20px;">
-        <li><a href="#create-payment-example">3.1. Создать платёж</a></li>
-        <li><a href="#check-status-example">3.2. Проверить статус чека</a></li>
-        <li><a href="#deny-cheque-example">3.3. Отклонить чек вручную</a></li>
-        <li><a href="#check-token-example">3.4. Проверить токен</a></li>
-      </ul>
-      <li><a href="#test-script">4. Пример тестирования API</a></li>
-    </ul>
+  <!-- NAVIGATION -->
+  <nav class="navbar navbar-expand-lg">
+    <div class="container">
+      <a class="navbar-brand" href="/">DRIP MONEY</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+        aria-controls="navbarNav" aria-expanded="false" aria-label="Меню">
+        <span class="navbar-toggler-icon"><i class="fas fa-bars"></i></span>
+      </button>
+      <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+        <ul class="navbar-nav">
+          <li class="nav-item">
+            <a class="nav-link" href="/">Главная</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/doc">Документация</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#footer">Контакты</a>
+          </li>
+        </ul>
+      </div>
+    </div>
   </nav>
 
-  <!-- 1. Маршруты -->
-  <h2 class="mt-5" id="routes">1. Маршруты (urls.py) ✅</h2>
-  <table class="table table-bordered table-striped">
-    <thead class="table-light">
-      <tr>
-        <th>Путь</th>
-        <th>Обработчик</th>
-        <th>Назначение</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><code>/api/create-payment/</code></td>
-        <td><code>CreatePaymentAPIView</code></td>
-        <td><strong>POST</strong>: Создаёт новый чек (требует авторизации)</td>
-      </tr>
-      <tr>
-        <td><code>/payment/</code></td>
-        <td><code>PaymentPageView</code></td>
-        <td><strong>GET</strong> <em>?hash=…</em>: страница оплаты</td>
-      </tr>
-      <tr>
-        <td><code>/payment/check_status/</code></td>
-        <td><code>CheckChequeStatusView</code></td>
-        <td><strong>POST</strong>: Проверка статуса чека</td>
-      </tr>
-      <tr>
-        <td><code>/payment/success/</code></td>
-        <td><code>PaymentSuccessView</code></td>
-        <td><strong>GET</strong>: Страница успешной оплаты</td>
-      </tr>
-      <tr>
-        <td><code>/api/sms_receiver/</code></td>
-        <td><code>SmsReceiverAPIView</code></td>
-        <td><strong>POST</strong>: Приём SMS (ищем чек по сумме) (требует авторизации)</td>
-      </tr>
-      <tr>
-        <td><code>/deny-cheque/</code></td>
-        <td><code>DenyChequeView</code></td>
-        <td><strong>POST</strong>: Помечает чек <code>is_denied=True</code></td>
-      </tr>
-      <tr>
-        <td><code>/check-token/</code></td>
-        <td><code>CheckTokenView</code></td>
-        <td><strong>POST</strong>: Проверка произвольного токена</td>
-      </tr>
-    </tbody>
-  </table>
+  <div class="container">
+    <!-- API Документация Секция -->
+    <section class="doc-section" data-aos="fade-up">
+      <h1 class="mb-4">Документация по оплате и связанным API 🚀</h1>
+      <p>
+        Данный проект содержит несколько эндпоинтов, связанных с созданием и 
+        обработкой «чеков» (платежей). Ниже представлено краткое описание 
+        без раскрытия исходного кода. 🤝
+      </p>
 
-  <!-- 2. Описание эндпоинтов -->
-  <h2 class="mt-5" id="endpoints">2. Краткое описание эндпоинтов 💡</h2>
+      <!-- Содержание -->
+      <nav class="mt-4" data-aos="fade-in">
+        <h5>Содержание</h5>
+        <ul class="toc-list">
+          <li><a href="#routes">1. Маршруты (urls.py)</a></li>
+          <li><a href="#endpoints">2. Краткое описание эндпоинтов</a></li>
+          <ul class="toc-list" style="margin-left: 20px;">
+            <li><a href="#create-payment">2.1. Создание платежа (CreatePayment)</a></li>
+            <li><a href="#payment-page">2.2. Страница оплаты (PaymentPage)</a></li>
+            <li><a href="#check-cheque-status">2.3. Проверка статуса чека (CheckChequeStatus)</a></li>
+            <li><a href="#payment-success">2.4. Страница успешной оплаты (PaymentSuccess)</a></li>
+            <li><a href="#sms-receiver">2.5. Приём SMS (SmsReceiver)</a></li>
+            <li><a href="#deny-cheque">2.6. Отметить чек как отклонённый (DenyCheque)</a></li>
+            <li><a href="#check-token">2.7. Проверка токена (CheckToken)</a></li>
+            <li><a href="#other-routes">2.8. Прочие маршруты</a></li>
+          </ul>
+          <li><a href="#examples">3. Примеры запросов и ответов</a></li>
+          <ul class="toc-list" style="margin-left: 20px;">
+            <li><a href="#create-payment-example">3.1. Создать платёж</a></li>
+            <li><a href="#check-status-example">3.2. Проверить статус чека</a></li>
+            <li><a href="#deny-cheque-example">3.3. Отклонить чек вручную</a></li>
+            <li><a href="#check-token-example">3.4. Проверить токен</a></li>
+          </ul>
+          <li><a href="#test-script">4. Пример тестирования API</a></li>
+        </ul>
+      </nav>
 
-  <h3 id="create-payment">2.1. Создание платежа (<code>CreatePayment</code>)</h3>
-  <ul>
-    <li><strong>URL:</strong> <code>POST /api/create-payment/</code></li>
-    <li>Требует авторизации (Token или другую)</li>
-    <li>Принимает JSON-данные (<code>amount</code>, <code>description</code> и т.п.)</li>
-    <li>Возвращает <code>hash</code> и <code>payment_url</code> для открытия страницы оплаты</li>
-  </ul>
+      <!-- 1. Маршруты -->
+      <h2 class="mt-5" id="routes">1. Маршруты (urls.py) ✅</h2>
+      <div class="table-responsive" data-aos="fade-up" data-aos-delay="100">
+        <table class="table table-bordered table-striped table-custom">
+          <thead class="table-light">
+            <tr>
+              <th>Путь</th>
+              <th>Обработчик</th>
+              <th>Назначение</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>/api/create-payment/</code></td>
+              <td><code>CreatePaymentAPIView</code></td>
+              <td><strong>POST</strong>: Создаёт новый чек (требует авторизации)</td>
+            </tr>
+            <tr>
+              <td><code>/payment/</code></td>
+              <td><code>PaymentPageView</code></td>
+              <td><strong>GET</strong> <em>?hash=…</em>: страница оплаты</td>
+            </tr>
+            <tr>
+              <td><code>/payment/check_status/</code></td>
+              <td><code>CheckChequeStatusView</code></td>
+              <td><strong>POST</strong>: Проверка статуса чека</td>
+            </tr>
+            <tr>
+              <td><code>/payment/success/</code></td>
+              <td><code>PaymentSuccessView</code></td>
+              <td><strong>GET</strong>: Страница успешной оплаты</td>
+            </tr>
+            <tr>
+              <td><code>/api/sms_receiver/</code></td>
+              <td><code>SmsReceiverAPIView</code></td>
+              <td><strong>POST</strong>: Приём SMS (ищем чек по сумме) (требует авторизации)</td>
+            </tr>
+            <tr>
+              <td><code>/check-token/</code></td>
+              <td><code>CheckTokenView</code></td>
+              <td><strong>POST</strong>: Проверка произвольного токена</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
-  <h3 id="payment-page">2.2. Страница оплаты (<code>PaymentPage</code>) 💳</h3>
-  <ul>
-    <li><strong>URL:</strong> <code>GET /payment?hash=&lt;cheque_hash&gt;</code></li>
-    <li>Возвращает HTML-страницу с таймером (обычно 10 минут) и кнопкой «Я оплатил»</li>
-    <li>Если сумма была целой, добавляется «копеечная» надбавка и комиссия</li>
-    <li>По истечении времени чек может быть отклонён (<code>is_denied</code>)</li>
-  </ul>
+      <!-- 2. Описание эндпоинтов -->
+      <h2 class="mt-5" id="endpoints">2. Краткое описание эндпоинтов 💡</h2>
 
-  <h3 id="check-cheque-status">2.3. Проверка статуса чека (<code>CheckChequeStatus</code>)</h3>
-  <ul>
-    <li><strong>URL:</strong> <code>POST /payment/check_status/</code></li>
-    <li>Тело запроса: <code>{"hash": "..."}</code></li>
-    <li>Возвращает <code>{"success": true, "is_applied": true/false}</code></li>
-    <li>При первой оплате может выполняться логика (уменьшение страхового депозита и т.п.)</li>
-  </ul>
+      <h3 id="create-payment">2.1. Создание платежа (<code>CreatePayment</code>)</h3>
+      <ul>
+        <li><strong>URL:</strong> <code>POST /api/create-payment/</code></li>
+        <li>Требует авторизации (Token или другую)</li>
+        <li>Принимает JSON-данные (<code>amount</code>, <code>description</code> и т.п.)</li>
+        <li>Возвращает <code>hash</code> и <code>payment_url</code> для открытия страницы оплаты</li>
+      </ul>
 
-  <h3 id="payment-success">2.4. Страница успешной оплаты (<code>PaymentSuccess</code>) 🎉</h3>
-  <ul>
-    <li><strong>URL:</strong> <code>GET /payment/success/</code></li>
-    <li>HTML-страница, показывающая, что платёж успешно прошёл</li>
-    <li>Можно передать <code>?redirect_url=...</code> для дальнейшей переадресации</li>
-  </ul>
+      <h3 id="payment-page">2.2. Страница оплаты (<code>PaymentPage</code>) 💳</h3>
+      <ul>
+        <li><strong>URL:</strong> <code>GET /payment?hash=&lt;cheque_hash&gt;</code></li>
+        <li>Возвращает HTML-страницу с таймером (обычно 10 минут) и кнопкой «Я оплатил»</li>
+        <li>Если сумма была целой, добавляется «копеечная» надбавка и комиссия</li>
+        <li>По истечении времени чек может быть отклонён (<code>is_denied</code>)</li>
+      </ul>
 
-  <h3 id="sms-receiver">2.5. Приём SMS (<code>SmsReceiver</code>) 📲</h3>
-  <ul>
-    <li><strong>URL:</strong> <code>POST /api/sms_receiver/</code></li>
-    <li>Требует авторизации</li>
-    <li>Принимает <code>{"sender": "...", "text": "..."}</code></li>
-    <li>Из <code>text</code> извлекается сумма (регуляркой), если чек не оплачен — помечается <code>is_applied=true</code></li>
-  </ul>
+      <h3 id="check-cheque-status">2.3. Проверка статуса чека (<code>CheckChequeStatus</code>)</h3>
+      <ul>
+        <li><strong>URL:</strong> <code>POST /payment/check_status/</code></li>
+        <li>Тело запроса: <code>{"hash": "..."}</code></li>
+        <li>Возвращает <code>{"success": true, "is_applied": true/false}</code></li>
+        <li>При первой оплате может выполняться логика (уменьшение страхового депозита и т.п.)</li>
+      </ul>
 
-  <h3 id="deny-cheque">2.6. Отметить чек как отклонённый (<code>DenyCheque</code>) ❌</h3>
-  <ul>
-    <li><strong>URL:</strong> <code>POST /deny-cheque/</code></li>
-    <li>Тело запроса: <code>{"hash": "..."}</code></li>
-    <li>Ставит <code>is_denied=true</code> для чека</li>
-  </ul>
+      <h3 id="payment-success">2.4. Страница успешной оплаты (<code>PaymentSuccess</code>) 🎉</h3>
+      <ul>
+        <li><strong>URL:</strong> <code>GET /payment/success/</code></li>
+        <li>HTML-страница, показывающая, что платёж успешно прошёл</li>
+        <li>Можно передать <code>?redirect_url=...</code> для дальнейшей переадресации</li>
+      </ul>
 
-  <h3 id="check-token">2.7. Проверка токена (<code>CheckToken</code>) 🔑</h3>
-  <ul>
-    <li><strong>URL:</strong> <code>POST /check-token/</code></li>
-    <li><code>{"token": "..."}</code></li>
-    <li>Ответ: <code>{"success": true, "token_exists": true/false}</code></li>
-  </ul>
+      <h3 id="sms-receiver">2.5. Приём SMS (<code>SmsReceiver</code>) 📲</h3>
+      <ul>
+        <li><strong>URL:</strong> <code>POST /api/sms_receiver/</code></li>
+        <li>Требует авторизации</li>
+        <li>Принимает <code>{"sender": "...", "text": "...", "device_token": "..."}</code></li>
+        <li>Из <code>text</code> извлекается сумма (регуляркой), если чек не оплачен — помечается <code>is_applied=true</code>, device_token можете найти в <a href="https://t.me/dripmoneypartnersbot">боте</a>.</li>
+      </ul>
 
+      <h3 id="deny-cheque">2.6. Отметить чек как отклонённый (<code>DenyCheque</code>)</h3>
+      <ul>
+        <li><strong>URL:</strong> <code>POST /api/deny-cheque/</code></li>
+        <li>Требует авторизации</li>
+        <li>Принимает <code>{"hash": "..."}</code></li>
+        <li>Помечает чек как отклонённый <code>is_denied=true</code></li>
+      </ul>
 
-  <!-- 3. Примеры запросов и ответов -->
-  <h2 class="mt-5" id="examples">3. Примеры запросов и ответов 🤔</h2>
+      <h3 id="check-token">2.7. Проверка токена (<code>CheckToken</code>) 🔑</h3>
+      <ul>
+        <li><strong>URL:</strong> <code>POST /check-token/</code></li>
+        <li>Тело запроса: <code>{"token": "..."}</code></li>
+        <li>Ответ: <code>{"success": true, "token_exists": true/false}</code></li>
+      </ul>
 
-  <h3 id="create-payment-example">3.1. Создать платёж 🏦</h3>
-  <p><strong>Запрос:</strong></p>
-  <pre><code class="language-http">POST /api/create-payment/
+      <h3 id="other-routes">2.8. Прочие маршруты</h3>
+      <ul>
+        <li>Дополнительные маршруты для управления пользователями, отчетами и т.д.</li>
+      </ul>
+
+      <!-- 3. Примеры запросов и ответов -->
+      <h2 class="mt-5" id="examples">3. Примеры запросов и ответов 🤔</h2>
+
+      <h3 id="create-payment-example">3.1. Создать платёж 🏦</h3>
+      <p><strong>Запрос:</strong></p>
+      <pre><code class="language-http">POST /api/create-payment/
 Authorization: Token &lt;YOUR_ACCESS_TOKEN&gt;
 Content-Type: application/json
 
@@ -210,62 +351,63 @@ Content-Type: application/json
   "description": "Test Payment"
 }
 </code></pre>
-  <p><strong>Пример ответа (201 Created) ✅:</strong></p>
-  <pre><code class="language-json">{
+      <p><strong>Пример ответа (201 Created) ✅:</strong></p>
+      <pre><code class="language-json">{
   "payment_url": "https://example.com/payment?hash=abcdef123456",
   "hash": "abcdef123456"
 }
 </code></pre>
 
-  <h3 id="check-status-example">3.2. Проверить статус чека 🔎</h3>
-  <p><strong>Запрос:</strong></p>
-  <pre><code class="language-http">POST /payment/check_status/
+      <h3 id="check-status-example">3.2. Проверить статус чека 🔎</h3>
+      <p><strong>Запрос:</strong></p>
+      <pre><code class="language-http">POST /payment/check_status/
 Content-Type: application/json
 
 {
   "hash": "abcdef123456"
 }
 </code></pre>
-  <p><strong>Ответ (пример, если чек не оплачен):</strong></p>
-  <pre><code class="language-json">{
+      <p><strong>Ответ (пример, если чек не оплачен):</strong></p>
+      <pre><code class="language-json">{
   "success": true,
   "is_applied": false
 }
 </code></pre>
-  <p><strong>Ответ (если чек оплачен):</strong></p>
-  <pre><code class="language-json">{
+      <p><strong>Ответ (если чек оплачен):</strong></p>
+      <pre><code class="language-json">{
   "success": true,
   "is_applied": true
 }
 </code></pre>
 
-  <h3 id="deny-cheque-example">3.3. Отклонить чек вручную 🤚</h3>
-  <p><strong>Запрос:</strong></p>
-  <pre><code class="language-http">POST /deny-cheque/
+      <h3 id="deny-cheque-example">3.3. Отклонить чек вручную ❌</h3>
+      <p><strong>Запрос:</strong></p>
+      <pre><code class="language-http">POST /api/deny-cheque/
+Authorization: Token &lt;YOUR_ACCESS_TOKEN&gt;
 Content-Type: application/json
 
 {
   "hash": "abcdef123456"
 }
 </code></pre>
-  <p><strong>Пример ответа:</strong></p>
-  <pre><code class="language-json">{
+      <p><strong>Пример ответа:</strong></p>
+      <pre><code class="language-json">{
   "success": true,
-  "message": "Cheque denied"
+  "message": "Чек отклонён успешно."
 }
 </code></pre>
 
-  <h3 id="check-token-example">3.4. Проверить токен 🧐</h3>
-  <p><strong>Запрос:</strong></p>
-  <pre><code class="language-http">POST /check-token/
+      <h3 id="check-token-example">3.4. Проверить токен 🧐</h3>
+      <p><strong>Запрос:</strong></p>
+      <pre><code class="language-http">POST /check-token/
 Content-Type: application/json
 
 {
   "token": "abcdef123456"
 }
 </code></pre>
-  <p><strong>Пример ответа:</strong></p>
-  <pre><code class="language-json">{
+      <p><strong>Пример ответа:</strong></p>
+      <pre><code class="language-json">{
   "success": true,
   "token_exists": true
 }
@@ -276,95 +418,111 @@ Content-Type: application/json
 }
 </code></pre>
 
-  <hr class="my-5" />
-  <!-- 4. Пример тестирования API -->
-  <h2 class="mt-5" id="test-script">4. Пример тестирования API 🚀</h2>
+      <hr class="my-5" />
+      <!-- 4. Пример тестирования API -->
+      <h2 class="mt-5" id="test-script">4. Пример тестирования API 🚀</h2>
 
-  <!-- Добавленная секция с пояснением о получении токена -->
-  <div class="alert alert-warning" role="alert">
-    <strong>Для получения API токена:</strong><br>
-    Вам необходимо пройти авторизацию в нашем боте <b>DRIP MONEY</b>. 🤖<br> После получения 
-    данного токена, вставьте его в код (см. ниже) и протестируйте API на создание платежей. 🎉
-  </div>
+      <!-- Добавленная секция с пояснением о получении токена -->
+      <div class="alert alert-warning" role="alert" data-aos="fade-up" data-aos-delay="100">
+        <strong>Для получения API токена:</strong><br>
+        Вам необходимо пройти авторизацию в нашем боте <b>DRIP MONEY</b>. 🤖<br> После получения 
+        данного токена, вставьте его в код (см. ниже) и протестируйте API на создание платежей. 🎉
+      </div>
 
-  <p>
-    Ниже приведён пример скрипта на Python, который показывает, как можно 
-    протестировать получение токена (логин) и создание платежа. 🏆
-  </p>
-  <pre><code class="language-python">
-    import requests, uuid
-    from random import randint
-    
-    # Конфигурация
-    API_BASE_URL = "https://dripmoney.io"  # Базовый URL вашего API
-    AUTH_ENDPOINT = "/api-token-auth/"     # Эндпоинт для получения токена
-    CREATE_PAYMENT_ENDPOINT = "/api/create-payment/"  # Эндпоинт для создания платежа
-    
-    # Данные для создания платежа
-    PAYMENT_DATA = {
-        "amount": f"{randint(100, 10000)}.00",          # Сумма платежа
-        "description": "Оплата подписки",
-        "hash":  str(uuid.uuid4()), 
-        "redirect_url": "https://google.com",
-        "success_webhook": "https://dripmoney.io"
+      <p data-aos="fade-up" data-aos-delay="200">
+        Ниже приведён пример скрипта на Python, который показывает, как можно 
+        протестировать получение токена (логин) и создание платежа. 🏆
+      </p>
+      <pre data-aos="fade-up" data-aos-delay="300"><code class="language-python">
+import requests, uuid
+from random import randint
+
+# Конфигурация
+API_BASE_URL = "https://dripmoney.io"  # Базовый URL вашего API
+AUTH_ENDPOINT = "/api-token-auth/"     # Эндпоинт для получения токена
+CREATE_PAYMENT_ENDPOINT = "/api/create-payment/"  # Эндпоинт для создания платежа
+
+# Данные для создания платежа
+PAYMENT_DATA = {
+    "amount": f"{randint(100, 10000)}.00",          # Сумма платежа
+    "description": "Оплата подписки",
+    "hash":  str(uuid.uuid4()), 
+    "redirect_url": "https://google.com",
+    "success_webhook": "https://dripmoney.io"
+}
+
+
+def create_payment(token, payment_data):
+    """
+    Создание нового платежа с использованием токена аутентификации.
+    """
+    url = f"{API_BASE_URL}{CREATE_PAYMENT_ENDPOINT}"
+    headers = {
+        "Authorization": f"Token {token}",
+        "Content-Type": "application/json"
     }
     
+    try:
+        response = requests.post(url, headers=headers, json=payment_data)
+        response.raise_for_status()
+        payment_info = response.json()
+        print("Платеж успешно создан:")
+        print(payment_info)
+    except requests.exceptions.HTTPError as http_err:
+        print(f"HTTP ошибка при создании платежа: {http_err}")
+        print(f"Ответ сервера: {response.text}")
+    except Exception as err:
+        print(f"Ошибка при создании платежа: {err}")
     
-    def create_payment(token, payment_data):
-        """
-        Создание нового платежа с использованием токена аутентификации.
-        """
-        url = f"{API_BASE_URL}{CREATE_PAYMENT_ENDPOINT}"
-        headers = {
-            "Authorization": f"Token {token}",
-            "Content-Type": "application/json"
-        }
-        
-        try:
-            response = requests.post(url, headers=headers, json=payment_data)
-            response.raise_for_status()
-            payment_info = response.json()
-            print("Платеж успешно создан:")
-            print(payment_info)
-        except requests.exceptions.HTTPError as http_err:
-            print(f"HTTP ошибка при создании платежа: {http_err}")
-            print(f"Ответ сервера: {response.text}")
-        except Exception as err:
-            print(f"Ошибка при создании платежа: {err}")
+def main():
+    token = "YOUR TOKEN"
     
-    def main():
-        token = "YOUR TOKEN"
-        
-        if not token:
-            print("Не удалось получить токен. Проверьте учетные данные и попробуйте снова.")
-            return
-        
-        print(f"Токен получен: {token}")
-        
-        # Шаг 2: Создание платежа
-        print("Создание платежа...")
-        create_payment(token, PAYMENT_DATA)
+    if not token:
+        print("Не удалось получить токен. Проверьте учетные данные и попробуйте снова.")
+        return
     
-    if __name__ == "__main__":
-        main()
-</code></pre>
-</div> <!-- /container -->
+    print(f"Токен получен: {token}")
+    
+    # Шаг 2: Создание платежа
+    print("Создание платежа...")
+    create_payment(token, PAYMENT_DATA)
 
+if __name__ == "__main__":
+    main()
+      </code></pre>
+    </section>
+  </div> <!-- /container -->
 
-<!-- Bootstrap JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- FOOTER -->
+  <footer id="footer" class="mt-5">
+    <div class="container">
+      <p>
+        © 2023 DRIP MONEY. Все права защищены. <br>
+        Поддержка: <a href="https://t.me/babki_siyda">наша служба помощи</a> ⚙️
+      </p>
+    </div>
+  </footer>
 
-<!-- Highlight.js (готовая сборка) -->
-<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.8.0/build/highlight.min.js"></script>
-<!-- Подключаем языки -->
-<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.8.0/build/languages/json.min.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.8.0/build/languages/http.min.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.8.0/build/languages/python.min.js"></script>
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Highlight.js -->
+  <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.8.0/build/highlight.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.8.0/build/languages/json.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.8.0/build/languages/http.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.8.0/build/languages/python.min.js"></script>
+  <script>
+    // Активируем подсветку всех блоков кода
+    hljs.highlightAll();
+  </script>
 
-<script>
-  // Активируем подсветку всех блоков кода
-  hljs.highlightAll();
-</script>
-
+  <!-- AOS JS -->
+  <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
+  <script>
+    AOS.init({
+      duration: 800,
+      easing: 'ease-in-out',
+      once: true,
+    });
+  </script>
 </body>
 </html>

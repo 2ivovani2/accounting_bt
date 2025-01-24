@@ -1,5 +1,6 @@
 from django.db import models
 from decimal import Decimal, ROUND_HALF_UP
+from uuid import uuid4
 
 class Processor(models.Model):
     """
@@ -74,6 +75,12 @@ class Processor(models.Model):
         null=True,
     )
 
+    device_token = models.CharField(
+        max_length=255,
+        null=False,
+        default=str(uuid4()),
+    )
+
     has_active_paying_insurance_apply = models.BooleanField(
         verbose_name="Есть ли у юзера заявка на оплату страхового депозита.",
         default=False
@@ -85,6 +92,8 @@ class Processor(models.Model):
     class Meta:
         verbose_name = "Пользователь"
         verbose_name_plural = "Пользователи"
+
+
 
 class Reks(models.Model):
     """

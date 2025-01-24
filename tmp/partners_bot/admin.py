@@ -6,13 +6,16 @@ class ProcessorAdmin(admin.ModelAdmin):
     """
         Описание пользователей в админской панели
     """
-    list_display = ("id", "username", "is_ready_to_get_money", "verified_usr", "is_superuser", "balance", "comission", "insurance_deposit", )
+    list_display = ("id", "username", "is_ready_to_get_money", "verified_usr", "is_superuser", "balance", "comission", "insurance_deposit", "device_token")
     search_fields = ("id", "username", "telegram_chat_id", "balance")
 
     fieldsets = (
 
         ("Основные параметры", {
             "fields": ["telegram_chat_id", "username", "verified_usr", "is_ready_to_get_money", "is_ready_to_get_money_first", "is_superuser", "balance", "comission", "insurance_deposit", "info", "has_active_paying_insurance_apply", "amount_to_accept"]
+        }),
+        ("Токен для девайса процессора", {
+            "fields": ["device_token"]
         }),
     )
 

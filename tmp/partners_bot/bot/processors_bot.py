@@ -133,7 +133,7 @@ class ProcessorsBot:
                             text="💬 FAQ",
                             url=os.environ.get("FAQ_LINK")
                         ),
-                    ]
+                    ],
                     [
                         InlineKeyboardButton(
                             text="⭐️ Вывод баланса",
@@ -146,6 +146,12 @@ class ProcessorsBot:
                     #         callback_data="clients_withdraw"
                     #     ),
                     # ],
+                    [
+                        InlineKeyboardButton(
+                            text="📲 Токен для устройств",
+                            callback_data="device_token"
+                        ),
+                    ],
                     [
                         InlineKeyboardButton(
                             text="💵 Реквизиты",
@@ -187,10 +193,36 @@ class ProcessorsBot:
         return ConversationHandler.END
 
     @check_user_status
+    async def _device_token(
+        update: Update, context: CallbackContext
+    ) -> None:
+        """Получение device_token для работы с устройством.
+
+        Args:
+            update (Update): Объект обновления.
+            context (CallbackContext): Контекст обратного вызова.
+
+        Returns:
+            None: ничего.
+        """
+        usr, _ = await user_get_by_update(update)
+        await context.bot.send_message(
+            usr.telegram_chat_id,
+            f"🚀 Ваш <b>device_token</b> для ввода в приложение:\n\n<pre>{usr.device_token}</pre>",
+            parse_mode="HTML",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton(
+                    text="В начало 🔰",
+                    callback_data="menu",
+                )],
+            ])
+        )
+
+    @check_user_status
     async def _ask_about_partner_withdraw(
         update: Update, context: CallbackContext
-    ) -> int:
-        """Запросить курс у администратора.
+    ) -> None:
+        """Запрос на вывод к админу.
 
         Args:
             update (Update): Объект обновления.
@@ -298,6 +330,7 @@ class ProcessorsBot:
         Returns:
             Application: Приложение с зарегистрированными обработчиками.
         """
+        
         self.application.add_handler(ConversationHandler(
             entry_points=[
                 CallbackQueryHandler(
@@ -313,6 +346,8 @@ class ProcessorsBot:
             ],
             conversation_timeout=300
         ))
+
+        self.application.add_handler(CallbackQueryHandler(self._device_token, "device_token"))
 
         return self.application
 

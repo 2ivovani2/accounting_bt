@@ -179,38 +179,32 @@ class ApplierBot:
             f"<b>Ⓘ <u>ID профиля</u></b> - {usr.telegram_chat_id}\n\n· Текущий баланс: <b>{usr.balance}₽</b>\n· Заработано: <b>{round(total_money, 1)}₽</b>\n· Текущая комиссия: <b>{usr.comission}%</b>\n· Курс USDT/RUB: <b>{course}₽</b>\n\n<b>Возникли тех неполадки ⤵️</b> @{os.environ.get('ADMIN_TO_APPLY_telegram_username')}",
             parse_mode="HTML",
             reply_markup=InlineKeyboardMarkup([
-                # [
+                [
                     
-                #     InlineKeyboardButton(
-                #         text="⌛️ Вывод", 
-                #         callback_data="withdraw_menu"
-                #     ),
-                #     InlineKeyboardButton(
-                #         text="💸 Отправить чек", 
-                #         callback_data="send_cheque"
-                #     ),
-                # ],
-                # [
-                #     InlineKeyboardButton(
-                #         text="📆 История",
-                #         callback_data="today_hist",
-                #     ),
-                #     InlineKeyboardButton(
-                #         text="💵 Реквизиты", 
-                #         callback_data="reks"
-                #     ),
+                    InlineKeyboardButton(
+                        text="⌛️ Вывод", 
+                        callback_data="withdraw_menu"
+                    ),
+                    InlineKeyboardButton(
+                        text="💸 Отправить чек", 
+                        callback_data="send_cheque"
+                    ),
+                ],
+                [
+                    InlineKeyboardButton(
+                        text="📆 История",
+                        callback_data="today_hist",
+                    ),
+                    InlineKeyboardButton(
+                        text="🔗 Рефералы", 
+                        callback_data="refs"
+                    ),
+                    # InlineKeyboardButton(
+                    #     text="💵 Реквизиты", 
+                    #     callback_data="reks"
+                    # ),
                 
-                # ],
-                # [
-                #     InlineKeyboardButton(
-                #         text="🔗 Рефералы", 
-                #         callback_data="refs"
-                #     ),
-                #     InlineKeyboardButton(
-                #         text="🔙 Назад", 
-                #         callback_data="menu"
-                #     )
-                # ],
+                ],
                 [
                     InlineKeyboardButton(
                         text="🫣 Доступ к API", 
@@ -495,7 +489,7 @@ class ApplierBot:
         ))
 
         self.application.add_handler(CallbackQueryHandler(self._profile, "profile"))
-        # self.application.add_handler(CallbackQueryHandler(self._refs_info, "refs"))
+        self.application.add_handler(CallbackQueryHandler(self._refs_info, "refs"))
         # self.application.add_handler(CallbackQueryHandler(self._reks_info, "reks"))
         # self.application.add_handler(CallbackQueryHandler(self._get_reks, "get_reks"))
         self.application.add_handler(CallbackQueryHandler(self._api_info, "api_info"))

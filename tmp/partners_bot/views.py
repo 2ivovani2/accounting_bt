@@ -1,9 +1,6 @@
 import json, requests, re
 import logging, os
 
-from django.conf import settings
-from applier.tasks import initialize_bot
-
 from decimal import Decimal, ROUND_DOWN, ROUND_HALF_UP
 from datetime import timedelta
 
@@ -27,6 +24,7 @@ from partners_bot.models import Processor, Reks  # если у вас так н�
 from .models import AutoAcceptCheque
 from .serializers import AutoAcceptChequeSerializer, SmsReceiverSerializer
 from .tasks import handle_update
+from .bot_notification import notify_bot_user
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
@@ -177,6 +175,27 @@ class SmsReceiverAPIView(APIView):
         if not cheque.is_applied:
             cheque.is_applied = True
             cheque.save()
+
+            usr = cheque.reks.reks_owner                
+            usr.clients_withdraw += cheque.amount
+            usr.insurance_deposit -= cheque.amount
+            usr.balance += cheque.amount * Decimal(usr.comission * 0.01)
+            usr.save()
+            
+            if usr.insurance_deposit <= 0:
+                usr.is_ready_to_get_money = False
+                usr.save()
+                notify_bot_user(
+                    text=f"😔 К сожалению, ваш лимит на принятие чеков истек, вам необходимо вывести сумму <b>{usr.balance / ((100 - usr.comission) * 0.01) - usr.balance}RUB</b> на адрес <pre>{os.environ.get('ACCEPT_INSURANCE_PAYMENTS_ADDRESS')}</pre>\n<blockquote>После оплаты отправьте подтверждение администратору и мы разблокирем ваш профиль.</blockquote>",
+                    bot_token=os.environ.get("PROCESSORS_BOT_TOKEN"),
+                    chat_id=usr.telegram_chat_id
+                )
+
+            notify_bot_user(
+                text=f"<b>❤️‍🔥 Новое поступление ❤️‍🔥</b>\n\n· Хэш чека - <pre>{cheque.hash}</pre>\n· Сумма поступления - <b>{round(cheque.amount, 2)}₽</b>\n· Ваша доля - <b>{round(cheque.amount * Decimal(usr.comission * 0.01), 2)}₽</b>",
+                bot_token=os.environ.get("PROCESSORS_BOT_TOKEN"),
+                chat_id=usr.telegram_chat_id
+            )
             logger.info(f"Платеж {cheque.hash} отмечен как примененный.")
 
         return Response({
@@ -279,6 +298,9 @@ class PaymentPageView(APIView):
                     cheque.save()
 
         if not cheque.reks:
+            cheque.is_denied = True
+            cheque.save()
+
             return render(request, 'payment_page.html', {
                 'cheque': cheque,
                 'missing_reks': True,
@@ -321,17 +343,6 @@ class CheckChequeStatusView(APIView):
             cheque = get_object_or_404(AutoAcceptCheque, hash=cheque_hash)
 
             if cheque.is_applied:
-                usr = cheque.reks.reks_owner
-                
-                usr.clients_withdraw += cheque.amount
-                usr.insurance_deposit -= cheque.amount
-                usr.balance += cheque.amount * Decimal(usr.comission * 0.01)
-                usr.save()
-                
-                if usr.insurance_deposit <= 0:
-                    usr.is_ready_to_get_money = False
-                    usr.save()
-
                 # Можно вызывать тут webhook, если надо
                 webhook_url = cheque.success_webhook
                 if webhook_url:
