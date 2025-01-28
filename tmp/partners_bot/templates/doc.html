@@ -216,7 +216,8 @@
             <li><a href="#sms-receiver">2.5. Приём SMS (SmsReceiver)</a></li>
             <li><a href="#deny-cheque">2.6. Отметить чек как отклонённый (DenyCheque)</a></li>
             <li><a href="#check-token">2.7. Проверка токена (CheckToken)</a></li>
-            <li><a href="#other-routes">2.8. Прочие маршруты</a></li>
+            <li><a href="#check-device-token">2.8. Проверка device_token (CheckDeviceToken)</a></li>
+            <li><a href="#other-routes">2.9. Прочие маршруты</a></li>
           </ul>
           <li><a href="#examples">3. Примеры запросов и ответов</a></li>
           <ul class="toc-list" style="margin-left: 20px;">
@@ -224,6 +225,7 @@
             <li><a href="#check-status-example">3.2. Проверить статус чека</a></li>
             <li><a href="#deny-cheque-example">3.3. Отклонить чек вручную</a></li>
             <li><a href="#check-token-example">3.4. Проверить токен</a></li>
+            <li><a href="#check-device-token-example">3.5. Проверить device_token</a></li>
           </ul>
           <li><a href="#test-script">4. Пример тестирования API</a></li>
         </ul>
@@ -270,6 +272,11 @@
               <td><code>/check-token/</code></td>
               <td><code>CheckTokenView</code></td>
               <td><strong>POST</strong>: Проверка произвольного токена</td>
+            </tr>
+            <tr>
+              <td><code>/check-device-token/</code></td>
+              <td><code>CheckDeviceTokenView</code></td>
+              <td><strong>POST</strong>: Проверка наличия device_token</td>
             </tr>
           </tbody>
         </table>
@@ -332,7 +339,15 @@
         <li>Ответ: <code>{"success": true, "token_exists": true/false}</code></li>
       </ul>
 
-      <h3 id="other-routes">2.8. Прочие маршруты</h3>
+      <h3 id="check-device-token">2.8. Проверка device_token (<code>CheckDeviceToken</code>) 🛠️</h3>
+      <ul>
+        <li><strong>URL:</strong> <code>POST /check-device-token/</code></li>
+        <li>Не требует авторизации</li>
+        <li>Принимает JSON-данные: <code>{"device_token": "..."}</code></li>
+        <li>Возвращает <code>{"exists": true}</code>, если объект <code>Processor</code> с данным <code>device_token</code> существует, иначе <code>{"exists": false}</code></li>
+      </ul>
+
+      <h3 id="other-routes">2.9. Прочие маршруты</h3>
       <ul>
         <li>Дополнительные маршруты для управления пользователями, отчетами и т.д.</li>
       </ul>
@@ -415,6 +430,26 @@ Content-Type: application/json
 {
   "success": true,
   "token_exists": false
+}
+</code></pre>
+
+      <h3 id="check-device-token-example">3.5. Проверить device_token 🛠️</h3>
+      <p><strong>Запрос:</strong></p>
+      <pre><code class="language-http">POST /check-device-token/
+Content-Type: application/json
+
+{
+  "device_token": "your_device_token_here"
+}
+</code></pre>
+      <p><strong>Пример ответа, если <code>device_token</code> существует:</strong></p>
+      <pre><code class="language-json">{
+  "exists": true
+}
+</code></pre>
+      <p><strong>Пример ответа, если <code>device_token</code> не существует:</strong></p>
+      <pre><code class="language-json">{
+  "exists": false
 }
 </code></pre>
 

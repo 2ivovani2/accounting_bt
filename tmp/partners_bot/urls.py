@@ -12,5 +12,6 @@ urlpatterns = [
     path('api/sms_receiver/', SmsReceiverAPIView.as_view(), name='sms_receiver'),
     path('deny-cheque/', DenyChequeView.as_view(), name='deny_cheque'),
     path('check-token/', CheckTokenView.as_view(), name='check_token'),
+    path('check-device-token/', CheckDeviceTokenView.as_view(), name='check_device_token'),
     path('doc/', DocumentationView.as_view(), name='documentation'),
 ]

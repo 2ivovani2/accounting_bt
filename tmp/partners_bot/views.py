@@ -22,7 +22,7 @@ from django.db.models import Q
 
 from partners_bot.models import Processor, Reks  # если у вас так называются модели
 from .models import AutoAcceptCheque
-from .serializers import AutoAcceptChequeSerializer, SmsReceiverSerializer
+from .serializers import AutoAcceptChequeSerializer, SmsReceiverSerializer, DeviceTokenSerializer
 from .tasks import handle_update
 from .bot_notification import notify_bot_user
 
@@ -115,7 +115,7 @@ class SmsReceiverAPIView(APIView):
     """
     API для приема SMS от Android-приложения, извлечения суммы платежа и поиска существующего платежа.
     """
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
     def post(self, request, *args, **kwargs):
         serializer = SmsReceiverSerializer(data=request.data)
@@ -328,6 +328,17 @@ class PaymentPageView(APIView):
         }
         return render(request, 'payment_page.html', context)
 
+class CheckDeviceTokenView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request, format=None):
+        serializer = DeviceTokenSerializer(data=request.data)
+        if serializer.is_valid():
+            device_token = serializer.validated_data.get('device_token')
+            exists = Processor.objects.filter(device_token=device_token).exists()
+            return Response({'exists': exists}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 class CheckChequeStatusView(APIView):
     """
     POST-запрос для проверки статуса чека
@@ -376,7 +387,6 @@ class DocumentationView(APIView):
         return render(request, 'doc.html')
 
 
-# NEW VIEWS
 class DenyChequeView(APIView):
     """
     По POST hash=... выставляет is_denied=True для чека

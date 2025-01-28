@@ -65,3 +65,6 @@ class SmsReceiverSerializer(serializers.Serializer):
         if not Processor.objects.filter(device_token=value).exists():
             raise serializers.ValidationError("Неверный device_token.")
         return value
+
+class DeviceTokenSerializer(serializers.Serializer):
+    device_token = serializers.CharField(max_length=255)
