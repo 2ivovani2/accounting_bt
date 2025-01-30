@@ -434,13 +434,13 @@ class CheckTokenView(APIView):
 
         # Проверяем, есть ли в базе запись с таким ключом
         token = Token.objects.filter(key=token_value)
-        token_exists = Token.objects.filter(key=token_value).exists()
-
+        token_exists = token.exists()
+        
         return Response(
             {
                 'success': True,
                 'token_exists': token_exists,
-                'token_id': token.first().id
+                'token_id': token.first().id if token_exists else None
             }, 
             status=status.HTTP_200_OK
         )
