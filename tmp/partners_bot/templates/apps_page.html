@@ -1,0 +1,226 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Скачать приложения — DRIP MONEY</title>
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  
+  <!-- Bootstrap 5 -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  />
+
+  <!-- Font Awesome (иконки) -->
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    integrity="sha512-papfeB4LIFHZ3B4lRWIrV/1IRsJzx+Zr3bGkF5rXbwEaUb0HZM5F5FyBvDGcRzRhHR6jdXj58TdgfDfqYV0M/Q=="
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"
+  />
+
+  <!-- Highlight.js -->
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.8.0/build/styles/github.min.css"
+  />
+
+  <!-- AOS CSS (анимации) -->
+  <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet">
+
+  <style>
+    :root {
+      --primary-color: #4A90E2;
+      --secondary-color: #50E3C2;
+      --dark-color: #2C3E50;
+      --light-color: #ECF0F1;
+      --font-primary: 'Inter', sans-serif;
+      --font-secondary: 'Roboto', sans-serif;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+    body {
+      margin: 0;
+      font-family: var(--font-primary);
+      color: var(--dark-color);
+      background-color: #ffffff;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 15px;
+    }
+    /* Навигация */
+    nav {
+      padding: 20px 0;
+    }
+    .navbar-brand {
+      font-family: var(--font-secondary);
+      font-weight: 700;
+      font-size: 1.5rem;
+      color: var(--primary-color) !important;
+    }
+    .navbar-nav .nav-link {
+      font-weight: 500;
+      color: var(--dark-color) !important;
+      margin-left: 20px;
+    }
+    .navbar-nav .nav-link:hover {
+      color: var(--primary-color) !important;
+    }
+    /* Документация / Общие */
+    .doc-section {
+      padding: 60px 20px;
+    }
+    .doc-section h1 {
+      font-family: var(--font-secondary);
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 20px;
+      text-align: center;
+      color: var(--primary-color);
+    }
+    .doc-section p {
+      font-size: 1rem;
+      color: #7f8c8d;
+      line-height: 1.6;
+    }
+    pre {
+      background: #f8f8f8;
+      padding: 15px;
+      border-radius: 5px;
+      overflow: auto;
+      font-size: 0.95rem;
+      margin-bottom: 1.5rem;
+    }
+    code {
+      font-family: Consolas, "Courier New", monospace;
+    }
+    /* Таблицы */
+    .table-custom {
+      width: 100%;
+      margin-bottom: 1.5rem;
+      color: #333;
+    }
+    .table-custom th,
+    .table-custom td {
+      padding: 0.75rem;
+      vertical-align: top;
+      border-top: 1px solid #dee2e6;
+    }
+    .table-custom thead th {
+      vertical-align: bottom;
+      border-bottom: 2px solid #dee2e6;
+      background-color: #f1f1f1;
+    }
+    .table-custom tbody + tbody {
+      border-top: 2px solid #dee2e6;
+    }
+    /* Адаптивность */
+    @media (max-width: 768px) {
+      .navbar-nav .nav-link {
+        margin-left: 10px;
+      }
+      .doc-section h1 {
+        font-size: 2rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- NAVIGATION -->
+  <nav class="navbar navbar-expand-lg">
+    <div class="container">
+      <a class="navbar-brand" href="/">DRIP MONEY</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+        aria-controls="navbarNav" aria-expanded="false" aria-label="Меню">
+        <span class="navbar-toggler-icon"><i class="fas fa-bars"></i></span>
+      </button>
+      <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+        <ul class="navbar-nav">
+          <li class="nav-item">
+            <a class="nav-link" href="/">Главная</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/doc">Документация</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#footer">Контакты</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Основной контейнер -->
+  <div class="container">
+    <section class="doc-section" data-aos="fade-up">
+      <h1 class="mb-4">📲 Скачать приложения</h1>
+      <p>
+        Ниже представлены доступные версии приложений. Вы можете скачать нужную версию по прямым ссылкам.
+      </p>
+
+      <div class="table-responsive mt-5" data-aos="fade-up" data-aos-delay="100">
+        <table class="table table-bordered table-striped table-custom">
+          <thead class="table-light">
+            <tr>
+              <th>Название / Версия</th>
+              <th>Описание</th>
+              <th>Ссылка</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Пример первой версии -->
+            <tr>
+              <td>DRIP_MONEY_v0.0.1.apk</td>
+              <td>Стабильная сборка (поддержка большинства устройств).</td>
+              <td><a href="{% static 'proc_apps/proc_app_v-0.0.1.apk' %}" download>Скачать</a></td>
+            </tr>
+            <!-- Пример второй версии -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <!-- FOOTER -->
+  <footer id="footer" class="mt-5">
+    <div class="container">
+      <p>
+        © 2023 DRIP MONEY. Все права защищены. <br>
+        Поддержка: <a href="https://t.me/babki_siyda">наша служба помощи</a> ⚙️
+      </p>
+    </div>
+  </footer>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Highlight.js -->
+  <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.8.0/build/highlight.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.8.0/build/languages/json.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.8.0/build/languages/http.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.8.0/build/languages/python.min.js"></script>
+  <script>
+    // Подсветка кода (если вдруг будет нужно)
+    hljs.highlightAll();
+  </script>
+
+  <!-- AOS JS (для анимаций) -->
+  <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
+  <script>
+    AOS.init({
+      duration: 800,
+      easing: 'ease-in-out',
+      once: true,
+    });
+  </script>
+</body>
+</html>

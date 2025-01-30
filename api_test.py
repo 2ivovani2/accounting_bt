@@ -12,7 +12,8 @@ PASSWORD = "sashket2003"      # Замените на ваш password
 
 # Данные для создания платежа
 PAYMENT_DATA = {
-    "amount": f"{randint(100, 10000)}.00",          # Сумма платежа
+    # "amount": f"{randint(100, 10000)}.00",          # Сумма платежа
+    "amount": "1000",          # Сумма платежа
     "description": "Оплата подписки",
     "hash":  str(uuid.uuid4()), 
     "redirect_url": "https://google.com",

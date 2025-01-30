@@ -14,4 +14,5 @@ urlpatterns = [
     path('check-token/', CheckTokenView.as_view(), name='check_token'),
     path('check-device-token/', CheckDeviceTokenView.as_view(), name='check_device_token'),
     path('doc/', DocumentationView.as_view(), name='documentation'),
+    path('download-apps/', DownloadAppsView.as_view(), name='download_proc_apps'),
 ]
