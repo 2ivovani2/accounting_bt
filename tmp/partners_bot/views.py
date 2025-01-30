@@ -333,6 +333,7 @@ class CheckDeviceTokenView(APIView):
             return Response({'exists': exists}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
 class CheckChequeStatusView(APIView):
     """
     POST-запрос для проверки статуса чека
